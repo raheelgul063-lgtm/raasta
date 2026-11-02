@@ -5,8 +5,9 @@ let sb = null;
 if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY) {
   // supabase-js is bundled in /vendor (pinned version, no third party CDN at runtime)
   try { sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); }
-  catch (e) { console.warn("Supabase could not load, falling back to Demo mode", e); }
+  catch (e) { console.error("Supabase could not load", e); }
 }
+const CONFIGURED = Boolean(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
 const LIVE = Boolean(sb);
 const app = document.getElementById("app");
 let session = null;
@@ -589,7 +590,11 @@ function route() {
 }
 
 async function init() {
-  if (!LIVE) $("#demoBanner").hidden = false;
+  if (!LIVE) {
+    $("#demoBanner").hidden = false;
+    // Configured but could not connect: never silently fall back to demo with real users
+    if (CONFIGURED) $("#demoBanner").innerHTML = `Could not connect to Raasta. Please refresh the page. If it keeps happening, try again in a few minutes.`;
+  }
   if (LIVE) {
     const { data } = await sb.auth.getSession();
     session = data.session;
