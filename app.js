@@ -781,7 +781,7 @@ async function viewLetter() {
 /* ---------------- Router ---------------- */
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
   finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
-  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
+  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
   welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
@@ -789,7 +789,7 @@ function route() {
   // Supabase magic link returns tokens in the hash; let the client read them first
   if (key.startsWith("access_token") || key.startsWith("error")) { history.replaceState(null, "", location.pathname + "#/"); return route(); }
   (routes[key] || viewHome)();
-  const navKey = { program: "finder", university: "universities", city: "cities", "visa-guide": "guides", moving: "guides", letter: "tools", interview: "tools", doccheck: "tools", grades: "tools", compare: "tools" }[key] || key;
+  const navKey = { program: "finder", university: "universities", city: "cities", "visa-guide": "guides", moving: "guides", jobs: "guides", letter: "tools", interview: "tools", doccheck: "tools", grades: "tools", compare: "tools" }[key] || key;
   renderCompareBar();
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active", a.dataset.nav === (navKey || "home")));
   window.scrollTo(0, 0); app.focus({ preventScroll: true });
@@ -1137,6 +1137,8 @@ async function viewCity() {
         <div class="fact"><span>Health insurance</span><strong>about €141 to €146</strong></div><div class="fact"><span>Transport</span><strong>Semester ticket or €63 Deutschlandticket</strong></div><div class="fact"><span>Official living cost minimum</span><strong>€992 per month</strong></div></div>
         <p class="notice">Rent: MLP Studentenwohnreport 2026. Insurance: 2026 student rates.</p></section>
     </div>
+    <section class="section"><div class="section-head"><div><h2>Find a job in ${esc(c.name)}</h2><p>Apps and agencies that work in ${esc(c.name)}. Search with the city name.</p></div><a class="btn ghost small" href="#/jobs">All job platforms</a></div>
+      ${jobCards([...(G().jobs?.apps || []).slice(0, 3), ...(G().jobs?.agencies || []).slice(0, 3)])}</section>
     <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?state=${encodeURIComponent(c.state)}">All programs in ${esc(c.state)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
     <p class="notice" id="cSrc"></p>`;
   const d = await cityLive(c);
@@ -1200,6 +1202,19 @@ function viewGrades() {
   };
 }
 
+function jobCards(list) {
+  return `<div class="job-grid">${list.map((j) => `${j.url ? `<a class="job-card" href="${safeUrl(j.url)}" target="_blank" rel="noopener">` : `<div class="job-card">`}<strong>${esc(j.name)}${j.url ? " ↗" : ""}</strong><span>${esc(j.d)}</span>${j.url ? "</a>" : "</div>"}`).join("")}</div>`;
+}
+function viewJobs() {
+  const J = G().jobs || { apps: [], agencies: [], portals: [], tips: [] };
+  app.innerHTML = `${guideHero("Jobs for students", "Find a student job in Germany", "Shift apps, staffing agencies and job portals that hire international students, with the 2026 work rules.")}
+    <div class="callout"><strong>Work rules 2026:</strong> ${esc(J.rules || "")}</div>
+    <section class="section"><div class="section-head"><div><h2>Shift apps</h2><p>Flexible shifts you choose yourself, often paid weekly. Great for your first months.</p></div></div>${jobCards(J.apps)}</section>
+    <section class="section"><div class="section-head"><div><h2>Staffing agencies</h2><p>They place you with companies in logistics, office, industry and IT. Registration is free.</p></div></div>${jobCards(J.agencies)}</section>
+    <section class="section"><div class="section-head"><div><h2>Job portals</h2><p>For Werkstudent jobs, internships and graduate roles.</p></div></div>${jobCards(J.portals)}</section>
+    <section class="card" style="margin-top:16px"><h3>Tips</h3><ul class="needs">${(J.tips || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section>`;
+}
+
 function viewHub(kind) {
   const items = kind === "tools" ? [
     ["#/visa", "✦", "AI advisor", "Program matches and visa answers in English or Urdu."],
@@ -1211,6 +1226,7 @@ function viewHub(kind) {
     : [["#/visa-guide", "🛂", "Student visa from Pakistan", "Step by step, with fees and the blocked account. Dated."],
     ["#/moving", "🧳", "Moving to Germany", "Registration, insurance, housing, banks, transport and culture."],
     ["#/cities", "🏙️", "City guides", "Jobs, internships and rent in 12 student cities."],
+    ["#/jobs", "💼", "Student jobs", "Zenjob, Jobvalley, TimePartner, Randstad and more, with 2026 work rules."],
     ["#/roadmap", "🧭", "10 step roadmap", "From choosing a program to your first day."]];
   app.innerHTML = `${guideHero(kind === "tools" ? "AI tools" : "Guides", kind === "tools" ? "Free AI tools for your application" : "Guides for every step", kind === "tools" ? "Built for students from Pakistan. Free, with a daily AI limit." : "Checked facts, with dates, so you know what is current.")}
     <div class="grid cols-3">${items.map(([h, ic, t, d]) => `<a class="card" href="${h}"><div class="icon">${ic}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></a>`).join("")}</div>`;
@@ -1618,6 +1634,17 @@ function uniCard(u) {
   </a>`;
 }
 
+// Numbered pager: 1 2 3 ... 18 with previous and next
+function pager(page, pages) {
+  if (pages <= 1) return "";
+  const nums = new Set([1, pages, page - 1, page, page + 1]);
+  if (page <= 3) [2, 3, 4].forEach((n) => nums.add(n));
+  if (page >= pages - 2) [pages - 1, pages - 2, pages - 3].forEach((n) => nums.add(n));
+  const list = [...nums].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  let out = `<button type="button" class="pg" data-page="${page - 1}" ${page === 1 ? "disabled" : ""} aria-label="Previous page">‹</button>`;
+  list.forEach((n, i) => { if (i && n - list[i - 1] > 1) out += `<span class="pg-gap">…</span>`; out += `<button type="button" class="pg ${n === page ? "on" : ""}" data-page="${n}" ${n === page ? 'aria-current="page"' : ""}>${n}</button>`; });
+  return out + `<button type="button" class="pg" data-page="${page + 1}" ${page === pages ? "disabled" : ""} aria-label="Next page">›</button>`;
+}
 async function viewUniversities() {
   app.innerHTML = `<div class="page-head"><h1>Universities in Germany</h1><p>Loading...</p></div>`;
   const unis = uniAggregate(await db.programs());
@@ -1637,15 +1664,21 @@ async function viewUniversities() {
       <select id="usort" aria-label="Sort">${opt("n", "Most programs", f.sort)}${opt("free", "Most tuition free", f.sort)}${opt("az", "A to Z", f.sort)}</select>
     </div>
     <p class="count" id="ucount"></p>
-    <div class="uni-grid" id="ulist"></div>`;
+    <div class="uni-grid" id="ulist"></div>
+    <nav class="pager" id="upager" aria-label="Pages"></nav>`;
   const render = () => {
     const q = $("#uq").value.trim().toLowerCase(), t = $("#utype").value, st = $("#ustate").value, so = $("#usort").value;
     let list = unis.filter((u) => (!q || `${u.name} ${u.city}`.toLowerCase().includes(q)) && (!t || u.type === t) && (!st || u.state === st));
     list.sort(so === "az" ? (a, b) => a.name.localeCompare(b.name) : so === "free" ? (a, b) => b.free - a.free : (a, b) => b.n - a.n);
-    $("#ucount").textContent = `${list.length} universit${list.length === 1 ? "y" : "ies"}`;
-    $("#ulist").innerHTML = list.slice(0, 300).map(uniCard).join("") || `<div class="empty">No university matches.</div>`;
+    const PER = 12, pages = Math.max(1, Math.ceil(list.length / PER));
+    page = Math.min(Math.max(1, page), pages);
+    $("#ucount").textContent = `${list.length} universit${list.length === 1 ? "y" : "ies"}${pages > 1 ? ` · page ${page} of ${pages}` : ""}`;
+    $("#ulist").innerHTML = list.slice((page - 1) * PER, page * PER).map(uniCard).join("") || `<div class="empty">No university matches.</div>`;
+    $("#upager").innerHTML = pager(page, pages);
+    $("#upager").querySelectorAll("[data-page]").forEach((b) => b.onclick = () => { page = Number(b.dataset.page); render(); $("#ucount").scrollIntoView({ behavior: "smooth", block: "start" }); });
   };
-  app.querySelectorAll(".uni-tools input, .uni-tools select").forEach((el) => el.addEventListener(el.type === "search" ? "input" : "change", render));
+  let page = Number(route.params.get("page")) || 1;
+  app.querySelectorAll(".uni-tools input, .uni-tools select").forEach((el) => el.addEventListener(el.type === "search" ? "input" : "change", () => { page = 1; render(); }));
   render();
 }
 

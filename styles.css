@@ -623,3 +623,16 @@ body { overflow-x: clip; }
 @media (max-width: 960px) { .city-grid, .adm-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .city-grid, .adm-grid { grid-template-columns: 1fr; } }
 .topnav a { padding: 8px 10px; }
+.job-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.job-card { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
+.job-card strong { color: var(--green); }
+.job-card span { color: var(--muted); font-size: .88rem; }
+.pager { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 22px 0 6px; }
+.pg { min-width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font: inherit; font-weight: 700; cursor: pointer; color: var(--ink); }
+.pg:hover:not(:disabled) { border-color: var(--green-2); color: var(--green); }
+.pg.on { background: var(--green); border-color: var(--green); color: #fff; }
+.pg:disabled { opacity: .4; cursor: default; }
+.pg-gap { align-self: center; color: var(--muted); padding: 0 2px; }
+@media (max-width: 960px) { .job-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .job-grid { grid-template-columns: 1fr; } }

@@ -91,6 +91,39 @@ window.RAASTA_GUIDES = {
     ]
   },
 
+  jobs: {
+    rules: "Non EU students may work 140 full days or 280 half days per year. During the semester, Werkstudent jobs are limited to 20 hours a week. Mini jobs pay up to €603 per month without taxes or social security. The minimum wage in 2026 is €13.90 per hour.",
+    apps: [
+      { name: "Zenjob", url: "https://www.zenjob.com/de/", d: "App for flexible shifts in retail, logistics, events and offices. Choose shifts yourself, paid weekly." },
+      { name: "Jobvalley", url: "https://www.jobvalley.com/", d: "Student job platform (formerly Studitemps): shifts, part time jobs and Werkstudent roles across Germany." },
+      { name: "StudentJob", url: "https://www.studentjob.de/", d: "Large board for student jobs, mini jobs and internships." },
+      { name: "Coople", url: "https://www.coople.com/de/", d: "App for short assignments in hospitality, logistics and retail." },
+      { name: "Instaff", url: "https://www.instaff.jobs/", d: "Event, promotion and hospitality shifts, popular with students." }
+    ],
+    agencies: [
+      { name: "TimePartner", url: "https://www.timepartner.com/", d: "Staffing agency with many offices, including Berlin. Office, logistics, industry and IT roles." },
+      { name: "ManpowerGroup", url: "https://www.manpower.de/", d: "One of the largest staffing agencies: industry, logistics, office and IT." },
+      { name: "Randstad", url: "https://www.randstad.de/", d: "Global staffing agency with offices in every big German city, including student and part time jobs." },
+      { name: "Adecco", url: "https://www.adecco.de/", d: "Temporary and permanent jobs in office, industry and logistics." },
+      { name: "Hays", url: "https://www.hays.de/", d: "Specialist recruiter for IT, engineering, finance and life sciences. Good for graduates." },
+      { name: "Persona service", url: "https://www.persona.de/", d: "Staffing agency for industry, logistics and office jobs." }
+    ],
+    portals: [
+      { name: "LinkedIn", url: "https://www.linkedin.com/jobs/", d: "Best for English speaking jobs, startups and graduate roles. Set your location to the city." },
+      { name: "StepStone", url: "https://www.stepstone.de/", d: "Germany's biggest job board for professional and Werkstudent roles." },
+      { name: "Indeed", url: "https://de.indeed.com/", d: "All types of jobs; search Werkstudent plus your field." },
+      { name: "XING", url: "https://www.xing.com/jobs", d: "German professional network, strong with German speaking employers." },
+      { name: "Bundesagentur für Arbeit Jobbörse", url: "https://www.arbeitsagentur.de/jobsuche/", d: "Official federal job portal with every kind of job, including internships." },
+      { name: "Your university career service", url: null, d: "Job boards, CV checks and career fairs, free for students. Often the best source for internships." }
+    ],
+    tips: [
+      "Make a German style CV (Lebenslauf): one or two pages, photo optional, clear dates.",
+      "Learn some German: even A2 or B1 opens many more student jobs.",
+      "Never pay a fee to get a job. Real agencies are paid by employers, not by you.",
+      "Your employer needs your tax ID, health insurance and a German bank account."
+    ]
+  },
+
   moving: [
     { id: "register", ic: "🏠", t: "Registration (Anmeldung) and tax ID", items: [
       "Register your address at the local Bürgeramt within 14 days of moving in. Bring your passport and the landlord confirmation (Wohnungsgeberbestätigung).",
@@ -113,6 +146,12 @@ window.RAASTA_GUIDES = {
       "Online banks (N26, DKB) open quickly with just a passport. Traditional banks (Sparkasse, Commerzbank, Deutsche Bank) have branches and free student accounts but may need your registration certificate.",
       "Many shops and restaurants still prefer cash or the German debit card (Girocard). Carry some cash.",
       "Working: non EU students may work 140 full days or 280 half days per year. Student jobs (Werkstudent) up to 20 hours a week during the semester." ] },
+    { id: "jobs", ic: "💼", t: "Student jobs, apps and agencies", items: [
+      "Work rules: 140 full days or 280 half days per year; Werkstudent jobs up to 20 hours a week during the semester; mini jobs up to €603 per month.",
+      "Shift apps: Zenjob, Jobvalley, Coople, Instaff. Choose your own shifts and get paid quickly.",
+      "Staffing agencies: TimePartner, ManpowerGroup, Randstad, Adecco, Hays and Persona service place students in logistics, office, industry and IT jobs.",
+      "Job portals: LinkedIn, StepStone, Indeed, XING and the official Arbeitsagentur Jobbörse. See the full list with links on the Jobs page.",
+      "Never pay to get a job. Real agencies are paid by employers." ] },
     { id: "connect", ic: "📶", t: "Mobile and internet", items: [
       "Prepaid SIM cards (no contract) from Aldi Talk, Lidl Connect, Congstar or fraenk are cheap and flexible. You must verify your identity with your passport.",
       "The big networks are Telekom, Vodafone and O2. Discount brands use the same networks at lower prices.",
