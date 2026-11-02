@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Raasta · Free guide to German universities for Pakistani students</title>
+  <meta name="description" content="Free step by step help for Pakistani students applying to German universities: application tracker, visa document checklist, AI visa assistant, motivation letter and interview practice." />
+  <meta property="og:title" content="Raasta · Your free path to a German university" />
+  <meta property="og:description" content="Tracker, visa checklist, AI visa assistant, motivation letter help and interview practice. Free for Pakistani students." />
+  <meta name="theme-color" content="#0E4D3A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E4D3A'/%3E%3Cpath d='M18 46 L32 18 L46 46' stroke='%23F2B544' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand" aria-label="Raasta home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0E4D3A"/><path d="M18 46 L32 18 L46 46" stroke="#F2B544" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-name">Raasta</span>
+      <span class="brand-urdu" lang="ur">راستہ</span>
+    </a>
+    <nav class="topnav" aria-label="Main">
+      <a href="#/finder" data-nav="finder">Find programs</a>
+      <a href="#/roadmap" data-nav="roadmap">Roadmap</a>
+      <a href="#/tracker" data-nav="tracker">Tracker</a>
+      <a href="#/visa" data-nav="visa">Visa assistant</a>
+      <a href="#/letter" data-nav="letter">Motivation letter</a>
+      <a href="#/interview" data-nav="interview">Interview</a>
+    </nav>
+    <div id="authArea" class="auth-area"></div>
+  </header>
+
+  <div id="demoBanner" class="demo-banner" hidden>
+    Demo mode: your data stays on this device and AI answers are samples. Connect Supabase in config.js to go live.
+  </div>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="footer">
+    <p><strong>Raasta</strong> is free for Pakistani students. Not affiliated with DAAD, uni-assist or the German Missions in Pakistan.</p>
+    <p><a href="#/privacy">Privacy policy</a></p>
+    <p>Always confirm requirements on the official <a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan</a> page and the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.</p>
+  </footer>
+
+  <nav class="bottomnav" aria-label="Mobile">
+    <a href="#/" data-nav="home"><span class="ic">⌂</span>Home</a>
+    <a href="#/tracker" data-nav="tracker"><span class="ic">✓</span>Tracker</a>
+    <a href="#/visa" data-nav="visa"><span class="ic">✦</span>Visa AI</a>
+    <a href="#/letter" data-nav="letter"><span class="ic">✎</span>Letter</a>
+    <a href="#/finder" data-nav="finder"><span class="ic">⌕</span>Find</a>
+  </nav>
+
+  <button id="fbBtn" class="fb-btn" type="button">💬 Feedback</button>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="programs.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
