@@ -1253,9 +1253,10 @@ async function viewFinder() {
             <select id="fsort" class="sort">${opt("deadline", "Soonest deadline", f.sort)}${opt("tuition", "Lowest tuition", f.sort)}${opt("duration", "Shortest", f.sort)}${opt("az", "A to Z", f.sort)}</select>
           </div>
         </div>
+        <div id="activeF" class="active-filters"></div>
         <div id="bachelorNote"></div>
         <div id="results" class="prog-list"></div>
-        <p class="notice">${progs.length.toLocaleString("en-US")} international programs, based on the DAAD International Programmes database, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official university page. Missing something? Tell us with the Feedback button.</p>
+        <p class="notice">${progs.length.toLocaleString("en-US")} programs from the DAAD International Programmes database and the official websites of private universities, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official university page. Missing something? Tell us with the Feedback button.</p>
       </section>
     </div>`;
 
@@ -1297,7 +1298,19 @@ async function viewFinder() {
     list.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
     // Profile matches first
     if (prof?.field) list.sort((a, b) => (b.field === prof.field) - (a.field === prof.field));
-    $("#count").textContent = `${list.length} program${list.length === 1 ? "" : "s"}`;
+    $("#count").textContent = `${list.length.toLocaleString("en-US")} program${list.length === 1 ? "" : "s"}`;
+    // Show every active filter as a removable chip, so remembered filters are never hidden
+    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
+    const act = Object.entries(c).filter(([k, v]) => v && LBL[k]);
+    $("#activeF").innerHTML = act.length ? `${act.map(([k, v]) => `<button type="button" class="fchip" data-clear="${k}">${esc(LBL[k](v))} <span aria-hidden="true">×</span><span class="sr-only">Remove filter</span></button>`).join("")}${act.length > 1 ? `<button type="button" class="btn link small" data-clear="all">Clear all</button>` : ""}` : "";
+    $("#activeF").querySelectorAll("[data-clear]").forEach((b) => b.onclick = () => {
+      const k = b.dataset.clear;
+      if (k === "all") { $("#resetF").click(); return; }
+      if (k === "degree") app.querySelector("input[name=fdegree][value='']").checked = true;
+      else if (k === "savedOnly") $("#fsaved").checked = false;
+      else { const el = { q: "#fq", field: "#ffield", lang: "#flang", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
+      history.replaceState(null, "", "#/finder"); render();
+    });
     $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";
     const PAGE = 30;
     let shown = 0;
