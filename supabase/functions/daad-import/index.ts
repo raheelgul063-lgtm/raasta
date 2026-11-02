@@ -18,10 +18,12 @@ const FIELD_RULES: [string, RegExp][] = [
   ["Business / Management / Economics", /business|management|econom|financ|marketing|\bMBA\b|accounting|logistic|entrepreneur|administration|tourism|supply chain|banking|controlling/i],
   ["Life Sciences / Biotech / Health", /bio|medic|health|pharma|neuro|molecular|life science|nutrition|food|agri|animal|plant|nurs|epidemi|dental|veterinar|horticult|crop|psycholog|sport/i],
   ["Natural Sciences", /physic|chemi|mathemat|astro|geoscien|earth|statistic|geolog|meteorolog|ocean|natural science|quantum/i],
-  ["Design / Media / Arts", /design|media|\bart|arts\b|music|film|journalis|photograph|game|fashion|architect|communication|culture|curat|theatre|dance/i],
+  ["Other", /social|politic|\blaw\b|legal|sociolog|education|linguist|history|philosoph|international relations|peace|governance|public policy|anthropolog|development studies|religio|theolog|languages?\b|literature|english studies|german studies/i],
+  ["Design / Media / Arts", /design|media|\bart\b|\bfine arts|music|film|journalis|photograph|game|fashion|architect|communication|curat|theatre|dance/i],
 ];
 function field(subject: string, name: string) {
-  for (const s of [subject || "", name || ""]) for (const [f, re] of FIELD_RULES) if (re.test(s)) return f;
+  const n = (name || "").replace(/\b(Master|Bachelor) of (Arts|Science|Engineering|Fine Arts|Laws|Business Administration|Education|Music)\b/gi, " ").replace(/\((M|B)\.?\s?(A|Sc|Eng|FA)\.?\)/gi, " ");
+  for (const s of [subject || "", n]) for (const [f, re] of FIELD_RULES) if (re.test(s)) return f;
   return "Other";
 }
 
@@ -128,6 +130,7 @@ const okUrl = (u?: string | null) => (u && /^https?:\/\//i.test(u) && !/daad\.de
 
 function title(name: string, degreeText: string | null, deg: string) {
   const m = (name + " " + (degreeText || "")).match(/\b(M\.?\s?Sc|M\.?\s?A|M\.?\s?Eng|MBA|LL\.?\s?M|M\.?\s?Ed|MFA|MPH|M\.?\s?Mus|B\.?\s?Sc|B\.?\s?A|B\.?\s?Eng|BBA|LL\.?\s?B|Master of [A-Z][a-z]+(?: [a-z]+)? ?[A-Z]?[a-z]*|Bachelor of [A-Z][a-z]+(?: [a-z]+)? ?[A-Z]?[a-z]*)\b\.?/);
+  if (m && /^(Master|Bachelor) of/.test(m[1])) return m[1].replace(/^((?:Master|Bachelor) of [A-Z][a-z]+(?: [A-Z][a-z]+)?).*$/, "$1").replace(/ (In|And|For)$/, "");
   if (m) return m[1].replace(/\s/g, "").replace(/^MSc$/, "M.Sc.").replace(/^MA$/, "M.A.").replace(/^MEng$/, "M.Eng.").replace(/^BSc$/, "B.Sc.").replace(/^BA$/, "B.A.").replace(/^BEng$/, "B.Eng.").replace(/^LLM$/, "LL.M.").replace(/^Masterof/, "Master of ").replace(/^Bachelorof/, "Bachelor of ");
   return deg;
 }

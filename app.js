@@ -145,7 +145,7 @@ const db = {
       let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
       if (LIVE) {
         // only the columns the lists need; the program page loads the full row
-        const cols = "id,university,program,degree,title,field,city,state,type,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
+        const cols = "id,university,program,degree,title,field,city,state,type,language,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
         const all = [];
         for (let from = 0; from < 20000; from += 1000) {
           const { data, error } = await sb.from("programs").select(cols).eq("active", true).order("id").range(from, from + 999);
