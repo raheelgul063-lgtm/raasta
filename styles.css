@@ -378,3 +378,6 @@ tr:last-child td { border-bottom: 0; }
 }
 .topnav a { white-space: nowrap; }
 @media (max-width: 1180px) { .brand-urdu { display: none; } .topnav a { padding: 8px 9px; font-size: .88rem; } }
+
+.otp { font-size: 1.6rem; letter-spacing: .5em; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.otp-actions { display: flex; justify-content: space-between; margin-top: 8px; }

@@ -47,6 +47,12 @@ Still to do: set `CONTACT_EMAIL` in `config.js` (shown on the privacy page), the
 
 5. **Authentication > URL Configuration**: Site URL = your GitHub Pages address (step 4 below), and add the same address to Redirect URLs.
 
+### Sign in with a 6 digit code (OTP)
+
+The website asks for the email, sends a code and checks it. For the email to contain the code, set both templates in Supabase **Authentication > Emails > Templates**:
+- **Magic Link**: subject `Your Raasta code`, body: the content of `supabase/email-templates/code-email.html`
+- **Confirm signup**: same subject and body
+
 ### Google login
 
 1. Go to console.cloud.google.com, create a project called Raasta.
@@ -54,7 +60,7 @@ Still to do: set `CONTACT_EMAIL` in `config.js` (shown on the privacy page), the
 3. **Credentials > Create credentials > OAuth client ID > Web application**.
    - Authorized JavaScript origins: `https://YOUR_GITHUB_NAME.github.io`
    - Authorized redirect URI: copy it from Supabase **Authentication > Sign In / Providers > Google** (looks like `https://abcdxyz.supabase.co/auth/v1/callback`).
-4. Paste the Google Client ID and Client Secret into Supabase **Authentication > Sign In / Providers > Google** and enable it.
+4. Paste the Google Client ID and Client Secret into Supabase **Authentication > Sign In / Providers > Google** and enable it. The Google button then appears on the site automatically (no code change needed).
 
 Email login links also work out of the box. Supabase's built in email sender is limited to a few emails per hour, so for the Facebook test most people should use Google. Later, connect a free Resend account under **Authentication > Emails > SMTP** for unlimited email logins.
 

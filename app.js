@@ -199,21 +199,33 @@ function renderAuth() {
   }
 }
 
-function openLogin(reason) {
+// Which sign-in methods are switched on in Supabase (public endpoint). Google button appears automatically once enabled.
+let authSettings = null;
+async function getAuthSettings() {
+  if (authSettings || !LIVE) return authSettings || {};
+  try {
+    const r = await fetch(`${CFG.SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: CFG.SUPABASE_ANON_KEY } });
+    authSettings = await r.json();
+  } catch { authSettings = {}; }
+  return authSettings;
+}
+
+async function openLogin(reason) {
+  const st = await getAuthSettings();
+  const google = Boolean(st?.external?.google) || Boolean(CFG.GOOGLE_LOGIN);
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   bg.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <h2 id="loginTitle">Sign in, it's free</h2>
+      <h2 id="loginTitle">Sign in or sign up, it's free</h2>
       <p>${esc(reason || "Save your tracker and use the AI tools. No password needed.")}</p>
-      ${CFG.GOOGLE_LOGIN ? `<button class="btn google" id="googleBtn" type="button">
-        <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      ${google ? `<button class="btn google" id="googleBtn" type="button"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
         Continue with Google
       </button>
       <div class="or"><span>or use your email</span></div>` : ""}
       <form id="loginForm">
-        <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" /></div>
-        <button class="btn" style="width:100%">Email me a login link</button>
+        <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" maxlength="200" /></div>
+        <button class="btn" style="width:100%">Send me a 6 digit code</button>
       </form>
       <button class="btn link" id="closeLogin" style="margin-top:8px;width:100%">Not now</button>
     </div>`;
@@ -226,14 +238,46 @@ function openLogin(reason) {
     const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
     if (error) toast(error.message);
   };
+  const friendly = (m) => /rate limit|too many|security purposes/i.test(m) ? "Too many attempts. Please wait a minute and try again." : m;
+
+  const sendCode = async (email) => sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: true } });
+
+  const showCodeStep = (email) => {
+    $(".modal", bg).innerHTML = `
+      <h2>Enter your code</h2>
+      <p>We sent a 6 digit code to <strong>${esc(email)}</strong>. Check spam if you don't see it in a minute.</p>
+      <form id="codeForm">
+        <div class="field"><label for="otp">6 digit code</label>
+          <input id="otp" class="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="123456" /></div>
+        <button class="btn" style="width:100%" id="verifyBtn">Verify and sign in</button>
+      </form>
+      <div class="otp-actions">
+        <button class="btn link small" id="resendBtn" disabled>Resend code (60)</button>
+        <button class="btn link small" id="changeEmail">Use another email</button>
+      </div>`;
+    const otp = $("#otp", bg); otp.focus();
+    otp.addEventListener("input", () => { otp.value = otp.value.replace(/\D/g, ""); if (otp.value.length === 6) $("#codeForm", bg).requestSubmit(); });
+    let left = 60; const rb = $("#resendBtn", bg);
+    const timer = setInterval(() => { left--; rb.textContent = left > 0 ? `Resend code (${left})` : "Resend code"; if (left <= 0) { rb.disabled = false; clearInterval(timer); } }, 1000);
+    rb.onclick = async () => { rb.disabled = true; const { error } = await sendCode(email); toast(error ? friendly(error.message) : "New code sent"); left = 60; const t2 = setInterval(() => { left--; rb.textContent = left > 0 ? `Resend code (${left})` : "Resend code"; if (left <= 0) { rb.disabled = false; clearInterval(t2); } }, 1000); };
+    $("#changeEmail", bg).onclick = () => { clearInterval(timer); close(); openLogin(reason); };
+    $("#codeForm", bg).onsubmit = async (e) => {
+      e.preventDefault();
+      const vb = $("#verifyBtn", bg); if (vb.disabled) return;
+      vb.disabled = true; vb.textContent = "Checking...";
+      const { error } = await sb.auth.verifyOtp({ email, token: otp.value.trim(), type: "email" });
+      if (error) { vb.disabled = false; vb.textContent = "Verify and sign in"; otp.select(); toast(/expired|invalid/i.test(error.message) ? "That code is wrong or expired. Check the latest email or resend." : friendly(error.message)); return; }
+      clearInterval(timer); close(); toast("You're signed in");
+    };
+  };
+
   $("#loginForm", bg).onsubmit = async (e) => {
     e.preventDefault();
     const btn = e.submitter; btn.disabled = true; btn.textContent = "Sending...";
-    const email = $("#email", bg).value.trim();
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-    if (error) { btn.disabled = false; btn.textContent = "Email me a login link"; toast(/rate limit/i.test(error.message) ? "Too many login emails right now. Please try again in a few minutes." : error.message); return; }
-    $(".modal", bg).innerHTML = `<h2>Check your inbox</h2><p>We sent a login link to <strong>${esc(email)}</strong>. Open it on this device. Check spam if you don't see it.</p><button class="btn" style="width:100%" id="okBtn">OK</button>`;
-    $("#okBtn", bg).onclick = close;
+    const email = $("#email", bg).value.trim().toLowerCase();
+    const { error } = await sendCode(email);
+    if (error) { btn.disabled = false; btn.textContent = "Send me a 6 digit code"; toast(friendly(error.message)); return; }
+    showCodeStep(email);
   };
 }
 
