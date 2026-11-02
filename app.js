@@ -198,8 +198,9 @@ function renderAuth() {
     area.innerHTML = `<a href="#/profile" class="avatar" title="${esc(session.user.email)}">${esc((name || "?").trim()[0].toUpperCase())}</a><button class="btn link small" id="logoutBtn">Log out</button>`;
     $("#logoutBtn").onclick = async () => { await sb.auth.signOut(); toast("Logged out"); };
   } else {
-    area.innerHTML = `<button class="btn small" id="loginBtn">Sign in free</button>`;
-    $("#loginBtn").onclick = () => openLogin();
+    area.innerHTML = `<button class="btn link small" id="signinBtn">Sign in</button><button class="btn small" id="loginBtn">Sign up free</button>`;
+    $("#loginBtn").onclick = () => openLogin(null, "signup");
+    $("#signinBtn").onclick = () => openLogin(null, "signin");
   }
 }
 
@@ -214,28 +215,36 @@ async function getAuthSettings() {
   return authSettings;
 }
 
-async function openLogin(reason) {
+async function openLogin(reason, mode = "signup") {
   const st = await getAuthSettings();
+  const isUp = mode === "signup";
   const google = Boolean(st?.external?.google) || Boolean(CFG.GOOGLE_LOGIN);
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   bg.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <h2 id="loginTitle">Sign in or sign up, it's free</h2>
-      <p>${esc(reason || "Save your tracker and use the AI tools. No password needed.")}</p>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" role="tab" class="${isUp ? "on" : ""}" data-mode="signup" aria-selected="${isUp}">Sign up</button>
+        <button type="button" role="tab" class="${!isUp ? "on" : ""}" data-mode="signin" aria-selected="${!isUp}">Sign in</button>
+      </div>
+      <h2 id="loginTitle">${isUp ? "Create your free account" : "Welcome back"}</h2>
+      <p>${esc(reason || (isUp ? "Save your universities, track deadlines and use the AI tools. No password needed." : "We'll email you a 6 digit code."))}</p>
       ${google ? `<button class="btn google" id="googleBtn" type="button"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        Continue with Google
+        ${isUp ? "Sign up" : "Continue"} with Google
       </button>
       <div class="or"><span>or use your email</span></div>` : ""}
       <form id="loginForm">
+        ${isUp ? `<div class="field"><label for="fullName">Full name</label><input id="fullName" required maxlength="120" placeholder="Ali Raza" autocomplete="name" /></div>` : ""}
         <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" maxlength="200" /></div>
-        <button class="btn" style="width:100%">Send me a 6 digit code</button>
+        ${isUp ? `<label class="check" style="font-weight:400;font-size:.85rem;margin-bottom:12px"><input type="checkbox" id="agree" required /> I agree to the <a href="#/privacy" target="_blank">privacy policy</a></label>` : ""}
+        <button class="btn" style="width:100%">${isUp ? "Create account" : "Send me a code"}</button>
       </form>
       <button class="btn link" id="closeLogin" style="margin-top:8px;width:100%">Not now</button>
     </div>`;
   document.body.appendChild(bg);
-  $("#email", bg).focus();
+  ($("#fullName", bg) || $("#email", bg)).focus();
   const close = () => bg.remove();
+  bg.querySelectorAll("[data-mode]").forEach((t) => t.onclick = () => { if (t.dataset.mode !== mode) { close(); openLogin(reason, t.dataset.mode); } });
   $("#closeLogin", bg).onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
   if ($("#googleBtn", bg)) $("#googleBtn", bg).onclick = async () => {
@@ -244,15 +253,15 @@ async function openLogin(reason) {
   };
   const friendly = (m) => /rate limit|too many|security purposes/i.test(m) ? "Too many attempts. Please wait a minute and try again." : m;
 
-  const sendCode = async (email) => sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: true } });
+  const sendCode = async (email, fullName) => sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: isUp, ...(isUp && fullName ? { data: { full_name: fullName } } : {}) } });
 
   const showCodeStep = (email) => {
     $(".modal", bg).innerHTML = `
       <h2>Enter your code</h2>
-      <p>We sent a 6 digit code to <strong>${esc(email)}</strong>. Check spam if you don't see it in a minute.</p>
+      <p>We sent a code to <strong>${esc(email)}</strong>. Check spam if you don't see it in a minute.</p>
       <form id="codeForm">
-        <div class="field"><label for="otp">6 digit code</label>
-          <input id="otp" class="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="123456" /></div>
+        <div class="field"><label for="otp">Code from the email</label>
+          <input id="otp" class="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="000000" /></div>
         <button class="btn" style="width:100%" id="verifyBtn">Verify and sign in</button>
       </form>
       <div class="otp-actions">
@@ -260,7 +269,7 @@ async function openLogin(reason) {
         <button class="btn link small" id="changeEmail">Use another email</button>
       </div>`;
     const otp = $("#otp", bg); otp.focus();
-    otp.addEventListener("input", () => { otp.value = otp.value.replace(/\D/g, ""); if (otp.value.length === 6) $("#codeForm", bg).requestSubmit(); });
+    otp.addEventListener("input", () => { otp.value = otp.value.replace(/\D/g, ""); });
     let left = 60; const rb = $("#resendBtn", bg);
     const timer = setInterval(() => { left--; rb.textContent = left > 0 ? `Resend code (${left})` : "Resend code"; if (left <= 0) { rb.disabled = false; clearInterval(timer); } }, 1000);
     rb.onclick = async () => { rb.disabled = true; const { error } = await sendCode(email); toast(error ? friendly(error.message) : "New code sent"); left = 60; const t2 = setInterval(() => { left--; rb.textContent = left > 0 ? `Resend code (${left})` : "Resend code"; if (left <= 0) { rb.disabled = false; clearInterval(t2); } }, 1000); };
@@ -271,7 +280,7 @@ async function openLogin(reason) {
       vb.disabled = true; vb.textContent = "Checking...";
       const { error } = await sb.auth.verifyOtp({ email, token: otp.value.trim(), type: "email" });
       if (error) { vb.disabled = false; vb.textContent = "Verify and sign in"; otp.select(); toast(/expired|invalid/i.test(error.message) ? "That code is wrong or expired. Check the latest email or resend." : friendly(error.message)); return; }
-      clearInterval(timer); close(); toast("You're signed in");
+      clearInterval(timer); close(); toast(isUp ? "Account created. Welcome to Raasta!" : "You're signed in");
     };
   };
 
@@ -279,8 +288,13 @@ async function openLogin(reason) {
     e.preventDefault();
     const btn = e.submitter; btn.disabled = true; btn.textContent = "Sending...";
     const email = $("#email", bg).value.trim().toLowerCase();
-    const { error } = await sendCode(email);
-    if (error) { btn.disabled = false; btn.textContent = "Send me a 6 digit code"; toast(friendly(error.message)); return; }
+    const fullName = $("#fullName", bg)?.value.trim();
+    const { error } = await sendCode(email, fullName);
+    if (error) {
+      btn.disabled = false; btn.textContent = isUp ? "Create account" : "Send me a code";
+      if (!isUp && /signups not allowed|not found|otp_disabled/i.test(error.message)) { toast("No account with this email yet. Please sign up."); close(); openLogin(reason, "signup"); return; }
+      toast(friendly(error.message)); return;
+    }
     showCodeStep(email);
   };
 }
@@ -293,9 +307,10 @@ function needsLogin(title, text) {
       <div class="icon">🔒</div>
       <h3>Sign in to continue</h3>
       <p style="margin-bottom:16px">${esc(text)}</p>
-      <button class="btn" id="gateLogin">Sign in free with email</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="gateLogin">Sign up free</button><button class="btn ghost" id="gateSignin">I have an account</button></div>
     </div>`;
-  $("#gateLogin").onclick = () => openLogin();
+  $("#gateLogin").onclick = () => openLogin(null, "signup");
+  $("#gateSignin").onclick = () => openLogin(null, "signin");
   return true;
 }
 
@@ -481,7 +496,19 @@ function appRow(a) {
 }
 
 /* Chat based views share one component */
-function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}) }) {
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function speakText(text, lang) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const clean = text.replace(/\*\*/g, "").replace(/https?:\/\/\S+/g, "");
+  const u = new SpeechSynthesisUtterance(clean);
+  u.lang = lang; u.rate = 0.98;
+  const v = speechSynthesis.getVoices().find((x) => x.lang?.toLowerCase().startsWith(lang.slice(0, 2)));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+
+function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}), voice = false }) {
   if (needsLogin(title, "Sign in free to use the AI. It keeps the service free by limiting daily use per student.")) return;
   const history = []; // {role, content}
   app.innerHTML = `
@@ -490,8 +517,14 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
     <div class="chat">
       <div class="chat-log" id="log"></div>
       ${chips.length ? `<div class="chips">${chips.map((c) => `<button class="chip">${esc(c)}</button>`).join("")}</div>` : ""}
+      ${voice ? `<div class="voice-bar">
+        <label class="check"><input type="checkbox" id="speakToggle" checked /> 🔊 Read questions aloud</label>
+        <select id="voiceLang" aria-label="Voice language"><option value="en-US">English</option><option value="en-GB">English (UK)</option><option value="ur-PK">اردو Urdu</option></select>
+        ${SR ? "" : `<span class="hint">Voice answers work in Chrome, Edge and Android. On iPhone use the keyboard mic.</span>`}
+      </div>` : ""}
       <form class="chat-form" id="chatForm">
-        <textarea id="chatInput" rows="1" placeholder="Type in English or Urdu..." aria-label="Message"></textarea>
+        ${voice && SR ? `<button type="button" class="mic" id="micBtn" aria-label="Answer by voice" title="Answer by voice">🎤</button>` : ""}
+        <textarea id="chatInput" rows="1" placeholder="${voice ? "Tap 🎤 and speak your answer, or type..." : "Type in English or Urdu..."}" aria-label="Message"></textarea>
         <button class="btn" id="sendBtn">Send</button>
       </form>
     </div>
@@ -515,6 +548,7 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
       const reply = await askAI({ mode, messages: history.slice(-20), context: getContext() });
       typing.remove(); add("ai", reply);
       history.push({ role: "assistant", content: reply });
+      if (voice && $("#speakToggle")?.checked) speakText(reply, $("#voiceLang").value);
     } catch (err) {
       typing.remove(); history.pop(); add("ai", err.message);
     } finally { $("#sendBtn").disabled = false; }
@@ -523,7 +557,19 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
   if (opener?.show) add("ai", opener.show);
   if (opener?.auto) send(opener.auto, { hidden: true });
 
-  $("#chatForm").onsubmit = (e) => { e.preventDefault(); const v = $("#chatInput").value; $("#chatInput").value = ""; send(v); };
+  let rec = null;
+  const stopRec = () => { if (rec) { rec.stop(); rec = null; } $("#micBtn")?.classList.remove("on"); };
+  if ($("#micBtn")) $("#micBtn").onclick = () => {
+    if (rec) { stopRec(); return; }
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    rec = new SR(); rec.lang = $("#voiceLang").value; rec.interimResults = true; rec.continuous = true;
+    const base = $("#chatInput").value ? $("#chatInput").value + " " : "";
+    rec.onresult = (ev) => { let t = ""; for (const r of ev.results) t += r[0].transcript; $("#chatInput").value = base + t; };
+    rec.onerror = (ev) => { toast(ev.error === "not-allowed" ? "Please allow microphone access in your browser" : "Voice stopped, tap the mic again"); stopRec(); };
+    rec.onend = () => { $("#micBtn")?.classList.remove("on"); rec = null; };
+    rec.start(); $("#micBtn").classList.add("on"); toast("Listening... tap the mic again when you finish");
+  };
+  $("#chatForm").onsubmit = (e) => { e.preventDefault(); stopRec(); const v = $("#chatInput").value; $("#chatInput").value = ""; send(v); };
   $("#chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#chatForm").requestSubmit(); } });
   app.querySelectorAll(".chip").forEach((c) => c.onclick = () => send(c.textContent));
   return { send };
@@ -552,7 +598,7 @@ function viewInterview() {
       <button class="btn gold" id="ivStart" style="margin-top:14px">Start mock interview</button>
     </div>`;
   if (needsLogin("Interview practice", "Sign in free to practise. Daily use is limited per student to keep the service free.")) return;
-  app.innerHTML = `<div class="page-head"><h1>Interview practice</h1><p>Practise answering out loud, then type your answer. You get feedback on every answer and a final score after 8 questions.</p></div>${extraTop}`;
+  app.innerHTML = `<div class="page-head"><h1>Interview practice</h1><p>The AI interviewer asks 8 real questions and gives feedback on every answer. Use voice: it reads the questions aloud and you answer by speaking, just like the real interview.</p></div>${extraTop}`;
   const ivp = Number(route.params?.get("program"));
   if (ivp) db.programs().then((ps) => { const p = ps.find((x) => x.id === ivp); if (p && $("#ivProg")) { $("#ivProg").value = `${p.title || ""} ${p.program}, ${p.university}`.trim(); $("#ivType").value = "university"; } });
   $("#ivStart").onclick = () => {
@@ -561,6 +607,7 @@ function viewInterview() {
       title: "Interview practice",
       intro: type === "visa" ? "Mock visa interview. Answer honestly and specifically, like you would at the embassy." : "Mock university admission interview. Show you know the program.",
       mode: "interview",
+      voice: true,
       opener: { auto: "Start the interview now with question 1." },
       getContext: () => ({ type, program })
     });

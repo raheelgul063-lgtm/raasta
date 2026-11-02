@@ -390,3 +390,13 @@ a.apply-step:hover { border-color: var(--green-2); }
 .apply-step em { font-style: normal; color: var(--muted); font-size: .84rem; }
 .prog-actions { flex-wrap: wrap; }
 @media (max-width: 860px) { .apply-steps { grid-template-columns: 1fr; } }
+
+.auth-tabs { display: flex; background: var(--cream); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.auth-tabs button { flex: 1; font: inherit; font-weight: 700; border: 0; background: none; padding: 9px; border-radius: 9px; cursor: pointer; color: var(--muted); }
+.auth-tabs button.on { background: var(--white); color: var(--green); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.voice-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--cream); font-size: .88rem; }
+.voice-bar select { width: auto; padding: 6px 10px; font-size: .85rem; border-radius: 999px; }
+.mic { flex: none; width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--white); font-size: 1.3rem; cursor: pointer; align-self: center; }
+.mic.on { background: var(--red); border-color: var(--red); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(180,68,47,.45); } 50% { box-shadow: 0 0 0 10px rgba(180,68,47,0); } }
+.auth-area .btn.link { color: var(--ink); }
