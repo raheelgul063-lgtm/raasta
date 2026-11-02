@@ -421,6 +421,9 @@ function viewHome() {
         <a class="card" href="#/letter"><div class="icon">✍️</div><h3>Motivation letter</h3><p>A personal first draft for one program, with an honest fit check.</p></a>
         <a class="card" href="#/interview"><div class="icon">🎤</div><h3>Interview practice</h3><p>University and visa mock interviews, by voice or text.</p></a>
         <a class="card" href="#/tracker"><div class="icon">✅</div><h3>Application tracker</h3><p>Deadlines, status and every visa document in one checklist.</p></a>
+        <a class="card" href="#/doccheck"><div class="icon">📄</div><h3>AI document checker</h3><p>Completeness, consistency and fit for a program, plus your German grade.</p></a>
+        <a class="card" href="#/visa-guide"><div class="icon">🛂</div><h3>Visa guide for Pakistan</h3><p>Step by step, with 2026 fees and the blocked account. Dated.</p></a>
+        <a class="card" href="#/moving"><div class="icon">🧳</div><h3>Moving to Germany</h3><p>Registration, insurance, housing, banks, transport and culture.</p></a>
       </div>
     </section>`;
   $("#megaSearch").onsubmit = (e) => {
@@ -778,6 +781,7 @@ async function viewLetter() {
 /* ---------------- Router ---------------- */
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
   finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
+  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
   welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
@@ -785,7 +789,7 @@ function route() {
   // Supabase magic link returns tokens in the hash; let the client read them first
   if (key.startsWith("access_token") || key.startsWith("error")) { history.replaceState(null, "", location.pathname + "#/"); return route(); }
   (routes[key] || viewHome)();
-  const navKey = key === "program" ? "finder" : key === "university" ? "universities" : key;
+  const navKey = { program: "finder", university: "universities", city: "cities", "visa-guide": "guides", moving: "guides", letter: "tools", interview: "tools", doccheck: "tools", grades: "tools", compare: "tools" }[key] || key;
   renderCompareBar();
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active", a.dataset.nav === (navKey || "home")));
   window.scrollTo(0, 0); app.focus({ preventScroll: true });
@@ -1078,6 +1082,235 @@ async function viewProfile(isWelcome) {
   };
 }
 
+/* ---------------- Guides: cities, visa, moving, grades ---------------- */
+const G = () => window.RAASTA_GUIDES || { cities: [], visa: { steps: [], missions: [], money: [] }, moving: [] };
+const wikiCache = {};
+async function cityLive(c) {
+  if (wikiCache[c.slug]) return wikiCache[c.slug];
+  const out = {};
+  try {
+    const s = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(c.wiki)}`).then((r) => r.json());
+    out.img = s.originalimage?.source || s.thumbnail?.source; out.thumb = s.thumbnail?.source; out.extract = s.extract; out.page = s.content_urls?.desktop?.page; out.q = s.wikibase_item;
+    if (out.q) {
+      const w = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${out.q}&property=P1082&format=json&origin=*`).then((r) => r.json());
+      const cl = (w.claims?.P1082 || []).map((x) => ({ n: Number(x.mainsnak?.datavalue?.value?.amount), t: x.qualifiers?.P585?.[0]?.datavalue?.value?.time || "", pref: x.rank === "preferred" })).filter((x) => x.n);
+      cl.sort((a, b) => (b.pref - a.pref) || b.t.localeCompare(a.t));
+      if (cl[0]) { out.pop = cl[0].n; out.popYear = cl[0].t.slice(1, 5); }
+    }
+  } catch {}
+  return (wikiCache[c.slug] = out);
+}
+function guideHero(eyebrow, title, text) {
+  return `<div class="page-hero"><span class="eyebrow light">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${text}</p></div>`;
+}
+
+async function viewCities() {
+  const progs = await db.programs();
+  const count = (c) => progs.filter((p) => (p.city || "").split(",").map((x) => x.trim()).includes(c.name) || p.city === c.name).length;
+  app.innerHTML = `${guideHero("City guides", "Where will you live?", "Jobs, internships, rent and daily life in Germany's main student cities. Population and photos come live from Wikipedia.")}
+    <div class="city-grid">${G().cities.map((c) => `<a class="city-card" href="#/city?c=${c.slug}"><div class="city-img" data-cimg="${c.slug}"></div><div class="city-body"><h3>${esc(c.name)}</h3><p>${esc(c.state)}</p><div class="uni-tags"><span class="pill">${count(c)} programs</span>${c.rent ? `<span class="pill pill-gold">Flat ${esc(c.rent)}</span>` : ""}</div></div></a>`).join("")}</div>
+    <p class="notice">Rent figures: MLP Studentenwohnreport 2026 (30 m² student flat, warm rent). Cities without a figure were not covered by the report.</p>`;
+  for (const c of G().cities) cityLive(c).then((d) => { const el = app.querySelector(`[data-cimg="${c.slug}"]`); if (el && d.thumb) el.style.backgroundImage = `url("${d.thumb}")`; });
+}
+
+async function viewCity() {
+  const c = G().cities.find((x) => x.slug === route.params.get("c"));
+  if (!c) { app.innerHTML = `<div class="empty">City not found. <a href="#/cities">All cities</a></div>`; return; }
+  const progs = (await db.programs()).filter((p) => (p.city || "").includes(c.name));
+  const unis = uniAggregate(progs).sort((a, b) => b.n - a.n);
+  app.innerHTML = `<a href="#/cities" class="back">← All cities</a>
+    <div class="city-hero" id="cityHero"><div class="city-hero-in"><span class="eyebrow light">${esc(c.state)}</span><h1>${esc(c.name)}</h1><p>${esc(c.vibe)}</p></div></div>
+    <div class="stat-row"><div><strong id="cPop">…</strong><span id="cPopL">Population</span></div><div><strong>${progs.length}</strong><span>International programs</span></div><div><strong>${unis.length}</strong><span>Universities</span></div><div><strong>${esc(c.rent || "n/a")}</strong><span>Student flat per month</span></div></div>
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card"><h3>Job market and industries</h3><ul class="needs">${c.industries.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <h3 style="margin-top:16px">Major employers nearby</h3><div class="uni-tags">${c.employers.map((x) => `<span class="pill">${esc(x)}</span>`).join("")}</div></section>
+      <section class="card"><h3>Internships and student jobs</h3><p>${esc(c.internships)}</p>
+        <p class="notice">Non EU students may work 140 full days or 280 half days per year. Search "Werkstudent ${esc(c.name)}" on LinkedIn, StepStone and Indeed.</p>
+        <h3 style="margin-top:16px">Cost of living</h3>
+        <div class="facts">${c.rent ? `<div class="fact"><span>Student flat (30 m², warm)</span><strong>${esc(c.rent)}</strong></div>` : `<div class="fact"><span>Rent</span><strong>Check WG-Gesucht for current prices</strong></div>`}${c.wg ? `<div class="fact"><span>Room in a shared flat</span><strong>${esc(c.wg)}</strong></div>` : ""}
+        <div class="fact"><span>Health insurance</span><strong>about €141 to €146</strong></div><div class="fact"><span>Transport</span><strong>Semester ticket or €63 Deutschlandticket</strong></div><div class="fact"><span>Official living cost minimum</span><strong>€992 per month</strong></div></div>
+        <p class="notice">Rent: MLP Studentenwohnreport 2026. Insurance: 2026 student rates.</p></section>
+    </div>
+    <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?q=${encodeURIComponent(c.name)}">All programs in ${esc(c.name)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
+    <p class="notice" id="cSrc"></p>`;
+  const d = await cityLive(c);
+  if (d.img && $("#cityHero")) $("#cityHero").style.backgroundImage = `linear-gradient(180deg, rgba(11,46,36,.35), rgba(11,46,36,.85)), url("${d.img}")`;
+  if ($("#cPop")) { $("#cPop").textContent = d.pop ? d.pop.toLocaleString("en-US") : "n/a"; if (d.popYear) $("#cPopL").textContent = `Population (${d.popYear})`; }
+  if ($("#cSrc") && d.page) $("#cSrc").innerHTML = `Photo and population: <a href="${safeUrl(d.page)}" target="_blank" rel="noopener">Wikipedia</a> and Wikidata (photo license on Wikimedia Commons).`;
+}
+
+function viewVisaGuide() {
+  const v = G().visa;
+  app.innerHTML = `${guideHero("Student visa from Pakistan", "German student visa, step by step", `Last updated <strong>${esc(G().checked)}</strong>. Amounts and rules change, so always confirm on the official <a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan</a> page.`)}
+    <div class="callout"><strong>APS certificate:</strong> ${esc(v.apsNote)}</div>
+    <ol class="steps">${v.steps.map((s, i) => `<li class="step"><span class="step-num">${i + 1}</span><div><h3>${esc(s.t)}</h3><p>${esc(s.d)}</p></div></li>`).join("")}</ol>
+    <div class="grid cols-2" style="margin-top:16px;align-items:start">
+      <section class="card"><h3>Where to apply</h3>${v.missions.map((m) => `<div class="fact"><span>${esc(m.name)}</span><strong>${esc(m.covers)}</strong></div>`).join("")}<p class="notice">Apply online at the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.</p></section>
+      <section class="card"><h3>Fees and money</h3>${v.money.map(([k, x]) => `<div class="fact"><span>${esc(k)}</span><strong>${esc(x)}</strong></div>`).join("")}<p class="notice">Processing times change with demand. Apply as soon as you have your admission letter.</p></section>
+    </div>
+    <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers in English or Urdu.</p></div><a class="btn gold" href="#/visa">Ask the AI advisor</a></div>`;
+}
+
+function viewMoving() {
+  const M = G().moving;
+  app.innerHTML = `${guideHero("After your admission", "Moving to Germany", `Everything for your first weeks, from registration to recycling. Last updated ${esc(G().checked)}.`)}
+    <nav class="toc">${M.map((m) => `<a href="#/moving?s=${m.id}" data-s="${m.id}">${m.ic} ${esc(m.t)}</a>`).join("")}</nav>
+    ${M.map((m) => `<section class="card guide-sec" id="g-${m.id}"><h2>${m.ic} ${esc(m.t)}</h2><ul class="needs">${m.items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section>`).join("")}`;
+  const s = route.params.get("s"); if (s) setTimeout(() => document.getElementById("g-" + s)?.scrollIntoView({ behavior: "smooth" }), 50);
+}
+
+// Modified Bavarian formula, used by uni-assist and German universities: German = 1 + 3 x (Nmax - Nd) / (Nmax - Nmin)
+function bavarian(nd, nmax, nmin) {
+  if (![nd, nmax, nmin].every(Number.isFinite) || nmax <= nmin) return null;
+  const g = 1 + 3 * (nmax - nd) / (nmax - nmin);
+  return Math.round(Math.min(Math.max(g, 1), 5) * 10) / 10;
+}
+const gradeWord = (g) => g <= 1.5 ? "Very good (sehr gut)" : g <= 2.5 ? "Good (gut)" : g <= 3.5 ? "Satisfactory (befriedigend)" : g <= 4.0 ? "Sufficient (ausreichend)" : "Below passing";
+
+function viewGrades() {
+  app.innerHTML = `${guideHero("Free tool", "Convert your Pakistani grades to the German scale", "Uses the modified Bavarian formula that uni-assist and German universities use. In Germany 1.0 is the best grade and 4.0 is the lowest pass.")}
+    <div class="grid cols-2" style="align-items:start">
+      <form class="card" id="gForm">
+        <div class="field"><label>Your grading system</label><div class="seg"><label><input type="radio" name="gs" value="cgpa" checked/><span>CGPA (out of 4)</span></label><label><input type="radio" name="gs" value="pct"/><span>Percentage</span></label></div></div>
+        <div class="form-row"><div class="field"><label for="gNd">Your grade</label><input id="gNd" inputmode="decimal" placeholder="3.20" required /></div>
+        <div class="field"><label for="gMax">Best possible</label><input id="gMax" inputmode="decimal" value="4.0" /></div></div>
+        <div class="field"><label for="gMin">Minimum passing grade <span class="hint">(printed on your transcript)</span></label><input id="gMin" inputmode="decimal" value="2.0" /></div>
+        <button class="btn" style="width:100%">Convert</button>
+      </form>
+      <section class="card" id="gOut"><h3>Your German grade</h3><p class="notice">Enter your grade to see the result.</p></section>
+    </div>
+    <section class="card" style="margin-top:16px"><h3>Good to know</h3><ul class="needs">
+      <li>Most Pakistani universities have a minimum passing CGPA of 2.0 out of 4.0 for a degree, but some use 1.0 or a different scale. Use the value on your own transcript.</li>
+      <li>For percentages, the minimum pass is often 33%, 40% or 50% depending on the board or university.</li>
+      <li>Many competitive Master's programs ask for a German grade of 2.5 or better.</li>
+      <li>This is an estimate. Only uni-assist or the university can make an official conversion.</li></ul></section>`;
+  const sync = () => { const pct = app.querySelector("input[name=gs]:checked").value === "pct"; $("#gMax").value = pct ? "100" : "4.0"; $("#gMin").value = pct ? "40" : "2.0"; $("#gNd").placeholder = pct ? "72" : "3.20"; };
+  app.querySelectorAll("input[name=gs]").forEach((r) => r.onchange = sync);
+  $("#gForm").onsubmit = (e) => {
+    e.preventDefault();
+    const nd = parseFloat($("#gNd").value), mx = parseFloat($("#gMax").value), mn = parseFloat($("#gMin").value);
+    const g = bavarian(nd, mx, mn);
+    $("#gOut").innerHTML = g == null ? `<h3>Your German grade</h3><p>Please check the numbers.</p>` : `<h3>Your German grade</h3><div class="grade-big">${g.toFixed(1)}</div><p><strong>${gradeWord(g)}</strong></p><p class="notice">Formula: 1 + 3 × (${mx} − ${nd}) / (${mx} − ${mn})</p>${g <= 2.5 ? `<div class="callout">Strong grade: competitive programs are realistic.</div>` : g <= 3.0 ? `<div class="callout">Solid. Many programs accept this; very competitive ones may ask for 2.5.</div>` : `<div class="callout">Look for programs without a strict grade cutoff, and strengthen your application with work experience and a good motivation letter.</div>`}<a class="btn gold" href="#/doccheck">Check your documents with AI</a>`;
+  };
+}
+
+function viewHub(kind) {
+  const items = kind === "tools" ? [
+    ["#/visa", "✦", "AI advisor", "Program matches and visa answers in English or Urdu."],
+    ["#/doccheck", "📄", "AI document checker", "Upload your documents and get a completeness and eligibility check."],
+    ["#/grades", "🧮", "Grade converter", "Your CGPA or percentage on the German scale."],
+    ["#/letter", "✍️", "Motivation letter", "A personal first draft for one program."],
+    ["#/interview", "🎤", "Interview practice", "University and visa mock interviews by voice."],
+    ["#/compare", "⇄", "Compare programs", "Up to 3 programs side by side."]]
+    : [["#/visa-guide", "🛂", "Student visa from Pakistan", "Step by step, with fees and the blocked account. Dated."],
+    ["#/moving", "🧳", "Moving to Germany", "Registration, insurance, housing, banks, transport and culture."],
+    ["#/cities", "🏙️", "City guides", "Jobs, internships and rent in 12 student cities."],
+    ["#/roadmap", "🧭", "10 step roadmap", "From choosing a program to your first day."]];
+  app.innerHTML = `${guideHero(kind === "tools" ? "AI tools" : "Guides", kind === "tools" ? "Free AI tools for your application" : "Guides for every step", kind === "tools" ? "Built for students from Pakistan. Free, with a daily AI limit." : "Checked facts, with dates, so you know what is current.")}
+    <div class="grid cols-3">${items.map(([h, ic, t, d]) => `<a class="card" href="${h}"><div class="icon">${ic}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></a>`).join("")}</div>`;
+}
+
+/* ---------------- AI document checker ---------------- */
+const toB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob); });
+async function shrinkImage(file) {
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`Could not read ${file.name}`)); i.src = URL.createObjectURL(file); });
+  const k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src);
+  return await new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
+}
+async function viewDocCheck() {
+  if (needsLogin("AI document checker", "Sign in free to check your documents. They are analysed and then discarded, never stored.")) return;
+  const progs = await db.programs();
+  let chosen = progs.find((x) => x.id === Number(route.params.get("program"))) || null;
+  const files = [];
+  app.innerHTML = `${guideHero("AI tool", "AI document checker", "Upload your transcripts, degree, language certificate and ID. The AI checks completeness, consistency and fit for one program, and converts your grade to the German scale.")}
+    <div class="callout"><strong>Important:</strong> this is a free pre-check, not an official evaluation. It does not replace uni-assist or the university, and it cannot certify documents. Your files are sent securely to the AI, analysed once and <strong>never stored</strong>.</div>
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card">
+        <h3>1. Target program</h3>
+        <div class="field" style="position:relative"><input id="dcSearch" placeholder="Search a program or university" autocomplete="off" value="${chosen ? esc(`${chosen.program}, ${chosen.university}`) : ""}" /><div id="dcHits" class="dc-hits"></div></div>
+        <p class="notice">Optional, but the eligibility score and chance estimate need a program.</p>
+        <h3 style="margin-top:14px">2. Your documents</h3>
+        <label class="dropzone" for="dcFiles" id="dcDrop"><strong>Choose files</strong> or drop them here<br/><span class="hint">PDF, JPG or PNG. Up to 6 files, 7 MB in total.</span></label>
+        <input type="file" id="dcFiles" multiple accept="application/pdf,image/jpeg,image/png,image/webp" hidden />
+        <ul class="dc-list" id="dcList"></ul>
+        <button class="btn gold" id="dcRun" style="width:100%;margin-top:12px" disabled>Check my documents</button>
+        <p class="notice">Uses 8 of your 30 daily AI credits.</p>
+      </section>
+      <section class="card" id="dcOut"><h3>Results</h3><p class="notice">Your report appears here: a checklist, consistency flags, your German grade, an eligibility score and next steps.</p></section>
+    </div>`;
+  const listEl = $("#dcList"), runBtn = $("#dcRun");
+  const total = () => files.reduce((a, f) => a + f.size, 0);
+  const renderList = () => {
+    listEl.innerHTML = files.map((f, i) => `<li><span>${f.type === "application/pdf" ? "📄" : "🖼️"} ${esc(f.name)}</span><em>${(f.size / 1024 / 1024).toFixed(1)} MB</em><button class="btn link small" data-rm="${i}" type="button">Remove</button></li>`).join("");
+    listEl.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { files.splice(Number(b.dataset.rm), 1); renderList(); });
+    runBtn.disabled = !files.length;
+  };
+  const add = async (list) => {
+    for (const f of list) {
+      if (files.length >= 6) { toast("Maximum 6 files."); break; }
+      try {
+        let blob = f, type = f.type;
+        if (f.type.startsWith("image/")) { blob = await shrinkImage(f); type = "image/jpeg"; }
+        else if (f.type !== "application/pdf") { toast(`${f.name}: only PDF or images.`); continue; }
+        if (total() + blob.size > 7 * 1024 * 1024) { toast(`${f.name} is too large. Keep the total under 7 MB.`); continue; }
+        files.push({ name: f.name, type, size: blob.size, blob });
+      } catch (e) { toast(e.message); }
+    }
+    renderList();
+  };
+  $("#dcFiles").onchange = (e) => add([...e.target.files]);
+  const dz = $("#dcDrop");
+  dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("over"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+  dz.addEventListener("drop", (e) => { e.preventDefault(); dz.classList.remove("over"); add([...e.dataTransfer.files]); });
+  $("#dcSearch").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase().split(/\s+/).filter(Boolean); chosen = null;
+    const hits = q.length ? progs.filter((p) => q.every((w) => `${p.program} ${p.university} ${p.city}`.toLowerCase().includes(w))).slice(0, 8) : [];
+    $("#dcHits").innerHTML = hits.map((p) => `<button type="button" data-pid="${p.id}"><strong>${esc(p.program)}</strong><span>${esc(p.university)} · ${esc(p.degree)}</span></button>`).join("");
+    $("#dcHits").querySelectorAll("[data-pid]").forEach((b) => b.onclick = () => { chosen = progs.find((x) => x.id === Number(b.dataset.pid)); $("#dcSearch").value = `${chosen.program}, ${chosen.university}`; $("#dcHits").innerHTML = ""; });
+  });
+
+  runBtn.onclick = async () => {
+    if (!LIVE) { toast("The document checker works once Raasta is connected."); return; }
+    runBtn.disabled = true; runBtn.textContent = "Checking... this takes about 30 to 60 seconds";
+    $("#dcOut").innerHTML = `<h3>Results</h3><p class="notice">Reading your documents...</p>`;
+    try {
+      const prof = profileSummary(await db.getProfile().catch(() => null));
+      const payload = { program_id: chosen?.id || null, profile: prof, files: await Promise.all(files.map(async (f) => ({ name: f.name, type: f.type, data: await toB64(f.blob) }))) };
+      const { data, error } = await sb.functions.invoke("doc-check", { body: payload });
+      if (error) { let m = "Something went wrong. Please try again."; try { const b = await error.context.json(); if (b?.error) m = b.error; } catch {} throw new Error(m); }
+      renderDocResult(data.result, chosen);
+    } catch (e) { $("#dcOut").innerHTML = `<h3>Results</h3><div class="callout">${esc(e.message)}</div>`; }
+    finally { runBtn.disabled = !files.length; runBtn.textContent = "Check my documents"; }
+  };
+}
+function renderDocResult(r, prog) {
+  const st = { present: "✅", missing: "❌", unclear: "⚠️" };
+  const ex = r.extracted || {};
+  const num = parseFloat(String(ex.grade || "").replace(",", "."));
+  let conv = "";
+  if (Number.isFinite(num)) {
+    const pct = ex.grade_type === "percentage" || num > 10;
+    const mx = Number(ex.grade_max) || (pct ? 100 : 4), mn = Number(ex.grade_min_pass) || (pct ? 40 : 2);
+    const g = bavarian(num, mx, mn);
+    if (g != null) conv = `<div class="dc-grade"><div><span>Your grade</span><strong>${esc(ex.grade)}</strong></div><div><span>German grade (estimate)</span><strong>${g.toFixed(1)}</strong></div><em>${gradeWord(g)}. Modified Bavarian formula with best ${mx}, minimum pass ${mn}${ex.grade_min_pass ? " (from your transcript)" : " (assumed, check your transcript)"}.</em></div>`;
+  }
+  const score = Math.max(0, Math.min(100, Number(r.eligibility?.score) || 0));
+  const lvl = (r.chance?.level || "unknown").toLowerCase();
+  $("#dcOut").innerHTML = `<h3>Results${prog ? ` for ${esc(prog.program)}` : ""}</h3>
+    <div class="dc-score"><div class="ring" style="--v:${score}"><strong>${score}</strong><span>/100</span></div><div><strong>Eligibility and completeness</strong><p>${esc(r.eligibility?.summary || "")}</p></div></div>
+    ${conv}
+    <div class="dc-chance ${lvl}"><strong>Estimated chance: ${esc(lvl === "unknown" ? "not enough information" : lvl)}</strong><ul>${(r.chance?.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul><em>Rough AI estimate only. Admission decisions are made by the university and depend on competition each semester.</em></div>
+    <h4>Checklist</h4><ul class="dc-check">${(r.checklist || []).map((c) => `<li>${st[c.status] || "•"} <strong>${esc(c.item)}</strong>${c.note ? ` <span>${esc(c.note)}</span>` : ""}</li>`).join("")}</ul>
+    ${(r.consistency || []).length ? `<h4>Flags to fix</h4><ul class="dc-flags">${r.consistency.map((c) => `<li class="${esc(c.severity)}">${esc(c.issue)}</li>`).join("")}</ul>` : ""}
+    <h4>Documents found</h4><ul class="dc-check">${(r.documents || []).map((d) => `<li>${d.ok ? "✅" : "⚠️"} <strong>${esc(d.type)}</strong> <span>${esc(d.file)}${(d.issues || []).length ? ": " + esc(d.issues.join("; ")) : ""}</span></li>`).join("")}</ul>
+    ${(r.eligibility?.gaps || []).filter(Boolean).length ? `<h4>Gaps</h4><ul class="needs">${r.eligibility.gaps.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${(r.next_steps || []).length ? `<h4>Next steps</h4><ol class="needs">${r.next_steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
+    <p class="notice">Not an official evaluation. uni-assist or the university makes the final decision. Your files were not stored.</p>`;
+}
+
 /* ---------------- Feedback ---------------- */
 function openFeedback() {
   if (LIVE && !session) { openLogin("Sign in free to send feedback. It keeps spam out."); return; }
@@ -1264,6 +1497,18 @@ const langPill = (p) => {
   return "";
 };
 const compareList = () => local.get("compare", []);
+function langLevel(p) {
+  const t = `${p.english_req || ""}`;
+  const lv = (t.match(/\b(A1|A2|B1|B2|C1|C2)\b/) || [])[1];
+  const ielts = (t.match(/IELTS[^0-9]{0,20}(\d(?:[.,]\d)?)/i) || [])[1];
+  if (/german/i.test(p.language || "") && !/english/i.test(p.language || "")) return "German, usually C1 (DSH 2 or TestDaF 4x4)";
+  return [lv && `English ${lv}`, ielts && `IELTS ${ielts}`].filter(Boolean).join(", ") || "See the university page";
+}
+function appRoute(p) {
+  if (/uni-assist/i.test(`${p.apply_url || ""} ${p.apply_via || ""}`)) return "uni-assist";
+  if (p.apply_url) return "Direct to the university";
+  return "Check the university page";
+}
 function progCard(p, saved) {
   const nd = nextDeadline(p);
   const dl = nd ? `<span class="${nd.days <= 30 ? "due-soon" : ""}">${nd.intake}: ${mmddText(`${String(nd.date.getMonth() + 1).padStart(2, "0")}-${String(nd.date.getDate()).padStart(2, "0")}`)} (${nd.days} days)</span>` : `<span>Deadline: see page</span>`;
@@ -1640,6 +1885,20 @@ async function viewProgram() {
         ${p.deadline_note ? `<p class="notice">${esc(p.deadline_note)}</p>` : ""}
       </section>
     </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Admission</h2>
+      <div class="adm-grid">
+        <div class="adm"><span>NC status</span><strong>${esc(p.nc_status || "Not stated")}</strong>${p.nc_value ? `<em>Last NC ${esc(p.nc_value)}${p.nc_semester ? ` (${esc(p.nc_semester)})` : ""}${p.nc_source ? `, <a href="${safeUrl(p.nc_source)}" target="_blank" rel="noopener">source</a>` : ""}</em>` : `<em>${p.nc_status ? "From the program listing." : "Most international programs select by documents, not a fixed grade cutoff. Check the university page."}</em>`}</div>
+        <div class="adm"><span>Language level</span><strong>${esc(langLevel(p))}</strong><em>${esc(p.language || "English")} taught</em></div>
+        <div class="adm"><span>Entrance exam</span><strong>${esc(p.entrance_exam || "None mentioned")}</strong><em>${p.entrance_exam ? "Mentioned in the admission requirements." : "Always confirm on the university page."}</em></div>
+        <div class="adm"><span>Studienkolleg needed?</span><strong>${p.degree === "Bachelor" ? "Usually yes, with Intermediate (HSSC)" : "No"}</strong><em>${p.degree === "Bachelor" ? "With a Pakistani HSSC you normally need a Studienkolleg, or 1 to 2 years of university study in Pakistan first. Check the DAAD admission database for your case." : "A recognised Bachelor's degree gives direct access."}</em></div>
+        <div class="adm"><span>Application route</span><strong>${esc(appRoute(p))}</strong><em>${appRoute(p) === "uni-assist" ? "Send documents to uni-assist first; they forward them to the university." : "Apply on the university's own portal."}</em></div>
+        <div class="adm"><span>Intakes</span><strong>${esc((p.intakes || []).join(" and ") || "See page")}</strong><em>${p.deadline_winter ? `Winter deadline ${mmddText(p.deadline_winter)}. ` : ""}${p.deadline_summer ? `Summer deadline ${mmddText(p.deadline_summer)}.` : ""}</em></div>
+      </div>
+      ${p.admission_req ? `<div class="adm-req"><strong>Academic requirements</strong><p>${esc(p.admission_req)}</p><span class="notice">From the program's DAAD listing.</span></div>` : ""}
+      <div class="prog-cta"><a class="btn gold small" href="#/doccheck?program=${p.id}">Check my documents for this program</a><a class="btn ghost small" href="#/grades">Convert my grade</a></div>
+    </section>
 
     <section class="card" style="margin-top:16px">
       <h2>What you need to apply</h2>

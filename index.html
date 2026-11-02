@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://uutsrmaomrfbnewgisqs.supabase.co; connect-src 'self' https://uutsrmaomrfbnewgisqs.supabase.co wss://uutsrmaomrfbnewgisqs.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://uutsrmaomrfbnewgisqs.supabase.co https://upload.wikimedia.org; connect-src 'self' https://en.wikipedia.org https://www.wikidata.org https://uutsrmaomrfbnewgisqs.supabase.co wss://uutsrmaomrfbnewgisqs.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Raasta · Find your study program in Germany, with a free AI advisor</title>
   <meta name="description" content="Search 2,000+ international Bachelor's and Master's programs in Germany, compare them, and get free AI help with motivation letters, interviews and the student visa." />
@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261102j" />
+  <link rel="stylesheet" href="styles.css?v=20261102k" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E4D3A'/%3E%3Cpath d='M18 46 L32 18 L46 46' stroke='%23F2B544' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 <body>
@@ -28,9 +28,10 @@
     <nav class="topnav" aria-label="Main">
       <a href="#/finder" data-nav="finder">Programs</a>
       <a href="#/universities" data-nav="universities">Universities</a>
+      <a href="#/cities" data-nav="cities">Cities</a>
       <a href="#/visa" data-nav="visa" class="nav-ai">✦ AI advisor</a>
-      <a href="#/letter" data-nav="letter">Motivation letter</a>
-      <a href="#/interview" data-nav="interview">Interview</a>
+      <a href="#/tools" data-nav="tools">AI tools</a>
+      <a href="#/guides" data-nav="guides">Guides</a>
       <a href="#/tracker" data-nav="tracker">Tracker</a>
     </nav>
     <div id="authArea" class="auth-area"></div>
@@ -46,8 +47,8 @@
     <div class="foot-cols">
       <div class="foot-brand"><strong>Raasta</strong><p>Free study abroad platform with an AI advisor. Germany first, more of Europe next.</p></div>
       <div><h4>Explore</h4><a href="#/finder">All programs</a><a href="#/finder?degree=Master">Master's programs</a><a href="#/finder?degree=Bachelor">Bachelor's programs</a><a href="#/finder?tuition=free">Tuition free programs</a><a href="#/universities">Universities</a></div>
-      <div><h4>AI tools</h4><a href="#/visa">AI advisor</a><a href="#/letter">Motivation letter</a><a href="#/interview">Interview practice</a><a href="#/compare">Compare programs</a></div>
-      <div><h4>Guides</h4><a href="#/roadmap">Step by step roadmap</a><a href="#/tracker">Application tracker</a><a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan ↗</a><a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal ↗</a></div>
+      <div><h4>AI tools</h4><a href="#/visa">AI advisor</a><a href="#/doccheck">Document checker</a><a href="#/grades">Grade converter</a><a href="#/letter">Motivation letter</a><a href="#/interview">Interview practice</a><a href="#/compare">Compare programs</a></div>
+      <div><h4>Guides</h4><a href="#/visa-guide">Student visa from Pakistan</a><a href="#/moving">Moving to Germany</a><a href="#/cities">City guides</a><a href="#/roadmap">Step by step roadmap</a><a href="#/tracker">Application tracker</a><a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan ↗</a><a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal ↗</a></div>
     </div>
     <p class="foot-legal">Not affiliated with DAAD, uni-assist or the German Missions. Program data comes from the DAAD International Programmes database and the official websites of private universities; the university page always has the final word. <a href="#/privacy">Privacy policy</a></p>
   </footer>
@@ -56,16 +57,17 @@
     <a href="#/" data-nav="home"><span class="ic">⌂</span>Home</a>
     <a href="#/finder" data-nav="finder"><span class="ic">⌕</span>Programs</a>
     <a href="#/visa" data-nav="visa"><span class="ic">✦</span>AI</a>
-    <a href="#/universities" data-nav="universities"><span class="ic">🏛</span>Unis</a>
-    <a href="#/tracker" data-nav="tracker"><span class="ic">✓</span>Tracker</a>
+    <a href="#/tools" data-nav="tools"><span class="ic">🧰</span>Tools</a>
+    <a href="#/guides" data-nav="guides"><span class="ic">🧭</span>Guides</a>
   </nav>
 
   <button id="fbBtn" class="fb-btn" type="button">💬 Feedback</button>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="config.js?v=20261102j"></script>
-  <script src="vendor/supabase-2.118.0.js?v=20261102j"></script>
-  <script src="programs.js?v=20261102j"></script>
-  <script type="module" src="app.js?v=20261102j"></script>
+  <script src="config.js?v=20261102k"></script>
+  <script src="vendor/supabase-2.118.0.js?v=20261102k"></script>
+  <script src="guides.js?v=20261102k"></script>
+  <script src="programs.js?v=20261102k"></script>
+  <script type="module" src="app.js?v=20261102k"></script>
 </body>
 </html>
