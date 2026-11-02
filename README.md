@@ -159,3 +159,8 @@ About 2,100 international Bachelor's and Master's programs come from the DAAD In
 - It is run from a browser tab on www2.daad.de (the DAAD search API only answers same-origin requests). Hand-checked programs (`curated = true`) are never overwritten.
 - After a full run, call the function with `{ action: "finish", since: "<run date>" }` to deactivate programs DAAD no longer lists.
 - The AI advisor gets only the 40 most relevant programs per question through `public.match_programs(q, lim)` (full text search).
+
+## Private universities (official websites)
+
+Many private universities are not in the DAAD database. Their programs are researched from each official website and stored as hand-checked rows (`curated = true`, `source = 'University website'`, `ext_id` like `hmkw:...`) through `supabase/functions/programs-upsert` (token protected).
+Done so far: HMKW, BSBI (Berlin and Hamburg campuses only), Arden University Berlin, IU (on campus Berlin and Cologne), EU Business School Munich, Gisma. Each listing notes who awards the degree (UK partner degrees, Spanish "título propio" and so on) so students can judge recognition.

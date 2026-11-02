@@ -165,16 +165,26 @@ Deno.serve(async (req) => {
   if (rpcErr) return json({ error: "Could not check your daily limit." }, 500);
   if (!allowed) return json({ error: "You have used today's free AI limit. It resets tomorrow. Your tracker still works." }, 429);
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const payload: Record<string, unknown> = {
+    model: mode === "letter" ? MODEL_WRITER : MODEL_FAST,
+    // Thinking is on by default on the 5.5 models and counts toward max_tokens, which cut answers short.
+    // Haiku: turn it off. Sonnet 5.5: "between_tools" is its lowest setting (no up-front thinking without tools).
+    thinking: { type: mode === "letter" ? "between_tools" : "disabled" },
+    max_tokens: mode === "letter" ? 4000 : 2000,
+    system: systemFor(mode, ctx, catalog),
+    messages,
+  };
+  const callClaude = (body: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model: mode === "letter" ? MODEL_WRITER : MODEL_FAST,
-      max_tokens: mode === "letter" ? 1600 : 900,
-      system: systemFor(mode, ctx, catalog),
-      messages,
-    }),
+    body: JSON.stringify(body),
   });
+  let res = await callClaude(payload);
+  if (res.status === 400) {
+    const t = await res.text();
+    if (/thinking/i.test(t)) { console.warn("thinking setting rejected, retrying without it", t.slice(0, 200)); delete payload.thinking; payload.max_tokens = 6000; res = await callClaude(payload); }
+    else res = new Response(t, { status: 400 });
+  }
 
   if (!res.ok) {
     console.error("Claude API error", res.status, await res.text());
@@ -182,5 +192,7 @@ Deno.serve(async (req) => {
   }
   const data = await res.json();
   const reply = (data.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("\n").trim();
+  if (data.stop_reason === "max_tokens") console.warn("AI reply hit max_tokens", mode, reply.length);
+  if (!reply) return json({ error: "The AI could not finish this answer. Please ask again, a bit shorter." }, 502);
   return json({ reply: reply.replace(/[\u2013\u2014]/g, ", ") });
 });
