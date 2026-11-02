@@ -538,3 +538,30 @@ body { overflow-x: clip; }
 .fchip:hover { background: #fff; }
 .fchip span { margin-left: 4px; font-weight: 800; }
 .upd-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 70; display: flex; gap: 14px; justify-content: center; align-items: center; padding: 10px 16px; background: var(--navy); color: #fff; font-weight: 600; font-size: .92rem; }
+
+/* Profile */
+.profile-wrap { max-width: 760px; display: grid; gap: 16px; }
+.prof-form { display: grid; gap: 16px; }
+.prof-form h3, .profile-wrap > .card h3 { margin-bottom: 14px; }
+.prof-head { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+.prof-id h2 { margin: 0; font-size: 1.4rem; }
+.prof-id p { margin: 2px 0 10px; color: var(--muted); }
+.av-actions { display: flex; gap: 8px; align-items: center; }
+.av-actions label.btn { margin: 0; cursor: pointer; }
+.prof-progress { grid-column: 1 / -1; display: grid; gap: 6px; font-size: .85rem; font-weight: 700; color: var(--green); }
+.av-img, .av-ini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: var(--green); color: var(--gold); font-weight: 800; }
+.av-img.xl, .av-ini.xl { width: 96px; height: 96px; font-size: 2rem; box-shadow: var(--shadow); }
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.avatar { overflow: hidden; }
+.phone-row { display: grid; grid-template-columns: 150px 1fr; gap: 8px; }
+.phone-row select { padding: 12px 8px; font-size: .9rem; }
+.small-check { font-weight: 400; font-size: .88rem; margin: -6px 0 16px; }
+.save-sticky { width: 100%; padding: 14px; }
+.pw-form { margin-top: 12px; }
+.pw-meter { height: 6px; background: var(--green-soft); border-radius: 999px; overflow: hidden; margin: -6px 0 4px; }
+.pw-meter span { display: block; height: 100%; width: 0; background: var(--red); transition: width .2s ease; }
+.pw-meter span.mid { background: var(--gold); }
+.pw-meter span.ok { background: var(--green-2); }
+.btn.danger { color: var(--red); border-color: var(--red); }
+.btn.danger:hover { background: var(--red-soft); }
+@media (max-width: 860px) { .phone-row { grid-template-columns: 120px 1fr; } }

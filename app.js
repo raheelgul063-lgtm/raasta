@@ -227,8 +227,9 @@ function renderAuth() {
   if (!LIVE) { area.innerHTML = `<a href="#/profile" class="status planning" style="text-decoration:none">Demo profile</a>`; return; }
   if (session) {
     const name = session.user.user_metadata?.full_name || session.user.email;
-    area.innerHTML = `<a href="#/profile" class="avatar" title="${esc(session.user.email)}">${esc((name || "?").trim()[0].toUpperCase())}</a><button class="btn link small" id="logoutBtn">Log out</button>`;
-    $("#logoutBtn").onclick = async () => { await sb.auth.signOut(); toast("Logged out"); };
+    area.innerHTML = `<a href="#/profile" class="avatar" title="Your profile (${esc(session.user.email)})">${window.__avatar ? `<img src="${esc(window.__avatar)}" alt="" />` : esc(initials(name))}</a><button class="btn link small" id="logoutBtn">Log out</button>`;
+    if (window.__avatar === undefined) { window.__avatar = null; db.getProfile().then((pr) => { if (pr?.avatar_url) { window.__avatar = pr.avatar_url; renderAuth(); } }).catch(() => {}); }
+    $("#logoutBtn").onclick = async () => { await sb.auth.signOut(); window.__avatar = undefined; toast("Logged out"); };
   } else {
     area.innerHTML = `<button class="btn link small" id="signinBtn">Sign in</button><button class="btn small" id="loginBtn">Sign up free</button>`;
     $("#loginBtn").onclick = () => openLogin(null, "signup");
@@ -268,13 +269,15 @@ async function openLogin(reason, mode = "signup") {
       <form id="loginForm">
         ${isUp ? `<div class="field"><label for="fullName">Full name</label><input id="fullName" required maxlength="120" placeholder="Ali Raza" autocomplete="name" /></div>` : ""}
         <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" maxlength="200" /></div>
+        ${!isUp ? `<div class="field"><label for="pwIn">Password <span class="hint">(only if you set one, otherwise leave empty)</span></label><input id="pwIn" type="password" autocomplete="current-password" maxlength="72" /></div>` : ""}
         ${isUp ? `<label class="check" style="font-weight:400;font-size:.85rem;margin-bottom:12px"><input type="checkbox" id="agree" required /> I agree to the <a href="#/privacy" target="_blank">privacy policy</a></label>` : ""}
-        <button class="btn" style="width:100%">${isUp ? "Create account" : "Send me a code"}</button>
+        <button class="btn" style="width:100%" id="loginSubmit">${isUp ? "Create account" : "Send me a code"}</button>
       </form>
       <button class="btn link" id="closeLogin" style="margin-top:8px;width:100%">Not now</button>
     </div>`;
   document.body.appendChild(bg);
   ($("#fullName", bg) || $("#email", bg)).focus();
+  if ($("#pwIn", bg)) $("#pwIn", bg).addEventListener("input", (e) => { $("#loginSubmit", bg).textContent = e.target.value ? "Sign in" : "Send me a code"; });
   const close = () => bg.remove();
   bg.querySelectorAll("[data-mode]").forEach((t) => t.onclick = () => { if (t.dataset.mode !== mode) { close(); openLogin(reason, t.dataset.mode); } });
   $("#closeLogin", bg).onclick = close;
@@ -321,6 +324,12 @@ async function openLogin(reason, mode = "signup") {
     const btn = e.submitter; btn.disabled = true; btn.textContent = "Sending...";
     const email = $("#email", bg).value.trim().toLowerCase();
     const fullName = $("#fullName", bg)?.value.trim();
+    const pw = $("#pwIn", bg)?.value;
+    if (!isUp && pw) {
+      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+      if (error) { btn.disabled = false; btn.textContent = "Sign in"; toast(/invalid/i.test(error.message) ? "Email or password is wrong. Leave the password empty to get a code instead." : friendly(error.message)); return; }
+      close(); toast("You're signed in"); return;
+    }
     const { error } = await sendCode(email, fullName);
     if (error) {
       btn.disabled = false; btn.textContent = isUp ? "Create account" : "Send me a code";
@@ -664,8 +673,16 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
   return { send };
 }
 
+function profileSummary(p) {
+  if (!p) return "";
+  const parts = [p.degree_level && `wants: ${p.degree_level}`, p.field && `field: ${p.field}`, p.bachelor_degree && `current degree: ${p.bachelor_degree}`, p.bachelor_university && `from ${p.bachelor_university}`, p.cgpa && `CGPA: ${p.cgpa}`, p.grad_year && `graduated: ${p.grad_year}`, p.english_test && `English: ${p.english_test}${p.english_score ? " " + p.english_score : ""}`, p.german_level && `German: ${p.german_level}`, p.budget && `budget: ${p.budget}`, p.intake && `intake: ${p.intake}`, p.province && `province: ${p.province}`];
+  return parts.filter(Boolean).join("; ");
+}
 function viewVisa() {
+  let prof = "";
+  if (LIVE && session) db.getProfile().then((p) => { prof = profileSummary(p); }).catch(() => {});
   chatView({
+    getContext: () => ({ profile: prof }),
     title: "Your AI study advisor",
     intro: "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
     mode: "visa",
@@ -823,6 +840,23 @@ async function maybeOnboard() {
 init();
 
 /* ---------------- Profile / onboarding ---------------- */
+const COUNTRY_CODES = [["+92", "Pakistan"], ["+49", "Germany"], ["+971", "UAE"], ["+966", "Saudi Arabia"], ["+44", "UK"], ["+1", "USA / Canada"], ["+974", "Qatar"], ["+968", "Oman"], ["+973", "Bahrain"], ["+965", "Kuwait"], ["+60", "Malaysia"], ["+90", "Turkey"]];
+const initials = (n) => String(n || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+function avatarHTML(url, name, cls = "") {
+  return url ? `<img class="av-img ${cls}" src="${esc(url)}" alt="" referrerpolicy="no-referrer" />` : `<span class="av-ini ${cls}">${esc(initials(name))}</span>`;
+}
+// Resize and centre crop to 320x320 JPEG. Re-encoding also strips EXIF data such as GPS location.
+async function prepareAvatar(file) {
+  if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) throw new Error("Please choose a JPG, PNG or WebP photo.");
+  if (file.size > 12 * 1024 * 1024) throw new Error("That photo is too large (max 12 MB).");
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Could not read that image.")); i.src = URL.createObjectURL(file); });
+  const S = 320, c = document.createElement("canvas"); c.width = c.height = S;
+  const side = Math.min(img.naturalWidth, img.naturalHeight);
+  c.getContext("2d").drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, S, S);
+  URL.revokeObjectURL(img.src);
+  return await new Promise((res) => c.toBlob(res, "image/jpeg", 0.86));
+}
+
 async function viewProfile(isWelcome) {
   if (needsLogin("Your profile", "Sign in to create your free profile.")) return;
   const p = (await db.getProfile().catch(() => null)) || {};
@@ -832,28 +866,118 @@ async function viewProfile(isWelcome) {
   const LEVELS = ["Master's", "Bachelor's", "PhD", "Language course / Studienkolleg"];
   const year = new Date().getFullYear();
   const INTAKES = [`Summer ${year + 1}`, `Winter ${year + 1}/${String(year + 2).slice(2)}`, `Summer ${year + 2}`, `Winter ${year + 2}/${String(year + 3).slice(2)}`, "Not sure yet"];
+  const TESTS = ["Not taken yet", "IELTS Academic", "TOEFL iBT", "PTE Academic", "Duolingo English Test", "Cambridge (C1 / C2)", "English medium of instruction letter"];
+  const GERMAN = ["None", "A1", "A2", "B1", "B2", "C1", "C2"];
+  const BUDGETS = ["Only tuition free public universities", "Up to €3,000 per year", "€3,000 to €8,000 per year", "€8,000 to €15,000 per year", "More than €15,000 per year"];
+  const name = p.full_name || metaName;
+  const phone = p.phone || "";
+  const cc = COUNTRY_CODES.map((c) => c[0]).sort((x, y) => y.length - x.length).find((c) => phone.startsWith(c)) || "+92";
+  const local = phone ? phone.slice(cc.length) : "";
+  const hasPassword = Boolean(session?.user?.user_metadata?.has_password);
+  const filled = ["full_name", "phone", "city", "province", "field", "intake", "bachelor_degree", "cgpa", "english_test", "avatar_url"].filter((k) => p[k]).length;
+  const pct = Math.round((filled / 10) * 100);
+
   app.innerHTML = `
     <div class="page-head">
       <h1>${isWelcome ? "Welcome to Raasta 👋" : "Your profile"}</h1>
-      <p>${isWelcome ? "Four quick questions so we can guide you better. Takes 30 seconds." : "Update your details any time."}</p>
+      <p>${isWelcome ? "A few details so the AI advisor can suggest programs that really fit you." : "Your details stay private. Only you can see them."}</p>
     </div>
-    <form class="card" id="profileForm" style="max-width:620px">
-      <div class="form-row">
-        <div class="field"><label for="pName">Full name</label><input id="pName" required value="${esc(p.full_name || metaName)}" placeholder="Ali Raza" /></div>
-        <div class="field"><label for="pCity">City</label><input id="pCity" value="${esc(p.city || "")}" placeholder="Lahore" /></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label for="pProv">Province <span class="hint">(decides Islamabad or Karachi)</span></label><select id="pProv"><option value="">Choose</option>${opt(PROVINCES, p.province)}</select></div>
-        <div class="field"><label for="pLevel">I want to study</label><select id="pLevel">${opt(LEVELS, p.degree_level || "Master's")}</select></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label for="pField">Field</label><select id="pField"><option value="">Choose</option>${opt(FIELDS, p.field)}</select></div>
-        <div class="field"><label for="pIntake">Target intake</label><select id="pIntake"><option value="">Choose</option>${opt(INTAKES, p.intake)}</select></div>
-      </div>
-      <button class="btn gold" style="width:100%">${isWelcome ? "Start my roadmap" : "Save"}</button>
-      ${session ? `<p class="notice">Signed in as ${esc(session.user.email)}</p>` : ""}
-    </form>
-    <div id="missionHint" class="callout" style="max-width:620px;margin-top:16px" hidden></div>`;
+    <div class="profile-wrap">
+      <section class="card prof-head">
+        <div class="av-wrap">${avatarHTML(p.avatar_url, name, "xl")}</div>
+        <div class="prof-id">
+          <h2>${esc(name || "Your name")}</h2>
+          <p>${esc(session?.user.email || "")}</p>
+          <div class="av-actions">
+            <label class="btn ghost small" for="avFile">${p.avatar_url ? "Change photo" : "Upload photo"}</label>
+            <input type="file" id="avFile" accept="image/jpeg,image/png,image/webp" hidden />
+            ${p.avatar_url ? `<button class="btn link small" id="avRemove" type="button">Remove</button>` : ""}
+          </div>
+        </div>
+        <div class="prof-progress"><span>Profile ${pct}% complete</span><div class="progress"><span style="width:${pct}%"></span></div></div>
+      </section>
+
+      <form id="profileForm" class="prof-form">
+        <section class="card">
+          <h3>Personal details</h3>
+          <div class="form-row">
+            <div class="field"><label for="pName">Full name <span class="hint">(as in your passport)</span></label><input id="pName" required maxlength="120" value="${esc(name)}" placeholder="Ali Raza" autocomplete="name" /></div>
+            <div class="field"><label for="pPhone">Phone number</label>
+              <div class="phone-row"><select id="pCC" aria-label="Country code">${COUNTRY_CODES.map(([c, n]) => `<option value="${c}" ${c === cc ? "selected" : ""}>${c} ${esc(n)}</option>`).join("")}</select>
+              <input id="pPhone" inputmode="tel" autocomplete="tel-national" maxlength="15" value="${esc(local)}" placeholder="3001234567" /></div></div>
+          </div>
+          <label class="check small-check"><input type="checkbox" id="pWa" ${p.whatsapp_ok ? "checked" : ""}/> Send me deadline reminders on WhatsApp (optional, you can turn this off any time)</label>
+          <div class="form-row">
+            <div class="field"><label for="pCity">City</label><input id="pCity" maxlength="80" value="${esc(p.city || "")}" placeholder="Lahore" /></div>
+            <div class="field"><label for="pProv">Province <span class="hint">(decides Islamabad or Karachi)</span></label><select id="pProv"><option value="">Choose</option>${opt(PROVINCES, p.province)}</select></div>
+          </div>
+          <div id="missionHint" class="callout" hidden></div>
+        </section>
+
+        <section class="card">
+          <h3>Study plans</h3>
+          <div class="form-row">
+            <div class="field"><label for="pLevel">I want to study</label><select id="pLevel">${opt(LEVELS, p.degree_level || "Master's")}</select></div>
+            <div class="field"><label for="pField">Field</label><select id="pField"><option value="">Choose</option>${opt(FIELDS, p.field)}</select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="pIntake">Target intake</label><select id="pIntake"><option value="">Choose</option>${opt(INTAKES, p.intake)}</select></div>
+            <div class="field"><label for="pBudget">Tuition budget</label><select id="pBudget"><option value="">Choose</option>${opt(BUDGETS, p.budget)}</select></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Academic background</h3>
+          <p class="notice" style="margin-top:-6px">The AI advisor uses this to suggest programs you can actually get into.</p>
+          <div class="form-row">
+            <div class="field"><label for="pDeg">Current or last degree</label><input id="pDeg" maxlength="120" value="${esc(p.bachelor_degree || "")}" placeholder="BS Computer Science" /></div>
+            <div class="field"><label for="pUni">University</label><input id="pUni" maxlength="160" value="${esc(p.bachelor_university || "")}" placeholder="FAST NUCES Karachi" /></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="pCgpa">CGPA or percentage</label><input id="pCgpa" maxlength="20" value="${esc(p.cgpa || "")}" placeholder="3.2 / 4.0" /></div>
+            <div class="field"><label for="pYear">Graduation year</label><input id="pYear" type="number" min="1980" max="2035" value="${esc(p.grad_year || "")}" placeholder="${year}" /></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="pTest">English proof</label><select id="pTest"><option value="">Choose</option>${opt(TESTS, p.english_test)}</select></div>
+            <div class="field"><label for="pScore">Score <span class="hint">(if taken)</span></label><input id="pScore" maxlength="20" value="${esc(p.english_score || "")}" placeholder="IELTS 6.5" /></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="pGer">German level</label><select id="pGer"><option value="">Choose</option>${opt(GERMAN, p.german_level)}</select></div>
+            <div></div>
+          </div>
+        </section>
+
+        <button class="btn gold save-sticky" id="saveBtn">${isWelcome ? "Save and see my roadmap" : "Save changes"}</button>
+      </form>
+
+      ${isWelcome ? "" : `
+      <section class="card">
+        <h3>Sign in and security</h3>
+        <div class="fact"><span>Email</span><strong>${esc(session?.user.email || "")}</strong></div>
+        <div class="fact"><span>Sign in method</span><strong>${(session?.user.app_metadata?.providers || ["email"]).includes("google") ? "Google or email code" : "Email code"}${hasPassword ? " or password" : ""}</strong></div>
+        <form id="pwForm" class="pw-form">
+          <p class="notice">${hasPassword ? "Change your password." : "Optional: set a password so you can sign in without waiting for an email code."}</p>
+          <div class="form-row">
+            <div class="field"><label for="pw1">New password</label><input id="pw1" type="password" minlength="8" maxlength="72" autocomplete="new-password" required /></div>
+            <div class="field"><label for="pw2">Repeat password</label><input id="pw2" type="password" minlength="8" maxlength="72" autocomplete="new-password" required /></div>
+          </div>
+          <div class="pw-meter"><span id="pwBar"></span></div><p class="notice" id="pwHint">At least 8 characters. Mix letters, numbers and symbols.</p>
+          <div id="pwNonce" hidden class="field"><label for="pwCode">Security code from your email</label><input id="pwCode" class="otp" inputmode="numeric" maxlength="8" placeholder="000000" /></div>
+          <button class="btn" id="pwBtn">${hasPassword ? "Change password" : "Set password"}</button>
+        </form>
+        <button class="btn ghost small" id="signOutAll" type="button" style="margin-top:12px">Sign out on all devices</button>
+      </section>
+
+      <section class="card">
+        <h3>Your data</h3>
+        <p class="notice">Raasta never sells your data. You can download it or delete your account at any time.</p>
+        <div class="prog-cta">
+          <button class="btn ghost small" id="exportBtn" type="button">Download my data</button>
+          <button class="btn ghost small danger" id="deleteBtn" type="button">Delete my account</button>
+        </div>
+      </section>`}
+    </div>`;
+
   const hint = () => {
     const v = $("#pProv").value, box = $("#missionHint");
     const msg = ["Sindh", "Balochistan"].includes(v) ? "Your visa goes to the German Consulate General in <strong>Karachi</strong>."
@@ -861,10 +985,96 @@ async function viewProfile(isWelcome) {
     box.hidden = !msg; box.innerHTML = msg;
   };
   $("#pProv").onchange = hint; hint();
+  $("#pPhone").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/[^\d]/g, "").replace(/^0+/, ""); });
+
+  // Photo upload
+  $("#avFile").onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    if (!LIVE) { toast("Photos work once Raasta is connected."); return; }
+    try {
+      toast("Uploading photo...");
+      const blob = await prepareAvatar(file);
+      const path = `${session.user.id}/avatar-${Date.now()}.jpg`;
+      const { error } = await sb.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (error) throw error;
+      const url = sb.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      const old = p.avatar_url;
+      await db.saveProfile({ avatar_url: url });
+      if (old) { const oldPath = old.split("/avatars/")[1]; if (oldPath) await sb.storage.from("avatars").remove([oldPath]); }
+      window.__avatar = url; renderAuth(); toast("Photo updated"); viewProfile(false);
+    } catch (err) { toast(err.message || "Upload failed"); }
+  };
+  if ($("#avRemove")) $("#avRemove").onclick = async () => {
+    const oldPath = p.avatar_url?.split("/avatars/")[1];
+    try { await db.saveProfile({ avatar_url: null }); if (oldPath) await sb.storage.from("avatars").remove([oldPath]); window.__avatar = null; renderAuth(); toast("Photo removed"); viewProfile(false); }
+    catch (err) { toast(err.message); }
+  };
+
   $("#profileForm").onsubmit = async (e) => {
     e.preventDefault();
-    const rec = { full_name: $("#pName").value.trim(), city: $("#pCity").value.trim(), province: $("#pProv").value, degree_level: $("#pLevel").value, field: $("#pField").value, intake: $("#pIntake").value };
-    try { await db.saveProfile(rec); toast("Saved"); if (isWelcome) location.hash = "#/roadmap"; } catch (err) { toast(err.message); }
+    const num = $("#pPhone").value.trim();
+    if (num && !/^\d{7,13}$/.test(num)) { toast("Please check your phone number (digits only, without the leading 0)."); return; }
+    const y = $("#pYear").value ? Number($("#pYear").value) : null;
+    const rec = {
+      full_name: $("#pName").value.trim(), phone: num ? $("#pCC").value + num : null, whatsapp_ok: Boolean(num) && $("#pWa").checked,
+      city: $("#pCity").value.trim(), province: $("#pProv").value, degree_level: $("#pLevel").value, field: $("#pField").value,
+      intake: $("#pIntake").value, budget: $("#pBudget").value || null, bachelor_degree: $("#pDeg").value.trim() || null,
+      bachelor_university: $("#pUni").value.trim() || null, cgpa: $("#pCgpa").value.trim() || null, grad_year: y,
+      english_test: $("#pTest").value || null, english_score: $("#pScore").value.trim() || null, german_level: $("#pGer").value || null
+    };
+    const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "Saving...";
+    try {
+      await db.saveProfile(rec);
+      if (LIVE && rec.full_name && rec.full_name !== metaName) await sb.auth.updateUser({ data: { full_name: rec.full_name } });
+      db._profile = null; toast("Saved"); if (isWelcome) location.hash = "#/roadmap"; else viewProfile(false);
+    } catch (err) { toast(/phone_chk/.test(err.message) ? "Please check your phone number." : err.message); btn.disabled = false; btn.textContent = "Save changes"; }
+  };
+
+  if (isWelcome) return;
+
+  // Password
+  const score = (v) => [v.length >= 8, v.length >= 12, /[a-z]/.test(v) && /[A-Z]/.test(v), /\d/.test(v), /[^\w\s]/.test(v)].filter(Boolean).length;
+  $("#pw1").addEventListener("input", () => { const sc = score($("#pw1").value); $("#pwBar").style.width = `${sc * 20}%`; $("#pwBar").className = sc >= 4 ? "ok" : sc >= 3 ? "mid" : ""; });
+  $("#pwForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const a = $("#pw1").value, b2 = $("#pw2").value;
+    if (a !== b2) { toast("The two passwords do not match."); return; }
+    if (score(a) < 3) { toast("Please choose a stronger password (mix letters, numbers and symbols)."); return; }
+    if (!LIVE) { toast("Passwords work once Raasta is connected."); return; }
+    const btn = $("#pwBtn"); btn.disabled = true;
+    const nonce = $("#pwCode").value.trim();
+    const { error } = await sb.auth.updateUser({ password: a, ...(nonce ? { nonce } : {}), data: { has_password: true } });
+    btn.disabled = false;
+    if (error) {
+      if (/reauthenticat|nonce/i.test(error.message)) {
+        await sb.auth.reauthenticate(); $("#pwNonce").hidden = false; $("#pwCode").focus();
+        toast("For your security we emailed you a code. Enter it and press the button again."); return;
+      }
+      toast(/same|different from the old/i.test(error.message) ? "Choose a different password from your current one." : /weak|pwned|leaked/i.test(error.message) ? "This password is too weak or was found in a data leak. Choose another." : error.message);
+      return;
+    }
+    $("#pwForm").reset(); $("#pwNonce").hidden = true; $("#pwBar").style.width = "0";
+    toast("Password saved. You can now sign in with email and password too.");
+  };
+  $("#signOutAll").onclick = async () => { if (!confirm("Sign out on all devices, including this one?")) return; await sb.auth.signOut({ scope: "global" }); toast("Signed out everywhere"); location.hash = "#/"; };
+
+  // Data export and deletion
+  $("#exportBtn").onclick = async () => {
+    try {
+      const [prof, apps, checks, saved] = await Promise.all([db.getProfile(), db.listApps(), db.getChecklist(), db.listSaved()]);
+      const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), email: session?.user.email, profile: prof, applications: apps, checklist: checks, saved_program_ids: saved }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "raasta-my-data.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    } catch (err) { toast(err.message); }
+  };
+  $("#deleteBtn").onclick = async () => {
+    const typed = prompt("This permanently deletes your profile, tracker, saved programs and photo. Type DELETE to confirm.");
+    if (typed !== "DELETE") { if (typed !== null) toast("Not deleted. You need to type DELETE."); return; }
+    try {
+      const { data: files } = await sb.storage.from("avatars").list(session.user.id);
+      if (files?.length) await sb.storage.from("avatars").remove(files.map((f) => `${session.user.id}/${f.name}`));
+      const { error } = await sb.rpc("delete_my_account"); if (error) throw error;
+      await sb.auth.signOut(); toast("Your account and data were deleted."); location.hash = "#/";
+    } catch (err) { toast(err.message); }
   };
 }
 

@@ -50,7 +50,9 @@ function systemFor(mode: string, ctx: Record<string, string>, catalog = ""): str
 ${VISA_FACTS}
 
 Raasta has about 2,000 international Bachelor's and Master's programs in Germany (public, applied sciences and private universities; English or German taught). Below are the ones that best match this conversation, found by a keyword search. Format: [id] degree | program | university (type) | city | field | teaching language | tuition per semester for non EU | next deadlines (non EU)
-${catalog || "(not available right now)"}
+${catalog || "(no keyword matches for this message)"}
+
+${ctx.profile ? `Student profile (saved by the student in Raasta; use it, do not ask again for what is already here, and say so if something important is missing): ${ctx.profile}` : "The student has not filled in a profile. Ask for their degree, CGPA and budget when it matters."}
 
 Program recommendations:
 - When a student asks which universities or programs to choose, FIRST recommend matching programs from the Raasta list above (2 to 5, best fit first). For each, give program, university, city, tuition, deadline and the link ${SITE}#/program?id=ID (use the id in brackets). Explain in one line why it fits their background.
@@ -154,7 +156,7 @@ Deno.serve(async (req) => {
   // Program catalog for recommendations: only the programs most relevant to this conversation
   let catalog = "";
   if (mode === "visa") {
-    const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => m.content).join(" ");
+    const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => m.content).join(" ") + " " + (ctx.profile || "").replace(/(wants|field|current degree|budget|intake|province|English|German|CGPA|graduated):/g, " ");
     const { data: progs } = await supabase.rpc("match_programs", { q: recent.slice(0, 1500), lim: 40 });
     const fee = (t: number | null) => (t === 0 ? "no tuition" : t == null ? "check page" : `${t} EUR`);
     catalog = (progs ?? []).map((p: any) => `[${p.id}] ${p.title || p.degree} | ${p.program} | ${p.university} (${p.type || "University"}) | ${p.city || ""} | ${p.field} | ${p.language || "English"} | ${fee(p.tuition)} | ${[p.deadline_winter && `winter ${p.deadline_winter}`, p.deadline_summer && `summer ${p.deadline_summer}`].filter(Boolean).join(", ") || "see page"}`).join("\n");
