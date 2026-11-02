@@ -1104,9 +1104,15 @@ function guideHero(eyebrow, title, text) {
   return `<div class="page-hero"><span class="eyebrow light">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${text}</p></div>`;
 }
 
+// City names appear in English and German ("Munich", "München", "Garching b. München"); Frankfurt (Oder) is a different city
+function inCity(p, c) {
+  const city = (p.city || "").toLowerCase();
+  if (c.slug === "frankfurt" && city.includes("oder")) return false;
+  return (c.match || [c.name]).some((m) => city.includes(m.toLowerCase()));
+}
 async function viewCities() {
   const progs = await db.programs();
-  const count = (c) => progs.filter((p) => (p.city || "").split(",").map((x) => x.trim()).includes(c.name) || p.city === c.name).length;
+  const count = (c) => progs.filter((p) => inCity(p, c)).length;
   app.innerHTML = `${guideHero("City guides", "Where will you live?", "Jobs, internships, rent and daily life in Germany's main student cities. Population and photos come live from Wikipedia.")}
     <div class="city-grid">${G().cities.map((c) => `<a class="city-card" href="#/city?c=${c.slug}"><div class="city-img" data-cimg="${c.slug}"></div><div class="city-body"><h3>${esc(c.name)}</h3><p>${esc(c.state)}</p><div class="uni-tags"><span class="pill">${count(c)} programs</span>${c.rent ? `<span class="pill pill-gold">Flat ${esc(c.rent)}</span>` : ""}</div></div></a>`).join("")}</div>
     <p class="notice">Rent figures: MLP Studentenwohnreport 2026 (30 m² student flat, warm rent). Cities without a figure were not covered by the report.</p>`;
@@ -1116,7 +1122,7 @@ async function viewCities() {
 async function viewCity() {
   const c = G().cities.find((x) => x.slug === route.params.get("c"));
   if (!c) { app.innerHTML = `<div class="empty">City not found. <a href="#/cities">All cities</a></div>`; return; }
-  const progs = (await db.programs()).filter((p) => (p.city || "").includes(c.name));
+  const progs = (await db.programs()).filter((p) => inCity(p, c));
   const unis = uniAggregate(progs).sort((a, b) => b.n - a.n);
   app.innerHTML = `<a href="#/cities" class="back">← All cities</a>
     <div class="city-hero" id="cityHero"><div class="city-hero-in"><span class="eyebrow light">${esc(c.state)}</span><h1>${esc(c.name)}</h1><p>${esc(c.vibe)}</p></div></div>
@@ -1131,7 +1137,7 @@ async function viewCity() {
         <div class="fact"><span>Health insurance</span><strong>about €141 to €146</strong></div><div class="fact"><span>Transport</span><strong>Semester ticket or €63 Deutschlandticket</strong></div><div class="fact"><span>Official living cost minimum</span><strong>€992 per month</strong></div></div>
         <p class="notice">Rent: MLP Studentenwohnreport 2026. Insurance: 2026 student rates.</p></section>
     </div>
-    <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?q=${encodeURIComponent(c.name)}">All programs in ${esc(c.name)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
+    <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?state=${encodeURIComponent(c.state)}">All programs in ${esc(c.state)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
     <p class="notice" id="cSrc"></p>`;
   const d = await cityLive(c);
   if (d.img && $("#cityHero")) $("#cityHero").style.backgroundImage = `linear-gradient(180deg, rgba(11,46,36,.35), rgba(11,46,36,.85)), url("${d.img}")`;
