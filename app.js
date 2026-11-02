@@ -3,7 +3,8 @@ const CFG = window.RAASTA_CONFIG || {};
 // Supabase is only loaded when configured, so Demo mode works fully offline
 let sb = null;
 if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY) {
-  try { sb = (await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm")).createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); }
+  // supabase-js is bundled in /vendor (pinned version, no third party CDN at runtime)
+  try { sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); }
   catch (e) { console.warn("Supabase could not load, falling back to Demo mode", e); }
 }
 const LIVE = Boolean(sb);
@@ -81,6 +82,7 @@ function richText(s) {
   h = h.replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
   return h;
 }
+const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? esc(u) : "#");
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg; t.classList.add("show");
@@ -203,14 +205,14 @@ function openLogin(reason) {
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
       <h2 id="loginTitle">Sign in, it's free</h2>
       <p>${esc(reason || "Save your tracker and use the AI tools. No password needed.")}</p>
-      <button class="btn google" id="googleBtn" type="button">
+      ${CFG.GOOGLE_LOGIN ? `<button class="btn google" id="googleBtn" type="button">
         <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
         Continue with Google
       </button>
-      <div class="or"><span>or use your email</span></div>
+      <div class="or"><span>or use your email</span></div>` : ""}
       <form id="loginForm">
         <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" /></div>
-        <button class="btn ghost" style="width:100%">Email me a login link</button>
+        <button class="btn" style="width:100%">Email me a login link</button>
       </form>
       <button class="btn link" id="closeLogin" style="margin-top:8px;width:100%">Not now</button>
     </div>`;
@@ -219,7 +221,7 @@ function openLogin(reason) {
   const close = () => bg.remove();
   $("#closeLogin", bg).onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
-  $("#googleBtn", bg).onclick = async () => {
+  if ($("#googleBtn", bg)) $("#googleBtn", bg).onclick = async () => {
     const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
     if (error) toast(error.message);
   };
@@ -228,7 +230,7 @@ function openLogin(reason) {
     const btn = e.submitter; btn.disabled = true; btn.textContent = "Sending...";
     const email = $("#email", bg).value.trim();
     const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-    if (error) { btn.disabled = false; btn.textContent = "Email me a login link"; toast(error.message); return; }
+    if (error) { btn.disabled = false; btn.textContent = "Email me a login link"; toast(/rate limit/i.test(error.message) ? "Too many login emails right now. Please try again in a few minutes." : error.message); return; }
     $(".modal", bg).innerHTML = `<h2>Check your inbox</h2><p>We sent a login link to <strong>${esc(email)}</strong>. Open it on this device. Check spam if you don't see it.</p><button class="btn" style="width:100%" id="okBtn">OK</button>`;
     $("#okBtn", bg).onclick = close;
   };
@@ -420,7 +422,7 @@ function appRow(a) {
     <div class="app-item">
       <div>
         <h4>${esc(a.university)} <span class="status ${esc(a.status)}">${esc(a.status)}</span></h4>
-        <div class="app-meta"><span>${esc(a.program)}</span><span>${esc(a.portal)}</span><span>${due}</span>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">Official page ↗</a>` : ""}</div>
+        <div class="app-meta"><span>${esc(a.program)}</span><span>${esc(a.portal)}</span><span>${due}</span>${a.url ? `<a href="${safeUrl(a.url)}" target="_blank" rel="noopener">Official page ↗</a>` : ""}</div>
       </div>
       <div class="app-actions">
         <select data-status="${a.id}" aria-label="Status">${statuses.map((s) => `<option value="${s}" ${s === a.status ? "selected" : ""}>${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}</select>
@@ -527,7 +529,7 @@ async function viewLetter() {
     ${area ? `<textarea id="${id}" placeholder="${esc(ph)}">${esc(saved[id] || "")}</textarea>` : `<input id="${id}" placeholder="${esc(ph)}" value="${esc(saved[id] || "")}" />`}</div>`;
   app.innerHTML = `
     <div class="page-head"><h1>Motivation letter builder</h1><p>Tell us your real story. We turn it into a personal first draft. You then edit it in your own words.</p></div>
-    ${lprog ? `<div class="callout" style="background:var(--green-soft);border-color:#C9E2D6;color:var(--green)"><strong>Writing for:</strong> ${esc(lprog.program)}, ${esc(lprog.university)}. Open the <a href="${esc(lprog.url)}" target="_blank" rel="noopener">official page</a> and name real modules or labs in "Why this program".</div>` : ""}
+    ${lprog ? `<div class="callout" style="background:var(--green-soft);border-color:#C9E2D6;color:var(--green)"><strong>Writing for:</strong> ${esc(lprog.program)}, ${esc(lprog.university)}. Open the <a href="${safeUrl(lprog.url)}" target="_blank" rel="noopener">official page</a> and name real modules or labs in "Why this program".</div>` : ""}
     ${!LIVE ? `<div class="callout" style="background:var(--red-soft);border-color:#EBC4BB;color:var(--red)"><strong>Preview mode:</strong> letters are only written on the live site (GitHub Pages, connected to Supabase with the Claude API key). This preview shows a sample.</div>` : ""}
     <div class="callout"><strong>Why we don't give templates:</strong> universities check letters for copied text, and the visa officer compares your letter with your interview answers. A letter built from your own facts is safer and stronger.</div>
     <div class="grid cols-2" style="align-items:start">
@@ -661,6 +663,7 @@ async function viewProfile(isWelcome) {
 
 /* ---------------- Feedback ---------------- */
 function openFeedback() {
+  if (LIVE && !session) { openLogin("Sign in free to send feedback. It keeps spam out."); return; }
   const page = location.hash.replace(/^#\/?/, "") || "home";
   const bg = document.createElement("div");
   bg.className = "modal-bg";
@@ -1001,7 +1004,7 @@ async function viewProgram() {
       <p class="prog-uni big">${esc(p.university)} · ${esc(p.city)}, ${esc(p.state)}</p>
       ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
       <div class="prog-cta">
-        <a class="btn gold" href="${esc(p.url)}" target="_blank" rel="noopener">Open official page ↗</a>
+        <a class="btn gold" href="${safeUrl(p.url)}" target="_blank" rel="noopener">Open official page ↗</a>
         <button class="btn ghost save-btn" data-save="${p.id}" aria-pressed="${saved.has(p.id)}">${saved.has(p.id) ? "★ Saved" : "☆ Save"}</button>
         <button class="btn ghost" id="trackBtn">+ Add to tracker</button>
       </div>
@@ -1036,7 +1039,7 @@ async function viewProgram() {
     <section class="card" style="margin-top:16px">
       <h2>What you need to apply</h2>
       <ul class="needs">${needs.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
-      <p class="notice">Based on the DAAD listing, checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"}. The official page always has the final word: <a href="${esc(p.url)}" target="_blank" rel="noopener">open it</a> before you apply.</p>
+      <p class="notice">Based on the DAAD listing, checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"}. The official page always has the final word: <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">open it</a> before you apply.</p>
     </section>
 
     <section class="grid cols-3" style="margin-top:16px">

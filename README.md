@@ -128,3 +128,19 @@ https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104
 German law: a public site run from Germany usually needs an Impressum (legal notice). Add one before you promote it widely.
 
 Grow the program database toward the full DAAD list (about 2,000 English taught programs). Urdu interface toggle, deadline reminder emails, blocked account and insurance partner links for revenue.
+
+## Security
+
+What protects student data today:
+- **Row Level Security on every table.** A student can only read and change their own rows. Tested: a logged in attacker cannot read or write other students' data, cannot call the admin stats, cannot edit programs and cannot read the admin list.
+- **Secrets stay on the server.** The Claude API key is only a Supabase secret. The anon key in `config.js` is public by design and only allows what the security rules allow.
+- **Abuse limits.** 30 AI credits per student per day, max 40 tracked universities, 100 saved programs and 20 feedback messages per day per student. Feedback needs login.
+- **Website hardening.** Content Security Policy (only our own scripts run), Supabase library bundled in `/vendor` (no third party CDN at runtime), all user text escaped, links limited to http(s).
+- **Privacy by design.** No passwords stored (email link login), no chat or letter text stored, data hosted in the EU (Frankfurt).
+
+What you should do:
+1. Turn on two factor login for your **GitHub**, **Supabase** and **Anthropic** accounts. These three accounts are the keys to everything.
+2. Never share the Supabase `service_role` key or database password with anyone, and never put them in this repo.
+3. Supabase **Authentication > Attack Protection**: enable CAPTCHA (Cloudflare Turnstile is free) before you promote widely, to stop bot sign ups.
+4. Supabase **Authentication > Emails > SMTP**: connect a sender (Resend free tier). The built in sender only allows a few login emails per hour.
+5. Keep the Anthropic monthly spend limit on.

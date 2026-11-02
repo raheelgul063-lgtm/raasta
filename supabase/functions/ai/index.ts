@@ -6,7 +6,7 @@ const DAILY_CREDITS = Number(Deno.env.get("DAILY_CREDITS") ?? 30);
 const MODEL_FAST = Deno.env.get("MODEL_FAST") ?? "claude-haiku-5-5";
 const MODEL_WRITER = Deno.env.get("MODEL_WRITER") ?? "claude-sonnet-5-5";
 // Set ALLOWED_ORIGIN to your GitHub Pages address, e.g. https://yourname.github.io
-const ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
+const ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "https://raheelgul063-lgtm.github.io";
 
 const cors = {
   "Access-Control-Allow-Origin": ORIGIN,

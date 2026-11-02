@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://uutsrmaomrfbnewgisqs.supabase.co wss://uutsrmaomrfbnewgisqs.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Raasta · Free guide to German universities for Pakistani students</title>
   <meta name="description" content="Free step by step help for Pakistani students applying to German universities: application tracker, visa document checklist, AI visa assistant, motivation letter and interview practice." />
   <meta property="og:title" content="Raasta · Your free path to a German university" />
@@ -58,6 +60,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="config.js"></script>
+  <script src="vendor/supabase-2.118.0.js"></script>
   <script src="programs.js"></script>
   <script type="module" src="app.js"></script>
 </body>
