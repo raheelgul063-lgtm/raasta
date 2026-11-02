@@ -65,6 +65,7 @@ const CHECKLIST = [
 ];
 
 const VISA_CHIPS = [
+  "Which programs fit my Bachelor's? (tell me your degree and CGPA)",
   "What documents do I need for the student visa?",
   "Islamabad or Karachi: where do I apply?",
   "How much money for the blocked account in 2026?",
@@ -80,7 +81,10 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 function richText(s) {
   let h = esc(s);
   h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  h = h.replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  h = h.replace(/(https?:\/\/[^\s<)]+)/g, (u) => {
+    const internal = u.match(/#\/program\?id=(\d+)/);
+    return internal ? `<a href="#/program?id=${internal[1]}">View program in Raasta →</a>` : `<a href="${u}" target="_blank" rel="noopener">${u}</a>`;
+  });
   return h;
 }
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? esc(u) : "#");
@@ -125,7 +129,7 @@ const db = {
   },
   async programs() {
     if (db._programs) return db._programs;
-    let list = window.RAASTA_PROGRAMS || [];
+    let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
     if (LIVE) {
       const { data, error } = await sb.from("programs").select("*").order("id");
       if (!error && data?.length) list = data;
@@ -574,7 +578,7 @@ async function viewLetter() {
     ${area ? `<textarea id="${id}" placeholder="${esc(ph)}">${esc(saved[id] || "")}</textarea>` : `<input id="${id}" placeholder="${esc(ph)}" value="${esc(saved[id] || "")}" />`}</div>`;
   app.innerHTML = `
     <div class="page-head"><h1>Motivation letter builder</h1><p>Tell us your real story. We turn it into a personal first draft. You then edit it in your own words.</p></div>
-    ${lprog ? `<div class="callout" style="background:var(--green-soft);border-color:#C9E2D6;color:var(--green)"><strong>Writing for:</strong> ${esc(lprog.program)}, ${esc(lprog.university)}. Open the <a href="${safeUrl(lprog.url)}" target="_blank" rel="noopener">official page</a> and name real modules or labs in "Why this program".</div>` : ""}
+    ${lprog ? `<div class="callout" style="background:var(--green-soft);border-color:#C9E2D6;color:var(--green)"><strong>Writing for:</strong> ${esc(lprog.program)}, ${esc(lprog.university)}. Open the <a href="${safeUrl(lprog.program_url || lprog.url)}" target="_blank" rel="noopener">official page</a> and name real modules or labs in "Why this program".</div>` : ""}
     ${!LIVE ? `<div class="callout" style="background:var(--red-soft);border-color:#EBC4BB;color:var(--red)"><strong>Preview mode:</strong> letters are only written on the live site (GitHub Pages, connected to Supabase with the Claude API key). This preview shows a sample.</div>` : ""}
     <div class="callout"><strong>Why we don't give templates:</strong> universities check letters for copied text, and the visa officer compares your letter with your interview answers. A letter built from your own facts is safer and stronger.</div>
     <div class="grid cols-2" style="align-items:start">
@@ -906,6 +910,7 @@ function progCard(p, saved) {
       </a>
       <div class="prog-actions">
         <a href="#/program?id=${p.id}" class="btn small">Details</a>
+        ${p.program_url ? `<a href="${safeUrl(p.program_url)}" target="_blank" rel="noopener" class="btn ghost small">University page ↗</a>` : ""}
         <button class="btn ghost small save-btn" data-save="${p.id}" aria-pressed="${saved.has(p.id)}">${saved.has(p.id) ? "★ Saved" : "☆ Save"}</button>
       </div>
     </article>`;
@@ -958,7 +963,7 @@ async function viewFinder() {
         </div>
         <div id="bachelorNote"></div>
         <div id="results" class="prog-list"></div>
-        <p class="notice">Starter database: ${progs.length} programs from DAAD MyGUIDE, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official page. Can't find yours? Search all programs on <a href="${OFFICIAL.daad}" target="_blank" rel="noopener">DAAD</a>.</p>
+        <p class="notice">Starter database: ${progs.length} programs from DAAD MyGUIDE, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official page. More programs are added regularly. Missing your field? Tell us with the Feedback button.</p>
       </section>
     </div>`;
 
@@ -1001,7 +1006,7 @@ async function viewFinder() {
     $("#count").textContent = `${list.length} program${list.length === 1 ? "" : "s"}`;
     $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";
     $("#results").innerHTML = list.length ? list.map((p) => progCard(p, saved)).join("")
-      : `<div class="empty">No programs match these filters. Try removing one, or search all programs on <a href="${OFFICIAL.daad}" target="_blank" rel="noopener">DAAD</a>.</div>`;
+      : `<div class="empty">No programs match these filters yet. Try removing a filter. Missing your field? Tell us with the Feedback button so we add it.</div>`;
     bindSave(saved);
   };
   app.querySelectorAll("#filters input, #filters select, #fsort").forEach((el) => el.addEventListener(el.type === "search" ? "input" : "change", render));
@@ -1053,7 +1058,8 @@ async function viewProgram() {
       <p class="prog-uni big">${esc(p.university)} · ${esc(p.city)}, ${esc(p.state)}</p>
       ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
       <div class="prog-cta">
-        <a class="btn gold" href="${safeUrl(p.url)}" target="_blank" rel="noopener">Open official page ↗</a>
+        <a class="btn gold" href="${safeUrl(p.program_url || p.url)}" target="_blank" rel="noopener">Open university page ↗</a>
+        ${p.apply_url ? `<a class="btn" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener">Go to application ↗</a>` : ""}
         <button class="btn ghost save-btn" data-save="${p.id}" aria-pressed="${saved.has(p.id)}">${saved.has(p.id) ? "★ Saved" : "☆ Save"}</button>
         <button class="btn ghost" id="trackBtn">+ Add to tracker</button>
       </div>
@@ -1088,7 +1094,13 @@ async function viewProgram() {
     <section class="card" style="margin-top:16px">
       <h2>What you need to apply</h2>
       <ul class="needs">${needs.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
-      <p class="notice">Based on the DAAD listing, checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"}. The official page always has the final word: <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">open it</a> before you apply.</p>
+      ${/uni-assist/i.test((p.apply_url || "") + (p.apply_via || "")) ? `<div class="callout" style="margin-top:14px"><strong>What is uni-assist?</strong> Many German universities ask international applicants to send documents to uni-assist first. They check your certificates (fee per application), then forward them to the university. Create one account at <a href="https://my.uni-assist.de/" target="_blank" rel="noopener">my.uni-assist.de</a> and use it for all such programs.</div>` : ""}
+      <div class="apply-steps">
+        <a class="apply-step" href="${safeUrl(p.program_url || p.url)}" target="_blank" rel="noopener"><span>1</span><div><strong>Read the program page</strong><em>Modules, exact requirements, documents</em></div></a>
+        ${p.apply_url ? `<a class="apply-step" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener"><span>2</span><div><strong>Open the application page</strong><em>${/uni-assist/i.test(p.apply_url) ? "uni-assist portal" : "University application portal"}</em></div></a>` : `<div class="apply-step"><span>2</span><div><strong>Find "Apply" on the program page</strong><em>The university explains its portal there</em></div></div>`}
+        <a class="apply-step" href="#/letter?program=${p.id}"><span>3</span><div><strong>Write your motivation letter</strong><em>For this program, in Raasta</em></div></a>
+      </div>
+      <p class="notice">Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from the university and the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.</p>
     </section>
 
     <section class="grid cols-3" style="margin-top:16px">
@@ -1106,7 +1118,7 @@ async function viewProgram() {
     const deadline = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : null;
     const portal = /uni-assist/i.test(p.apply_via || "") ? "uni-assist" : "University portal";
     try {
-      await db.addApp({ university: p.university, program: `${p.title ? p.title + " " : ""}${p.program}`, portal, deadline, status: "planning", program_id: p.id, url: p.url });
+      await db.addApp({ university: p.university, program: `${p.title ? p.title + " " : ""}${p.program}`, portal, deadline, status: "planning", program_id: p.id, url: p.apply_url || p.program_url || p.url });
       toast("Added to your tracker"); $("#trackBtn").textContent = "✓ In tracker"; $("#trackBtn").disabled = true;
     } catch (err) { toast(err.message); }
   };

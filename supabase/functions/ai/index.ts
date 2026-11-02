@@ -41,11 +41,21 @@ Universities:
 - Many universities use uni-assist (https://www.uni-assist.de/en/), others their own portal. Each program page says which.
 - Pakistani applicants do not need an APS certificate (that applies to China, India and Vietnam).`;
 
-function systemFor(mode: string, ctx: Record<string, string>): string {
+const SITE = Deno.env.get("SITE_URL") ?? "https://raheelgul063-lgtm.github.io/raasta/";
+
+function systemFor(mode: string, ctx: Record<string, string>, catalog = ""): string {
   if (mode === "visa") {
     return `You are Raasta's assistant, helping Pakistani students who want to study in Germany: choosing programs, university applications (uni-assist, documents, deadlines), and the student visa. You are friendly, clear and practical, like a senior student who already went through the process.
 
 ${VISA_FACTS}
+
+Programs in the Raasta database (English taught, checked by our team). Format: [id] degree | program | university | city | field | tuition per semester for non EU | next deadlines (non EU)
+${catalog || "(not available right now)"}
+
+Program recommendations:
+- When a student asks which universities or programs to choose, FIRST recommend matching programs from the Raasta list above (2 to 5, best fit first). For each, give program, university, city, tuition, deadline and the link ${SITE}#/program?id=ID (use the id in brackets). Explain in one line why it fits their background.
+- Be honest about fit: only recommend programs whose field matches the student's Bachelor's. If nothing in the Raasta list fits (for example media, design or arts), say clearly that Raasta does not list programs in that field yet, and only then point to the DAAD database as a second option. Never invent programs that are not in the list.
+- Remind them to check the requirements on the university page linked on each Raasta program page.
 
 Rules:
 - Base answers on the facts above. If a question goes beyond them or depends on an individual case, say what you know, then tell the student to check the portal checklist or the official page, with the link.
@@ -140,6 +150,14 @@ Deno.serve(async (req) => {
     return json({ error: "Please fill in program, experience and why this program." }, 400);
   }
 
+  // Program catalog for recommendations (public data)
+  let catalog = "";
+  if (mode === "visa") {
+    const { data: progs } = await supabase.from("programs").select("id,degree,title,program,university,city,field,tuition,deadline_winter,deadline_summer").eq("active", true).order("field");
+    const fee = (t: number | null) => (t === 0 ? "no tuition" : t == null ? "check page" : `${t} EUR`);
+    catalog = (progs ?? []).map((p) => `[${p.id}] ${p.title || p.degree} | ${p.program} | ${p.university} | ${p.city} | ${p.field} | ${fee(p.tuition)} | ${[p.deadline_winter && `winter ${p.deadline_winter}`, p.deadline_summer && `summer ${p.deadline_summer}`].filter(Boolean).join(", ") || "see page"}`).join("\n");
+  }
+
   // Daily limit
   const { data: allowed, error: rpcErr } = await supabase.rpc("use_ai_credit", { p_cost: COST[mode], p_daily_limit: DAILY_CREDITS });
   if (rpcErr) return json({ error: "Could not check your daily limit." }, 500);
@@ -150,8 +168,8 @@ Deno.serve(async (req) => {
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: mode === "letter" ? MODEL_WRITER : MODEL_FAST,
-      max_tokens: mode === "letter" ? 1600 : 700,
-      system: systemFor(mode, ctx),
+      max_tokens: mode === "letter" ? 1600 : 900,
+      system: systemFor(mode, ctx, catalog),
       messages,
     }),
   });

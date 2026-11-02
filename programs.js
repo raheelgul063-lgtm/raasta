@@ -29,7 +29,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 1,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.ismll.uni-hildesheim.de/da/index_en.html",
+  "apply_url": "https://www.ismll.uni-hildesheim.de/apply/",
+  "active": true
  },
  {
   "university": "Bingen University of Applied Sciences",
@@ -58,7 +61,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 2,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.th-bingen.de/en/studium/master/computer-science",
+  "apply_url": "https://www.th-bingen.de/en/studium/vor-dem-studium/application-and-enrolment/bewerbung-mit-auslaendischen-zeugnissen",
+  "active": true
  },
  {
   "university": "Saarland University",
@@ -88,7 +94,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 3,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.uni-saarland.de/en/study/programmes/master/informatics.html",
+  "apply_url": "https://apply.cs.uni-saarland.de/",
+  "active": true
  },
  {
   "university": "Saarland University",
@@ -118,7 +127,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 4,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://saarland-informatics-campus.de/studium-studies/data-science-and-artificial-intelligence-master/",
+  "apply_url": "https://www.uni-saarland.de/studium/bewerbung/master.html",
+  "active": true
  },
  {
   "university": "University of Rostock",
@@ -148,7 +160,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 5,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.uni-rostock.de/index.php?id=227937",
+  "apply_url": "https://www.uni-rostock.de/index.php?id=23131",
+  "active": true
  },
  {
   "university": "Hof University of Applied Sciences",
@@ -178,7 +193,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 6,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hof-university.com/studying-at-hof-university/our-degree-programs/applied-research-in-computer-science-msc.html",
+  "apply_url": "https://www.hof-university.com/studying-at-hof-university/application-and-admission.html",
+  "active": true
  },
  {
   "university": "Leibniz University Hannover",
@@ -208,7 +226,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 7,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.uni-hannover.de/de/studium/studienangebot/info/studiengang/detail/informatik-1/",
+  "apply_url": "https://www.uni-hannover.de/studienbewerbung",
+  "active": true
  },
  {
   "university": "TU Ilmenau",
@@ -238,7 +259,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 8,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.tu-ilmenau.de/studium/vor-dem-studium/studienangebot/masterstudiengaenge/data-science-m-sc",
+  "apply_url": "https://campus.tu-ilmenau.de/apply",
+  "active": true
  },
  {
   "university": "University of Koblenz",
@@ -267,7 +291,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 9,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.uni-koblenz.de/en/degree-programs/web-and-data-science-master-of-science",
+  "apply_url": "https://my.uni-assist.de/",
+  "active": true
  },
  {
   "university": "Albstadt-Sigmaringen University",
@@ -297,7 +324,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 10,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hs-albsig.de/studienangebot/masterstudiengaenge/industrial-artificial-intelligence/",
+  "apply_url": "https://www.hs-albsig.de/studieninfos/",
+  "active": true
  },
  {
   "university": "Technische Hochschule Mittelhessen",
@@ -327,7 +357,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 11,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://go.thm.de/ccce",
+  "apply_url": "https://www.uni-assist.de/en/",
+  "active": true
  },
  {
   "university": "TU Ilmenau",
@@ -356,7 +389,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 12,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.tu-ilmenau.de/en/study/before-the-study/range-of-courses/master/micro-and-nanotechnologies-msc",
+  "apply_url": "https://campus.tu-ilmenau.de/apply",
+  "active": true
  },
  {
   "university": "TU Ilmenau",
@@ -386,7 +422,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 13,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.tu-ilmenau.de/en/study/before-the-study/range-of-courses/master/biomedical-engineering-by-research",
+  "apply_url": "https://campus.tu-ilmenau.de/apply",
+  "active": true
  },
  {
   "university": "Hochschule Nordhausen",
@@ -416,7 +455,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 14,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hs-nordhausen.de/studium/ing/mechatronik/",
+  "apply_url": "https://my.uni-assist.de/",
+  "active": true
  },
  {
   "university": "Hochschule Schmalkalden",
@@ -445,37 +487,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 15,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
- },
- {
-  "university": "Rhine-Waal University of Applied Sciences",
-  "program": "Mechanical Engineering",
-  "degree": "Master",
-  "title": "M.Sc.",
-  "field": "Mechanical / Mechatronics Engineering",
-  "city": "Kleve",
-  "state": "North Rhine-Westphalia",
-  "type": "University of Applied Sciences",
-  "duration": 3,
-  "tuition": 0,
-  "intakes": [
-   "Winter",
-   "Summer"
-  ],
-  "url": "https://www.myguide.de/en/degree-programmes/detail/rhine-waal-university-of-applied-sciences-mechanical-engineering-w44152/?hec-id=w44152",
-  "tuition_note": null,
-  "semester_fee": null,
-  "english_req": null,
-  "other_req": null,
-  "apply_via": "Check program page",
-  "deadline_note": null,
-  "deadline_winter": null,
-  "deadline_summer": null,
-  "language": "English",
-  "summary": null,
-  "id": 16,
-  "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hs-schmalkalden.de/studium/studienangebot-hs-schmalkalden/master-studiengaenge/mechatronics-and-robotics.html",
+  "apply_url": null,
+  "active": true
  },
  {
   "university": "Rhine-Waal University of Applied Sciences",
@@ -505,7 +520,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 17,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hochschule-rhein-waal.de/en/faculties/life-sciences/degree-programmes/biological-resources-msc",
+  "apply_url": "https://www.hochschule-rhein-waal.de/en/academics/prospective-students/current-application-period/masters-programmes",
+  "active": true
  },
  {
   "university": "HAW Hamburg",
@@ -535,7 +553,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 18,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.haw-hamburg.de/en/master-pharmaceutical-biotechnology/",
+  "apply_url": "https://www.haw-hamburg.de/en/international/international-students/applying-to-haw-hamburg/",
+  "active": true
  },
  {
   "university": "BTU Cottbus-Senftenberg",
@@ -565,7 +586,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 19,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.b-tu.de/en/biotechnology-ms",
+  "apply_url": "https://www.b-tu.de/en/biotechnology-ms/admission",
+  "active": true
  },
  {
   "university": "Hochschule Flensburg",
@@ -594,7 +618,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 20,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://hs-flensburg.de/en/studieninteressierte/angebot/master/ABFS",
+  "apply_url": "https://hs-flensburg.de/studieninteressierte/bewerbung/master",
+  "active": true
  },
  {
   "university": "HAW Hamburg",
@@ -623,7 +650,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 21,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.haw-hamburg.de/en/master-renewable-energy-systems/",
+  "apply_url": "https://www.haw-hamburg.de/en/study/applications/",
+  "active": true
  },
  {
   "university": "Technical University of Munich",
@@ -653,7 +683,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 22,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.tum.de/en/studies/degree-programs/detail/sustainable-energy-and-processes-master-of-science-msc",
+  "apply_url": "https://www.tum.de/en/studies/application/application-info-portal/online-application",
+  "active": true
  },
  {
   "university": "Europa-Universität Flensburg",
@@ -683,7 +716,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 23,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.uni-flensburg.de/en/academics/prospective-students/master/meng-sustainable-energy/meng-sustainable-energy-transition-specialisation",
+  "apply_url": null,
+  "active": true
  },
  {
   "university": "TH Köln",
@@ -712,7 +748,10 @@ window.RAASTA_PROGRAMS = [
   "language": "English",
   "id": 24,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.th-koeln.de/en/academics/natural-resources-management-and-development-masters-program_6989.php",
+  "apply_url": "https://www.th-koeln.de/en/academics/natural-resources-management-and-development-masters-program_10753.php",
+  "active": true
  },
  {
   "university": "University of Mannheim",
@@ -741,7 +780,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 25,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.vwl.uni-mannheim.de/en/academics/prospective-students-msc",
+  "apply_url": "https://portal2.uni-mannheim.de/",
+  "active": true
  },
  {
   "university": "Nürtingen-Geislingen University",
@@ -771,7 +813,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 26,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hfwu.de/en/studium/studienangebot/international-management",
+  "apply_url": "https://www.hfwu.de/studium/bewerbung/master/",
+  "active": true
  },
  {
   "university": "WHU Otto Beisheim School of Management",
@@ -800,7 +845,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 27,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.whu.edu/en/programs/master-of-science-programs/master-in-management/",
+  "apply_url": "https://application-center.whu.edu/login",
+  "active": true
  },
  {
   "university": "International School of Management (ISM)",
@@ -829,7 +877,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 28,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://en.ism.de/full-degree-students/master-programs/master-international-management/overview",
+  "apply_url": null,
+  "active": true
  },
  {
   "university": "University of Wuppertal",
@@ -858,7 +909,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 29,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.chemie.uni-wuppertal.de/en/studium/studiengaenge/sustainable-chemistry-bachelor/",
+  "apply_url": "https://www.uni-assist.de/en/",
+  "active": true
  },
  {
   "university": "Weihenstephan-Triesdorf University of Applied Sciences",
@@ -887,7 +941,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 30,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hswt.de/en/study/study-offer/bachelor/applied-informatics",
+  "apply_url": "https://www.hswt.de/en/study/before-the-study/application",
+  "active": true
  },
  {
   "university": "TH Deggendorf",
@@ -916,7 +973,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 31,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.th-deg.de/im-b-en",
+  "apply_url": "https://www.th-deg.de/en/apply",
+  "active": true
  },
  {
   "university": "Rhine-Waal University of Applied Sciences",
@@ -945,65 +1005,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 32,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
- },
- {
-  "university": "Rhine-Waal University of Applied Sciences",
-  "program": "Electrical and Electronics Engineering",
-  "degree": "Bachelor",
-  "title": "B.Sc.",
-  "field": "Electrical / Electronics Engineering",
-  "city": "Kleve",
-  "state": "North Rhine-Westphalia",
-  "type": "University of Applied Sciences",
-  "duration": 7,
-  "tuition": 0,
-  "intakes": [
-   "Winter"
-  ],
-  "url": "https://www.myguide.de/en/degree-programmes/electrical-and-electronics-engineering/?hec-id=g1062460",
-  "tuition_note": null,
-  "semester_fee": null,
-  "english_req": null,
-  "other_req": null,
-  "apply_via": "Check program page",
-  "deadline_note": null,
-  "deadline_winter": null,
-  "deadline_summer": null,
-  "language": "English",
-  "summary": null,
-  "id": 33,
-  "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
- },
- {
-  "university": "Rhine-Waal University of Applied Sciences",
-  "program": "Mechanical Engineering",
-  "degree": "Bachelor",
-  "title": "B.Sc.",
-  "field": "Mechanical / Mechatronics Engineering",
-  "city": "Kleve",
-  "state": "North Rhine-Westphalia",
-  "type": "University of Applied Sciences",
-  "duration": 7,
-  "tuition": 0,
-  "intakes": [
-   "Winter"
-  ],
-  "url": "https://www.myguide.de/en/degree-programmes/mechanical-engineering/?hec-id=g850134",
-  "tuition_note": null,
-  "semester_fee": null,
-  "english_req": null,
-  "other_req": null,
-  "apply_via": "Check program page",
-  "deadline_note": null,
-  "deadline_winter": null,
-  "deadline_summer": null,
-  "language": "English",
-  "summary": null,
-  "id": 34,
-  "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hochschule-rhein-waal.de/en/faculties/communication-and-environment/degree-programmes/bachelor-degree-programmes",
+  "apply_url": "https://www.hochschule-rhein-waal.de/en/academics/prospective-students/current-application-period/bachelors-programmes",
+  "active": true
  },
  {
   "university": "Rhine-Waal University of Applied Sciences",
@@ -1032,7 +1037,10 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 35,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hochschule-rhein-waal.de/en/faculties/communication-and-environment/degree-programmes/bachelor-degree-programmes/infotronic",
+  "apply_url": "https://www.hochschule-rhein-waal.de/en/academics/prospective-students/current-application-period/bachelors-programmes",
+  "active": true
  },
  {
   "university": "Rhine-Waal University of Applied Sciences",
@@ -1061,6 +1069,9 @@ window.RAASTA_PROGRAMS = [
   "summary": null,
   "id": 36,
   "verified_on": "2026-11-02",
-  "source": "DAAD MyGUIDE"
+  "source": "DAAD MyGUIDE",
+  "program_url": "https://www.hochschule-rhein-waal.de/bioengineering-bsc",
+  "apply_url": "https://www.hochschule-rhein-waal.de/en/academics/prospective-students/current-application-period/bachelors-programmes",
+  "active": true
  }
 ];

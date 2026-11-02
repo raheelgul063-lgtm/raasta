@@ -161,8 +161,13 @@ add(university="Rhine-Waal University of Applied Sciences", program="Infotronic 
 add(university="Rhine-Waal University of Applied Sciences", program="Bioengineering", degree="Bachelor", title="B.Sc.", field=LS, city="Kleve", state="North Rhine-Westphalia", type=UAS,
     duration=7, tuition=0, intakes=["Winter"], url=DP+"rhine-waal-university-of-applied-sciences-bioengineering-g1322743/?hec-id=g1322743")
 
+import sys, os; sys.path.insert(0, os.path.dirname(__file__))
+from links import LINKS, INACTIVE
 for i, p in enumerate(P, 1):
     p["id"] = i; p["verified_on"] = "2026-11-02"; p["source"] = "DAAD MyGUIDE"
+    p["program_url"], p["apply_url"] = LINKS.get(i, (None, None))
+    p["active"] = i not in INACTIVE
+P = [p for p in P if p["active"]]
 print(len(P), "programs")
 open("/home/claude/raasta/programs.js", "w", encoding="utf-8").write(
   "// Starter program database. Source: DAAD MyGUIDE (myguide.de), checked 2 November 2026.\n// Used in Demo mode and as fallback; live data comes from the Supabase 'programs' table.\nwindow.RAASTA_PROGRAMS = " + json.dumps(P, ensure_ascii=False, indent=1) + ";\n")
@@ -172,7 +177,7 @@ def q(v):
     if isinstance(v, list): return "array[" + ",".join(q(x) for x in v) + "]::text[]"
     if isinstance(v, (int, float)): return str(v)
     return "'" + str(v).replace("'", "''") + "'"
-cols = ["id","university","program","degree","title","field","city","state","type","language","duration","tuition","tuition_note","semester_fee","intakes","deadline_winter","deadline_summer","deadline_note","english_req","other_req","apply_via","summary","url","source","verified_on"]
+cols = ["id","university","program","degree","title","field","city","state","type","language","duration","tuition","tuition_note","semester_fee","intakes","deadline_winter","deadline_summer","deadline_note","english_req","other_req","apply_via","summary","url","program_url","apply_url","source","verified_on"]
 rows = ",\n".join("(" + ",".join(q(p[c]) for c in cols) + ")" for p in P)
 sql = f"insert into public.programs ({','.join(cols)}) values\n{rows}\non conflict (id) do nothing;\nselect setval(pg_get_serial_sequence('public.programs','id'), (select max(id) from public.programs));\n"
 open("/home/claude/raasta/supabase/seed_programs.sql", "w", encoding="utf-8").write(sql)
