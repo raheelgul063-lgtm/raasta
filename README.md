@@ -150,3 +150,12 @@ What you should do:
 3. Supabase **Authentication > Attack Protection**: enable CAPTCHA (Cloudflare Turnstile is free) before you promote widely, to stop bot sign ups.
 4. Supabase **Authentication > Emails > SMTP**: connect a sender (Resend free tier). The built in sender only allows a few login emails per hour.
 5. Keep the Anthropic monthly spend limit on.
+
+
+## Program catalog (DAAD import)
+
+About 2,100 international Bachelor's and Master's programs come from the DAAD International Programmes database (all teaching languages).
+- Importer: `supabase/functions/daad-import` (no JWT; protected by a private token stored in `public.app_secrets`, readable only by the service role).
+- It is run from a browser tab on www2.daad.de (the DAAD search API only answers same-origin requests). Hand-checked programs (`curated = true`) are never overwritten.
+- After a full run, call the function with `{ action: "finish", since: "<run date>" }` to deactivate programs DAAD no longer lists.
+- The AI advisor gets only the 40 most relevant programs per question through `public.match_programs(q, lim)` (full text search).

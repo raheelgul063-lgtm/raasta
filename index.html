@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://uutsrmaomrfbnewgisqs.supabase.co wss://uutsrmaomrfbnewgisqs.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>Raasta · Free guide to German universities for Pakistani students</title>
-  <meta name="description" content="Free step by step help for Pakistani students applying to German universities: application tracker, visa document checklist, AI visa assistant, motivation letter and interview practice." />
+  <title>Raasta · Find your study program in Germany, with a free AI advisor</title>
+  <meta name="description" content="Search 2,000+ international Bachelor's and Master's programs in Germany, compare them, and get free AI help with motivation letters, interviews and the student visa." />
   <meta property="og:title" content="Raasta · Your free path to a German university" />
   <meta property="og:description" content="Tracker, visa checklist, AI visa assistant, motivation letter help and interview practice. Free for Pakistani students." />
   <meta name="theme-color" content="#0E4D3A" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261102e" />
+  <link rel="stylesheet" href="styles.css?v=20261102f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E4D3A'/%3E%3Cpath d='M18 46 L32 18 L46 46' stroke='%23F2B544' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 <body>
@@ -26,12 +26,12 @@
       <span class="brand-urdu" lang="ur">راستہ</span>
     </a>
     <nav class="topnav" aria-label="Main">
-      <a href="#/finder" data-nav="finder">Find programs</a>
-      <a href="#/roadmap" data-nav="roadmap">Roadmap</a>
-      <a href="#/tracker" data-nav="tracker">Tracker</a>
-      <a href="#/visa" data-nav="visa">Visa assistant</a>
+      <a href="#/finder" data-nav="finder">Programs</a>
+      <a href="#/universities" data-nav="universities">Universities</a>
+      <a href="#/visa" data-nav="visa" class="nav-ai">✦ AI advisor</a>
       <a href="#/letter" data-nav="letter">Motivation letter</a>
       <a href="#/interview" data-nav="interview">Interview</a>
+      <a href="#/tracker" data-nav="tracker">Tracker</a>
     </nav>
     <div id="authArea" class="auth-area"></div>
   </header>
@@ -43,25 +43,29 @@
   <main id="app" tabindex="-1"></main>
 
   <footer class="footer">
-    <p><strong>Raasta</strong> is free for Pakistani students. Not affiliated with DAAD, uni-assist or the German Missions in Pakistan.</p>
-    <p><a href="#/privacy">Privacy policy</a></p>
-    <p>Always confirm requirements on the official <a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan</a> page and the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.</p>
+    <div class="foot-cols">
+      <div class="foot-brand"><strong>Raasta</strong><p>Free study abroad platform with an AI advisor. Germany first, more of Europe next.</p></div>
+      <div><h4>Explore</h4><a href="#/finder">All programs</a><a href="#/finder?degree=Master">Master's programs</a><a href="#/finder?degree=Bachelor">Bachelor's programs</a><a href="#/finder?tuition=free">Tuition free programs</a><a href="#/universities">Universities</a></div>
+      <div><h4>AI tools</h4><a href="#/visa">AI advisor</a><a href="#/letter">Motivation letter</a><a href="#/interview">Interview practice</a><a href="#/compare">Compare programs</a></div>
+      <div><h4>Guides</h4><a href="#/roadmap">Step by step roadmap</a><a href="#/tracker">Application tracker</a><a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan ↗</a><a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal ↗</a></div>
+    </div>
+    <p class="foot-legal">Not affiliated with DAAD, uni-assist or the German Missions. Program data is based on the DAAD International Programmes database; the university page always has the final word. <a href="#/privacy">Privacy policy</a></p>
   </footer>
 
   <nav class="bottomnav" aria-label="Mobile">
     <a href="#/" data-nav="home"><span class="ic">⌂</span>Home</a>
+    <a href="#/finder" data-nav="finder"><span class="ic">⌕</span>Programs</a>
+    <a href="#/visa" data-nav="visa"><span class="ic">✦</span>AI</a>
+    <a href="#/universities" data-nav="universities"><span class="ic">🏛</span>Unis</a>
     <a href="#/tracker" data-nav="tracker"><span class="ic">✓</span>Tracker</a>
-    <a href="#/visa" data-nav="visa"><span class="ic">✦</span>Visa AI</a>
-    <a href="#/letter" data-nav="letter"><span class="ic">✎</span>Letter</a>
-    <a href="#/finder" data-nav="finder"><span class="ic">⌕</span>Find</a>
   </nav>
 
   <button id="fbBtn" class="fb-btn" type="button">💬 Feedback</button>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="config.js?v=20261102e"></script>
-  <script src="vendor/supabase-2.118.0.js?v=20261102e"></script>
-  <script src="programs.js?v=20261102e"></script>
-  <script type="module" src="app.js?v=20261102e"></script>
+  <script src="config.js?v=20261102f"></script>
+  <script src="vendor/supabase-2.118.0.js?v=20261102f"></script>
+  <script src="programs.js?v=20261102f"></script>
+  <script type="module" src="app.js?v=20261102f"></script>
 </body>
 </html>

@@ -49,12 +49,13 @@ function systemFor(mode: string, ctx: Record<string, string>, catalog = ""): str
 
 ${VISA_FACTS}
 
-Programs in the Raasta database (English taught, checked by our team). Format: [id] degree | program | university | city | field | tuition per semester for non EU | next deadlines (non EU)
+Raasta has about 2,000 international Bachelor's and Master's programs in Germany (public, applied sciences and private universities; English or German taught). Below are the ones that best match this conversation, found by a keyword search. Format: [id] degree | program | university (type) | city | field | teaching language | tuition per semester for non EU | next deadlines (non EU)
 ${catalog || "(not available right now)"}
 
 Program recommendations:
 - When a student asks which universities or programs to choose, FIRST recommend matching programs from the Raasta list above (2 to 5, best fit first). For each, give program, university, city, tuition, deadline and the link ${SITE}#/program?id=ID (use the id in brackets). Explain in one line why it fits their background.
-- Be honest about fit: only recommend programs whose field matches the student's Bachelor's. If nothing in the Raasta list fits (for example media, design or arts), say clearly that Raasta does not list programs in that field yet, and only then point to the DAAD database as a second option. Never invent programs that are not in the list.
+- Be honest about fit: only recommend programs whose field matches the student's Bachelor's. If the matches above do not fit, ask one short question about their field or send them to the Raasta finder with a search link like ${SITE}#/finder?q=KEYWORD (URL encode the keyword). Point to the DAAD database only as a last option. Never invent programs or ids that are not in the list.
+- German taught programs usually need German at C1 (DSH 2 or TestDaF 4x4). Mention this whenever you suggest one.
 - Remind them to check the requirements on the university page linked on each Raasta program page.
 
 Rules:
@@ -150,12 +151,13 @@ Deno.serve(async (req) => {
     return json({ error: "Please fill in program, experience and why this program." }, 400);
   }
 
-  // Program catalog for recommendations (public data)
+  // Program catalog for recommendations: only the programs most relevant to this conversation
   let catalog = "";
   if (mode === "visa") {
-    const { data: progs } = await supabase.from("programs").select("id,degree,title,program,university,city,field,tuition,deadline_winter,deadline_summer").eq("active", true).order("field");
+    const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => m.content).join(" ");
+    const { data: progs } = await supabase.rpc("match_programs", { q: recent.slice(0, 1500), lim: 40 });
     const fee = (t: number | null) => (t === 0 ? "no tuition" : t == null ? "check page" : `${t} EUR`);
-    catalog = (progs ?? []).map((p) => `[${p.id}] ${p.title || p.degree} | ${p.program} | ${p.university} | ${p.city} | ${p.field} | ${fee(p.tuition)} | ${[p.deadline_winter && `winter ${p.deadline_winter}`, p.deadline_summer && `summer ${p.deadline_summer}`].filter(Boolean).join(", ") || "see page"}`).join("\n");
+    catalog = (progs ?? []).map((p: any) => `[${p.id}] ${p.title || p.degree} | ${p.program} | ${p.university} (${p.type || "University"}) | ${p.city || ""} | ${p.field} | ${p.language || "English"} | ${fee(p.tuition)} | ${[p.deadline_winter && `winter ${p.deadline_winter}`, p.deadline_summer && `summer ${p.deadline_summer}`].filter(Boolean).join(", ") || "see page"}`).join("\n");
   }
 
   // Daily limit

@@ -73,6 +73,17 @@ const VISA_CHIPS = [
   "What happens after I upload documents on the portal?"
 ];
 
+const FIELD_META = {
+  "Computer Science / Data Science / AI": { ic: "💻", name: "Computer Science & AI", d: "Software, data science, AI, cyber security" },
+  "Business / Management / Economics": { ic: "📈", name: "Business & Economics", d: "Management, finance, marketing, MBA" },
+  "Mechanical / Mechatronics Engineering": { ic: "⚙️", name: "Mechanical & Mechatronics", d: "Automotive, robotics, production, materials" },
+  "Electrical / Electronics Engineering": { ic: "🔌", name: "Electrical & Electronics", d: "Power, embedded systems, communications" },
+  "Energy / Environment / Civil Engineering": { ic: "🌱", name: "Energy, Environment & Civil", d: "Renewables, water, urban planning, construction" },
+  "Life Sciences / Biotech / Health": { ic: "🧬", name: "Life Sciences & Health", d: "Biotech, medicine, public health, agriculture" },
+  "Natural Sciences": { ic: "🔭", name: "Natural Sciences", d: "Physics, chemistry, mathematics, earth sciences" },
+  "Design / Media / Arts": { ic: "🎨", name: "Design, Media & Arts", d: "Design, architecture, media, culture" },
+  "Other": { ic: "📚", name: "Law, Social Sciences & more", d: "Law, politics, education, languages" }
+};
 const FIELDS = ["Computer Science / Data Science / AI", "Electrical / Electronics Engineering", "Mechanical / Mechatronics Engineering", "Energy / Environment / Civil Engineering", "Business / Management / Economics", "Life Sciences / Biotech / Health", "Natural Sciences", "Design / Media / Arts", "Other"];
 
 /* ---------------- Helpers ---------------- */
@@ -129,12 +140,31 @@ const db = {
   },
   async programs() {
     if (db._programs) return db._programs;
-    let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
+    if (db._loading) return db._loading;
+    db._loading = (async () => {
+      let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
+      if (LIVE) {
+        // only the columns the lists need; the program page loads the full row
+        const cols = "id,university,program,degree,title,field,city,state,type,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
+        const all = [];
+        for (let from = 0; from < 20000; from += 1000) {
+          const { data, error } = await sb.from("programs").select(cols).eq("active", true).order("id").range(from, from + 999);
+          if (error) { all.length = 0; break; }
+          all.push(...data);
+          if (data.length < 1000) break;
+        }
+        if (all.length) list = all;
+      }
+      db._programs = list; return list;
+    })();
+    return db._loading;
+  },
+  async program(id) {
     if (LIVE) {
-      const { data, error } = await sb.from("programs").select("*").order("id");
-      if (!error && data?.length) list = data;
+      const { data } = await sb.from("programs").select("*").eq("id", id).maybeSingle();
+      if (data) return data;
     }
-    db._programs = list; return list;
+    return (await db.programs()).find((x) => x.id === id) || null;
   },
   async listSaved() {
     if (!LIVE) return local.get("saved", []);
@@ -317,40 +347,95 @@ function needsLogin(title, text) {
 /* ---------------- Views ---------------- */
 function viewHome() {
   app.innerHTML = `
-    <section class="hero">
-      <div>
-        <span class="eyebrow">Free for Pakistani students</span>
-        <h1>Your path to a German university, without paying a consultant.</h1>
-        <p class="lead">Track your applications, tick off every visa document, ask our AI visa assistant in English or Urdu, write your own motivation letter and practise your interview.</p>
-        <div class="hero-cta">
-          <a href="#/finder" class="btn gold">Find your university</a>
-          <a href="#/roadmap" class="btn ghost">See the roadmap</a>
-        </div>
-        <div class="hero-proof"><span>Built on official embassy checklists</span><span>Urdu and English</span><span>No hidden fees</span></div>
-      </div>
-      <div class="hero-card">
-        <h3>What it costs you</h3>
-        <div class="compare">
-          <div class="compare-row"><span>Typical consultant</span><span class="big strike">PKR 200,000</span></div>
-          <div class="compare-row"><span>Raasta</span><span class="big gold">Free</span></div>
-          <div class="compare-row"><span>Official costs only</span><span>Visa fee €75 + blocked account</span></div>
-        </div>
+    <section class="home-hero">
+      <div class="home-hero-in">
+        <span class="eyebrow light">Free for students · Germany now, more of Europe next</span>
+        <h1>Find your study program in Germany.<br/><span>Get in with your own AI advisor.</span></h1>
+        <p class="lead">Search every international Bachelor's and Master's program in Germany, compare them side by side, then let AI help with your motivation letter, interview and student visa.</p>
+        <form class="mega-search" id="megaSearch" role="search">
+          <div class="ms-field ms-q"><label for="msQ">What do you want to study?</label><input id="msQ" type="search" placeholder="e.g. Data Science, MBA, Mechatronics" autocomplete="off" /></div>
+          <div class="ms-field"><label for="msDeg">Degree</label><select id="msDeg"><option value="Master">Master's</option><option value="Bachelor">Bachelor's</option><option value="">Any degree</option></select></div>
+          <div class="ms-field"><label for="msLang">Language</label><select id="msLang"><option value="">Any language</option><option value="en">English</option><option value="de">German</option></select></div>
+          <button class="btn gold ms-go" type="submit">Search programs</button>
+        </form>
+        <div class="hero-stats" id="heroStats"><div><strong>…</strong><span>programs</span></div><div><strong>…</strong><span>universities</span></div><div><strong>…</strong><span>tuition free</span></div><div><strong>24/7</strong><span>AI advisor</span></div></div>
       </div>
     </section>
 
     <section class="section">
-      <div class="section-head"><div><h2>Everything in one place</h2><p>Find your program, apply, then get your visa. One tool for each step.</p></div></div>
-      <div class="grid cols-3">
-        <a class="card" href="#/roadmap"><div class="icon">🧭</div><h3>10 step roadmap</h3><p>Exactly what to do, in order, with official links.</p></a>
-        <a class="card" href="#/tracker"><div class="icon">✅</div><h3>Application tracker</h3><p>Every university, deadline and document in one checklist.</p></a>
-        <a class="card" href="#/visa"><div class="icon">💬</div><h3>AI visa assistant</h3><p>Ask anything about the student visa from Pakistan, in Urdu or English.</p></a>
-        <a class="card" href="#/letter"><div class="icon">✍️</div><h3>Motivation letter builder</h3><p>Answer a few questions, get a personal first draft. No copied templates.</p></a>
-        <a class="card" href="#/interview"><div class="icon">🎤</div><h3>Interview practice</h3><p>Mock visa and university interviews with feedback on every answer.</p></a>
-        <a class="card" href="#/finder"><div class="icon">🎓</div><h3>University finder</h3><p>Filter English taught programs by field, degree, fees, duration and deadline.</p></a>
+      <div class="section-head"><div><h2>Browse by field of study</h2><p>Pick a field to see every matching program.</p></div><a href="#/finder" class="btn ghost small">All programs</a></div>
+      <div class="field-grid" id="fieldGrid">${FIELDS.map((f) => `<a class="field-card" href="#/finder?field=${encodeURIComponent(f)}"><span class="fc-ic">${FIELD_META[f].ic}</span><strong>${esc(FIELD_META[f].name)}</strong><em>${esc(FIELD_META[f].d)}</em><span class="fc-n" data-fcount="${esc(f)}"></span></a>`).join("")}</div>
+    </section>
+
+    <section class="section ai-moat">
+      <div class="ai-moat-copy">
+        <span class="eyebrow">Your AI advisor</span>
+        <h2>Like a consultant, but free and awake at 2am.</h2>
+        <p>Tell it your degree, CGPA and budget. It suggests real programs from our database, checks honestly if you fit, and explains every visa step in English or Urdu.</p>
+        <ul class="ticks"><li>Program matches from ${"<span data-total>1,800+</span>"} real listings</li><li>Motivation letters written for one specific program</li><li>Mock interviews by voice, with feedback</li><li>Student visa checklist and blocked account help</li></ul>
+      </div>
+      <form class="ai-ask card" id="aiAsk">
+        <div class="ai-bubble">Salam! Which program are you aiming for, and what did you study before?</div>
+        <div class="chips">${["I have a BS Computer Science with 3.1 CGPA. Which Master's fit me?", "Which programs are tuition free and taught in English?", "What documents do I need for the German student visa?"].map((q) => `<button class="chip" type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+        <div class="ai-input"><input id="aiQ" placeholder="Ask anything about studying in Germany" aria-label="Ask the AI advisor" /><button class="btn" type="submit">Ask</button></div>
+      </form>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>From search to visa in four steps</h2><p>One place for the whole journey.</p></div></div>
+      <div class="steps4">
+        <a href="#/finder" class="s4"><span>1</span><strong>Explore</strong><em>Filter by field, language, tuition, deadline and city.</em></a>
+        <a href="#/compare" class="s4"><span>2</span><strong>Compare</strong><em>Put up to 3 programs side by side and shortlist them.</em></a>
+        <a href="#/letter" class="s4"><span>3</span><strong>Apply</strong><em>AI motivation letter, interview practice and a deadline tracker.</em></a>
+        <a href="#/visa" class="s4"><span>4</span><strong>Get your visa</strong><em>Document checklist and step by step answers for Pakistan.</em></a>
       </div>
     </section>
-    <section class="section" id="homeSuggest"></section>`;
+
+    <section class="section" id="homeUnis"></section>
+    <section class="section" id="homeSuggest"></section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>Study destinations</h2><p>We start with Germany and add one country at a time, with the same depth.</p></div></div>
+      <div class="dest-grid">
+        <a class="dest live" href="#/finder"><span class="flag">🇩🇪</span><strong>Germany</strong><em>Low or no tuition at public universities, 18 months post study work visa.</em><span class="dest-tag">Live</span></a>
+        <div class="dest"><span class="flag">🇮🇹</span><strong>Italy</strong><em>Affordable tuition and regional scholarships.</em><span class="dest-tag soon">Coming next</span></div>
+        <div class="dest"><span class="flag">🇬🇧</span><strong>United Kingdom</strong><em>One year Master's and the Graduate Route.</em><span class="dest-tag soon">Planned</span></div>
+        <div class="dest"><span class="flag">🇪🇺</span><strong>Rest of Europe</strong><em>Netherlands, France, Sweden and more.</em><span class="dest-tag soon">Planned</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>Free tools for your application</h2></div></div>
+      <div class="grid cols-3">
+        <a class="card" href="#/letter"><div class="icon">✍️</div><h3>Motivation letter</h3><p>A personal first draft for one program, with an honest fit check.</p></a>
+        <a class="card" href="#/interview"><div class="icon">🎤</div><h3>Interview practice</h3><p>University and visa mock interviews, by voice or text.</p></a>
+        <a class="card" href="#/tracker"><div class="icon">✅</div><h3>Application tracker</h3><p>Deadlines, status and every visa document in one checklist.</p></a>
+      </div>
+    </section>`;
+  $("#megaSearch").onsubmit = (e) => {
+    e.preventDefault();
+    const q = new URLSearchParams(); const v = $("#msQ").value.trim();
+    if (v) q.set("q", v); if ($("#msDeg").value) q.set("degree", $("#msDeg").value); if ($("#msLang").value) q.set("lang", $("#msLang").value);
+    location.hash = `#/finder${q.toString() ? "?" + q : ""}`;
+  };
+  const ask = (q) => { location.hash = `#/visa?q=${encodeURIComponent(q)}`; };
+  app.querySelectorAll("#aiAsk [data-q]").forEach((b) => b.onclick = () => ask(b.dataset.q));
+  $("#aiAsk").onsubmit = (e) => { e.preventDefault(); const v = $("#aiQ").value.trim(); if (v) ask(v); else $("#aiQ").focus(); };
+  homeStats();
   homeSuggestions();
+}
+
+async function homeStats() {
+  const progs = await db.programs();
+  if (!$("#heroStats")) return;
+  const unis = uniAggregate(progs);
+  const n = (x) => x.toLocaleString("en-US");
+  $("#heroStats").innerHTML = `<div><strong>${n(progs.length)}</strong><span>programs</span></div><div><strong>${n(unis.length)}</strong><span>universities</span></div><div><strong>${n(progs.filter((p) => p.tuition === 0).length)}</strong><span>tuition free</span></div><div><strong>24/7</strong><span>AI advisor</span></div>`;
+  app.querySelectorAll("[data-total]").forEach((x) => (x.textContent = n(progs.length)));
+  const counts = {}; progs.forEach((p) => (counts[p.field] = (counts[p.field] || 0) + 1));
+  app.querySelectorAll("[data-fcount]").forEach((x) => (x.textContent = counts[x.dataset.fcount] ? `${n(counts[x.dataset.fcount])} programs` : ""));
+  const top = unis.sort((a, b) => b.n - a.n).slice(0, 6);
+  if ($("#homeUnis")) $("#homeUnis").innerHTML = `<div class="section-head"><div><h2>Popular universities</h2><p>Most international programs. Public, applied sciences and private.</p></div><a href="#/universities" class="btn ghost small">All ${unis.length} universities</a></div><div class="uni-grid">${top.map(uniCard).join("")}</div>`;
 }
 
 async function homeSuggestions() {
@@ -364,8 +449,10 @@ async function homeSuggestions() {
     if (mine.length) { list = mine; title = "Suggested for you"; }
   }
   if (!list.length || !$("#homeSuggest")) return;
+  const saved = new Set(await db.listSaved().catch(() => []));
   box.innerHTML = `<div class="section-head"><div><h2>${title}</h2><p>${title === "Suggested for you" ? "Based on your field and degree level." : "Programs with the nearest application deadlines."}</p></div><a href="#/finder" class="btn ghost small">See all programs</a></div>
-    <div class="prog-grid">${list.slice(0, 3).map((p) => progCard(p, new Set())).join("")}</div>`;
+    <div class="prog-grid">${list.slice(0, 3).map((p) => progCard(p, saved)).join("")}</div>`;
+  bindSave(saved); bindCompare();
 }
 
 function viewRoadmap() {
@@ -577,11 +664,11 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
 
 function viewVisa() {
   chatView({
-    title: "AI visa assistant",
-    intro: "Ask anything about applying to German universities and the student visa from Pakistan. Visa answers are based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
+    title: "Your AI study advisor",
+    intro: "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
     mode: "visa",
     chips: VISA_CHIPS,
-    opener: { show: "Assalam o Alaikum! I can help with the German student visa from Pakistan: documents, blocked account, the online portal, appointments and interviews. What would you like to know?" }
+    opener: { show: "Assalam o Alaikum! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
   });
   const q = route.params?.get("q");
   if (q && $("#chatInput")) { $("#chatInput").value = q; $("#chatInput").focus(); }
@@ -600,7 +687,7 @@ function viewInterview() {
   if (needsLogin("Interview practice", "Sign in free to practise. Daily use is limited per student to keep the service free.")) return;
   app.innerHTML = `<div class="page-head"><h1>Interview practice</h1><p>The AI interviewer asks 8 real questions and gives feedback on every answer. Use voice: it reads the questions aloud and you answer by speaking, just like the real interview.</p></div>${extraTop}`;
   const ivp = Number(route.params?.get("program"));
-  if (ivp) db.programs().then((ps) => { const p = ps.find((x) => x.id === ivp); if (p && $("#ivProg")) { $("#ivProg").value = `${p.title || ""} ${p.program}, ${p.university}`.trim(); $("#ivType").value = "university"; } });
+  if (ivp) db.program(ivp).then((p) => { if (p && $("#ivProg")) { $("#ivProg").value = `${p.title || ""} ${p.program}, ${p.university}`.trim(); $("#ivType").value = "university"; } });
   $("#ivStart").onclick = () => {
     const type = $("#ivType").value, program = $("#ivProg").value.trim();
     chatView({
@@ -618,7 +705,7 @@ async function viewLetter() {
   if (needsLogin("Motivation letter builder", "Sign in free to generate your letter draft.")) return;
   const saved = local.get("letterForm", {});
   const lp = Number(route.params?.get("program"));
-  const lprog = lp ? (await db.programs()).find((x) => x.id === lp) : null;
+  const lprog = lp ? await db.program(lp).catch(() => null) : null;
   if (lprog) { saved.program = `${lprog.title ? lprog.title + " " : ""}${lprog.program}`; saved.university = lprog.university; }
   const f = (id, label, ph, area = false, hint = "") => `
     <div class="field"><label for="${id}">${label} ${hint ? `<span class="hint">${hint}</span>` : ""}</label>
@@ -654,7 +741,7 @@ async function viewLetter() {
   $("#letterForm").onsubmit = async (e) => {
     e.preventDefault();
     const form = Object.fromEntries(ids.map((i) => [i, $("#" + i).value.trim()]));
-    if (lprog) form.programFacts = [lprog.summary, `Language: ${lprog.language}`, lprog.duration ? `${lprog.duration} semesters` : "", `${lprog.city}, ${lprog.state}`, lprog.type].filter(Boolean).join(". ");
+    if (lprog) form.programFacts = [lprog.summary, `Language: ${lprog.language}`, lprog.duration ? `${lprog.duration} semesters` : "", [lprog.city, lprog.state].filter(Boolean).join(", "), lprog.type, lprog.english_req ? `English: ${lprog.english_req}` : ""].filter(Boolean).join(". ");
     if (!form.program || !form.experience || !form.whyProgram) { toast("Please fill in program, experience and why this program"); return; }
     const out = $("#letterOut"), btn = $("#genBtn");
     btn.disabled = true; btn.textContent = "Writing your draft..."; out.style.color = "var(--muted)"; out.textContent = "Writing, this takes about 20 seconds...";
@@ -671,7 +758,7 @@ async function viewLetter() {
 
 /* ---------------- Router ---------------- */
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
-  finder: viewFinder, program: viewProgram,
+  finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
   welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
@@ -679,7 +766,8 @@ function route() {
   // Supabase magic link returns tokens in the hash; let the client read them first
   if (key.startsWith("access_token") || key.startsWith("error")) { history.replaceState(null, "", location.pathname + "#/"); return route(); }
   (routes[key] || viewHome)();
-  const navKey = key === "program" ? "finder" : key;
+  const navKey = key === "program" ? "finder" : key === "university" ? "universities" : key;
+  renderCompareBar();
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active", a.dataset.nav === (navKey || "home")));
   window.scrollTo(0, 0); app.focus({ preventScroll: true });
 }
@@ -939,17 +1027,28 @@ function tuitionText(p) {
   if (p.tuition == null) return "Check page";
   return `€${Number(p.tuition).toLocaleString("en-US")} / semester`;
 }
+const mono = (name) => (String(name || "?").replace(/\b(University|of|the|Applied|Sciences|and|for|Hochschule|Technische|Universität|in)\b/gi, " ").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("") || String(name || "?")[0]).toUpperCase();
+const langPill = (p) => {
+  const l = p.language || "English";
+  if (/german/i.test(l) && /english/i.test(l)) return `<span class="pill pill-lang">English and German</span>`;
+  if (/german/i.test(l)) return `<span class="pill pill-lang">German taught</span>`;
+  return "";
+};
+const compareList = () => local.get("compare", []);
 function progCard(p, saved) {
   const nd = nextDeadline(p);
   const dl = nd ? `<span class="${nd.days <= 30 ? "due-soon" : ""}">${nd.intake}: ${mmddText(`${String(nd.date.getMonth() + 1).padStart(2, "0")}-${String(nd.date.getDate()).padStart(2, "0")}`)} (${nd.days} days)</span>` : `<span>Deadline: see page</span>`;
+  const inCmp = compareList().includes(p.id);
   return `
     <article class="prog-card">
       <a href="#/program?id=${p.id}" class="prog-main">
-        <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}</div>
+        <div class="prog-head"><span class="mono" aria-hidden="true">${esc(mono(p.university))}</span><div>
+          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${langPill(p)}</div>
+        </div></div>
         <h3>${esc(p.program)}</h3>
         <p class="prog-uni">${esc(p.university)}</p>
         <div class="prog-facts">
-          <span>📍 ${esc(p.city)}</span>
+          <span>📍 ${esc(p.city || "Germany")}</span>
           <span>⏱ ${p.duration ? `${p.duration} semesters` : "Duration: see page"}</span>
           <span>💶 ${esc(tuitionText(p))}</span>
           <span>📅 ${dl}</span>
@@ -959,8 +1058,152 @@ function progCard(p, saved) {
         <a href="#/program?id=${p.id}" class="btn small">Details</a>
         ${p.program_url ? `<a href="${safeUrl(p.program_url)}" target="_blank" rel="noopener" class="btn ghost small">University page ↗</a>` : ""}
         <button class="btn ghost small save-btn" data-save="${p.id}" aria-pressed="${saved.has(p.id)}">${saved.has(p.id) ? "★ Saved" : "☆ Save"}</button>
+        <button class="btn ghost small cmp-btn" data-compare="${p.id}" aria-pressed="${inCmp}">${inCmp ? "✓ Comparing" : "⇄ Compare"}</button>
       </div>
     </article>`;
+}
+
+function bindCompare() {
+  app.querySelectorAll("[data-compare]").forEach((b) => b.onclick = (e) => {
+    e.preventDefault();
+    const id = Number(b.dataset.compare); let list = compareList();
+    if (list.includes(id)) list = list.filter((x) => x !== id);
+    else { if (list.length >= 3) { toast("You can compare up to 3 programs. Remove one first."); return; } list.push(id); }
+    local.set("compare", list);
+    app.querySelectorAll(`[data-compare="${id}"]`).forEach((x) => { const on = list.includes(id); x.textContent = on ? "✓ Comparing" : "⇄ Compare"; x.setAttribute("aria-pressed", on); });
+    renderCompareBar();
+  });
+  renderCompareBar();
+}
+function renderCompareBar() {
+  let bar = $("#cmpBar");
+  const list = compareList();
+  const onPage = (location.hash.replace(/^#\/?/, "").split("?")[0]) === "compare";
+  if (!list.length || onPage) { bar?.remove(); return; }
+  if (!bar) { bar = document.createElement("div"); bar.id = "cmpBar"; bar.className = "cmp-bar"; document.body.appendChild(bar); }
+  bar.innerHTML = `<span><strong>${list.length}</strong> of 3 programs selected</span><button class="btn link small" id="cmpClear" type="button">Clear</button><a class="btn gold small" href="#/compare">Compare now →</a>`;
+  $("#cmpClear").onclick = () => { local.set("compare", []); app.querySelectorAll("[data-compare]").forEach((x) => { x.textContent = "⇄ Compare"; x.setAttribute("aria-pressed", "false"); }); renderCompareBar(); };
+}
+
+async function viewCompare() {
+  const ids = compareList();
+  app.innerHTML = `<div class="page-head"><h1>Compare programs</h1><p>Loading...</p></div>`;
+  if (!ids.length) { app.innerHTML = `<div class="page-head"><h1>Compare programs</h1><p>Pick up to 3 programs with the ⇄ Compare button in the finder.</p></div><div class="empty"><a href="#/finder" class="btn">Find programs</a></div>`; renderCompareBar(); return; }
+  const rows = (await Promise.all(ids.map((id) => db.program(id).catch(() => null)))).filter(Boolean);
+  const nd = (p) => { const n = nextDeadline(p); return n ? `${fmtDate(n.date)} (${n.intake})` : "See page"; };
+  const R = [
+    ["University", (p) => `<a href="#/university?name=${encodeURIComponent(p.university)}">${esc(p.university)}</a>`],
+    ["Degree", (p) => esc(p.title || p.degree)], ["City", (p) => esc([p.city, p.state].filter(Boolean).join(", "))],
+    ["University type", (p) => esc(p.type || "")], ["Teaching language", (p) => esc(p.language || "English")],
+    ["Duration", (p) => (p.duration ? `${p.duration} semesters` : "See page")], ["Tuition (non EU)", (p) => esc(tuitionText(p))],
+    ["Semester fee", (p) => esc(p.semester_fee || "See page")], ["Intakes", (p) => esc((p.intakes || []).join(", ") || "See page")],
+    ["Next deadline", (p) => nd(p)], ["English requirement", (p) => esc(p.english_req || "See page")],
+    ["Apply via", (p) => esc(p.apply_via || "See page")]
+  ];
+  app.innerHTML = `
+    <a href="#/finder" class="back">← Back to programs</a>
+    <div class="page-head"><h1>Compare programs</h1><p>Side by side, with deadlines for non EU applicants. Always confirm on the official page.</p></div>
+    <div class="card table-wrap cmp-table"><table>
+      <thead><tr><th></th>${rows.map((p) => `<th><a href="#/program?id=${p.id}" class="cmp-name">${esc(p.program)}</a><button class="btn link small" data-rm="${p.id}" type="button">Remove</button></th>`).join("")}</tr></thead>
+      <tbody>${R.map(([k, f]) => `<tr><td class="cmp-k">${k}</td>${rows.map((p) => `<td>${f(p)}</td>`).join("")}</tr>`).join("")}
+      <tr><td class="cmp-k"></td>${rows.map((p) => `<td><div class="cmp-actions">${p.program_url ? `<a class="btn small" href="${safeUrl(p.program_url)}" target="_blank" rel="noopener">University page ↗</a>` : ""}<a class="btn ghost small" href="#/letter?program=${p.id}">Write letter</a></div></td>`).join("")}</tr></tbody>
+    </table></div>
+    <div class="ai-strip card"><div><h3>Not sure which one fits you?</h3><p>Ask the AI advisor to compare them against your degree, CGPA and budget.</p></div>
+      <a class="btn gold" href="#/visa?q=${encodeURIComponent(`Help me choose between: ${rows.map((p) => `${p.program} at ${p.university}`).join("; ")}. My background is: `)}">Ask the AI advisor</a></div>`;
+  app.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { local.set("compare", compareList().filter((x) => x !== Number(b.dataset.rm))); viewCompare(); });
+}
+
+function uniAggregate(progs) {
+  const m = new Map();
+  for (const p of progs) {
+    const k = p.university; if (!k) continue;
+    let u = m.get(k);
+    if (!u) { u = { name: k, city: p.city, state: p.state, type: p.type, n: 0, master: 0, bachelor: 0, free: 0, fields: new Map(), hosts: new Map() }; m.set(k, u); }
+    u.n++; p.degree === "Master" ? u.master++ : u.bachelor++; if (p.tuition === 0) u.free++;
+    u.fields.set(p.field, (u.fields.get(p.field) || 0) + 1);
+    try { if (p.program_url) { const h = new URL(p.program_url).origin; u.hosts.set(h, (u.hosts.get(h) || 0) + 1); } } catch {}
+  }
+  for (const u of m.values()) {
+    u.site = [...u.hosts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    u.topField = [...u.fields.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  }
+  return [...m.values()];
+}
+function uniCard(u) {
+  return `<a class="uni-card" href="#/university?name=${encodeURIComponent(u.name)}">
+    <span class="mono big" aria-hidden="true">${esc(mono(u.name))}</span>
+    <div class="uni-body"><h3>${esc(u.name)}</h3><p>📍 ${esc([u.city, u.state].filter(Boolean).join(", ") || "Germany")}</p>
+      <div class="uni-tags"><span class="pill">${esc(u.type || "University")}</span>${u.free ? `<span class="pill pill-free">${u.free} tuition free</span>` : ""}</div></div>
+    <div class="uni-count"><strong>${u.n}</strong><span>program${u.n === 1 ? "" : "s"}</span></div>
+  </a>`;
+}
+
+async function viewUniversities() {
+  app.innerHTML = `<div class="page-head"><h1>Universities in Germany</h1><p>Loading...</p></div>`;
+  const unis = uniAggregate(await db.programs());
+  const f = Object.assign({ q: "", type: "", state: "", sort: "n" }, Object.fromEntries(route.params || []));
+  const states = [...new Set(unis.map((u) => u.state).filter(Boolean))].sort();
+  const opt = (v, l, c) => `<option value="${esc(v)}" ${v === c ? "selected" : ""}>${esc(l)}</option>`;
+  app.innerHTML = `
+    <div class="page-hero">
+      <span class="eyebrow light">Germany</span>
+      <h1>${unis.length} universities with international programs</h1>
+      <p>Public universities, universities of applied sciences and private universities. Open a university to see all of its programs.</p>
+    </div>
+    <div class="uni-tools card">
+      <input id="uq" type="search" placeholder="Search a university or city" value="${esc(f.q)}" aria-label="Search universities" />
+      <select id="utype" aria-label="Type">${opt("", "All types", f.type)}${opt("University", "Public university", f.type)}${opt("University of Applied Sciences", "University of Applied Sciences", f.type)}${opt("Private university", "Private university", f.type)}</select>
+      <select id="ustate" aria-label="State">${opt("", "All states", f.state)}${states.map((x) => opt(x, x, f.state)).join("")}</select>
+      <select id="usort" aria-label="Sort">${opt("n", "Most programs", f.sort)}${opt("free", "Most tuition free", f.sort)}${opt("az", "A to Z", f.sort)}</select>
+    </div>
+    <p class="count" id="ucount"></p>
+    <div class="uni-grid" id="ulist"></div>`;
+  const render = () => {
+    const q = $("#uq").value.trim().toLowerCase(), t = $("#utype").value, st = $("#ustate").value, so = $("#usort").value;
+    let list = unis.filter((u) => (!q || `${u.name} ${u.city}`.toLowerCase().includes(q)) && (!t || u.type === t) && (!st || u.state === st));
+    list.sort(so === "az" ? (a, b) => a.name.localeCompare(b.name) : so === "free" ? (a, b) => b.free - a.free : (a, b) => b.n - a.n);
+    $("#ucount").textContent = `${list.length} universit${list.length === 1 ? "y" : "ies"}`;
+    $("#ulist").innerHTML = list.slice(0, 300).map(uniCard).join("") || `<div class="empty">No university matches.</div>`;
+  };
+  app.querySelectorAll(".uni-tools input, .uni-tools select").forEach((el) => el.addEventListener(el.type === "search" ? "input" : "change", render));
+  render();
+}
+
+async function viewUniversity() {
+  const name = route.params.get("name") || "";
+  app.innerHTML = `<div class="empty">Loading university...</div>`;
+  const progs = (await db.programs()).filter((p) => p.university === name);
+  if (!progs.length) { app.innerHTML = `<div class="empty">University not found. <a href="#/universities">All universities</a></div>`; return; }
+  const u = uniAggregate(progs)[0];
+  const saved = new Set(await db.listSaved().catch(() => []));
+  const fields = [...u.fields.entries()].sort((a, b) => b[1] - a[1]);
+  app.innerHTML = `
+    <a href="#/universities" class="back">← All universities</a>
+    <div class="uni-hero">
+      <span class="mono xl" aria-hidden="true">${esc(mono(u.name))}</span>
+      <div><h1>${esc(u.name)}</h1><p>📍 ${esc([u.city, u.state].filter(Boolean).join(", "))} · ${esc(u.type || "University")}</p>
+        <div class="prog-cta">${u.site ? `<a class="btn gold" href="${safeUrl(u.site)}" target="_blank" rel="noopener">University website ↗</a>` : ""}<a class="btn ghost light" href="#/visa?q=${encodeURIComponent(`Which programs at ${u.name} fit my profile? My Bachelor's is in `)}">Ask the AI about this university</a></div></div>
+    </div>
+    <div class="stat-row">
+      <div><strong>${u.n}</strong><span>Programs</span></div>
+      <div><strong>${u.master}</strong><span>Master's</span></div>
+      <div><strong>${u.bachelor}</strong><span>Bachelor's</span></div>
+      <div><strong>${u.free}</strong><span>Tuition free</span></div>
+    </div>
+    ${u.type === "Private university" ? `<div class="callout"><strong>Private university:</strong> tuition is usually higher, but admission can be faster and more flexible. Check that the degree is state recognised before you pay any fee.</div>` : ""}
+    <section class="section">
+      <div class="section-head"><div><h2>Programs</h2><p>${fields.map(([f, n]) => `${esc(FIELD_META[f]?.name || f)} (${n})`).join(" · ")}</p></div>
+        <div class="seg small-seg" role="radiogroup" aria-label="Degree">${["", "Master", "Bachelor"].map((d) => `<label><input type="radio" name="udeg" value="${d}" ${d === "" ? "checked" : ""}/><span>${d || "All"}</span></label>`).join("")}</div></div>
+      <div class="prog-grid" id="uprogs"></div>
+    </section>`;
+  const render = () => {
+    const d = (app.querySelector("input[name=udeg]:checked") || {}).value || "";
+    const list = progs.filter((p) => !d || p.degree === d).sort((a, b) => a.program.localeCompare(b.program));
+    $("#uprogs").innerHTML = list.map((p) => progCard(p, saved)).join("") || `<div class="empty">No ${d} programs here.</div>`;
+    bindSave(saved); bindCompare();
+  };
+  app.querySelectorAll("input[name=udeg]").forEach((r) => r.onchange = render);
+  render();
 }
 
 async function viewFinder() {
@@ -971,9 +1214,10 @@ async function viewFinder() {
     (LIVE ? (session ? db.getProfile() : null) : local.get("profile", null)) ?? null
   ].map((x) => Promise.resolve(x).catch(() => null)));
   const saved = new Set(savedList || []);
-  const f = Object.assign({ q: "", degree: "", field: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
-    local.get("finderFilters", {}), Object.fromEntries(route.params || []));
-  if (!local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
+  const hasParams = [...(route.params || [])].length > 0;
+  const f = Object.assign({ q: "", degree: "", field: "", lang: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
+    hasParams ? {} : local.get("finderFilters", {}), Object.fromEntries(route.params || []));
+  if (!hasParams && !local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
   const states = [...new Set(progs.map((p) => p.state).filter(Boolean))].sort();
   const fields = [...new Set(progs.map((p) => p.field))];
   const opt = (v, label, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(label)}</option>`;
@@ -981,16 +1225,17 @@ async function viewFinder() {
 
   app.innerHTML = `
     <div class="page-head">
-      <h1>Find your university</h1>
-      <p>English taught programs at German universities. Filter, read what you need to apply, then go to the official page.</p>
+      <h1>Find your study program</h1>
+      <p>Bachelor's and Master's programs at public and private universities in Germany, taught in English or German. Filter, compare, then go to the official page.</p>
     </div>
     <div class="finder">
       <aside class="filters card" id="filters">
         <div class="filters-head"><h3>Filters</h3><button class="btn link small" id="resetF" type="button">Reset</button></div>
-        <div class="field"><label for="fq">Search</label><input id="fq" type="search" placeholder="e.g. data, Hamburg, mechatronics" value="${esc(f.q)}" /></div>
+        <div class="field"><label for="fq">Search</label><input id="fq" type="search" placeholder="e.g. data science, Munich, MBA" value="${esc(f.q)}" /></div>
         <div class="field"><label>Degree</label>
           <div class="seg" role="radiogroup" aria-label="Degree">${["", "Master", "Bachelor"].map((d) => `<label><input type="radio" name="fdegree" value="${d}" ${f.degree === d ? "checked" : ""}/><span>${d || "All"}</span></label>`).join("")}</div></div>
         <div class="field"><label for="ffield">Field</label><select id="ffield">${opt("", "All fields", f.field)}${FIELDS.filter((x) => fields.includes(x)).map((x) => opt(x, x, f.field)).join("")}</select></div>
+        <div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
         <div class="field"><label for="ftuition">Tuition (non EU)</label><select id="ftuition">${opt("", "Any", f.tuition)}${opt("free", "Tuition free only", f.tuition)}${opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
         <div class="field"><label for="fduration">Duration</label><select id="fduration">${opt("", "Any", f.duration)}${opt("3", "3 semesters or less", f.duration)}${opt("4", "4 semesters", f.duration)}${opt("6", "6 semesters or more", f.duration)}</select></div>
         <div class="field"><label for="fintake">Intake</label><select id="fintake">${opt("", "Any", f.intake)}${opt("Winter", "Winter (starts Oct)", f.intake)}${opt("Summer", "Summer (starts Apr)", f.intake)}</select></div>
@@ -1010,22 +1255,24 @@ async function viewFinder() {
         </div>
         <div id="bachelorNote"></div>
         <div id="results" class="prog-list"></div>
-        <p class="notice">Starter database: ${progs.length} programs from DAAD MyGUIDE, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official page. More programs are added regularly. Missing your field? Tell us with the Feedback button.</p>
+        <p class="notice">${progs.length.toLocaleString("en-US")} international programs, based on the DAAD International Programmes database, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official university page. Missing something? Tell us with the Feedback button.</p>
       </section>
     </div>`;
 
   const read = () => ({
     q: $("#fq").value.trim(), degree: (app.querySelector("input[name=fdegree]:checked") || {}).value || "",
-    field: $("#ffield").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
+    field: $("#ffield").value, lang: $("#flang").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
     deadline: $("#fdeadline").value, state: $("#fstate").value, type: $("#ftype").value, sort: $("#fsort").value, savedOnly: $("#fsaved").checked ? "1" : ""
   });
   const render = () => {
     const c = read(); local.set("finderFilters", c);
     const q = c.q.toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
     let list = progs.filter((p) => {
-      if (q && !`${p.program} ${p.university} ${p.city} ${p.field} ${p.summary || ""}`.toLowerCase().includes(q)) return false;
+      if (words.length) { const hay = `${p.program} ${p.university} ${p.city} ${p.field} ${p.title || ""}`.toLowerCase(); if (!words.every((w) => hay.includes(w))) return false; }
       if (c.degree && p.degree !== c.degree) return false;
       if (c.field && p.field !== c.field) return false;
+      if (c.lang) { const l = p.language || "English", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
       if (c.tuition === "free" && p.tuition !== 0) return false;
       if (c.tuition === "1500" && !(p.tuition != null && p.tuition <= 1500)) return false;
       if (c.duration === "3" && !(p.duration && p.duration <= 3)) return false;
@@ -1052,12 +1299,24 @@ async function viewFinder() {
     if (prof?.field) list.sort((a, b) => (b.field === prof.field) - (a.field === prof.field));
     $("#count").textContent = `${list.length} program${list.length === 1 ? "" : "s"}`;
     $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";
-    $("#results").innerHTML = list.length ? list.map((p) => progCard(p, saved)).join("")
-      : `<div class="empty">No programs match these filters yet. Try removing a filter. Missing your field? Tell us with the Feedback button so we add it.</div>`;
-    bindSave(saved);
+    const PAGE = 30;
+    let shown = 0;
+    const more = () => {
+      const next = list.slice(shown, shown + PAGE);
+      $("#moreBtn")?.remove();
+      $("#results").insertAdjacentHTML("beforeend", next.map((p) => progCard(p, saved)).join(""));
+      shown += next.length;
+      if (shown < list.length) {
+        $("#results").insertAdjacentHTML("beforeend", `<button class="btn ghost" id="moreBtn" type="button" style="grid-column:1/-1;justify-self:center">Show more (${list.length - shown} left)</button>`);
+        $("#moreBtn").onclick = more;
+      }
+      bindSave(saved); bindCompare();
+    };
+    $("#results").innerHTML = list.length ? "" : `<div class="empty">No programs match these filters yet. Try removing a filter. Missing your field? Tell us with the Feedback button so we add it.</div>`;
+    if (list.length) more();
   };
   app.querySelectorAll("#filters input, #filters select, #fsort").forEach((el) => el.addEventListener(el.type === "search" ? "input" : "change", render));
-  $("#resetF").onclick = () => { local.set("finderFilters", {}); route.params = new URLSearchParams(); app.querySelectorAll("#filters select").forEach((s) => (s.value = "")); $("#fq").value = ""; $("#fsaved").checked = false; app.querySelector("input[name=fdegree][value='']").checked = true; render(); };
+  $("#resetF").onclick = () => { history.replaceState(null, "", "#/finder"); local.set("finderFilters", {}); route.params = new URLSearchParams(); app.querySelectorAll("#filters select").forEach((s) => (s.value = "")); $("#fq").value = ""; $("#fsaved").checked = false; app.querySelector("input[name=fdegree][value='']").checked = true; render(); };
   $("#toggleF").onclick = () => $("#filters").classList.toggle("open");
   render();
 }
@@ -1079,12 +1338,12 @@ function bindSave(saved, rerender) {
 
 async function viewProgram() {
   const id = Number(route.params.get("id"));
-  const progs = await db.programs();
-  const p = progs.find((x) => x.id === id);
+  app.innerHTML = `<div class="empty">Loading program...</div>`;
+  const [progs, p] = await Promise.all([db.programs(), db.program(id)]);
   if (!p) { app.innerHTML = `<div class="empty">Program not found. <a href="#/finder">Back to the finder</a></div>`; return; }
   const saved = new Set(await db.listSaved().catch(() => []));
   const nd = nextDeadline(p);
-  const similar = progs.filter((x) => x.id !== p.id && x.field === p.field && x.degree === p.degree).slice(0, 3);
+  const similar = progs.filter((x) => x.id !== p.id && x.field === p.field && x.degree === p.degree && x.university !== p.university).sort((a, b) => (b.curated === true) - (a.curated === true) || (nextDeadline(a)?.days ?? 1e9) - (nextDeadline(b)?.days ?? 1e9)).slice(0, 3);
   const row = (k, v) => v ? `<div class="fact"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>` : "";
   const needs = [
     p.degree === "Master" ? "Bachelor's degree and transcripts (HEC attested for the visa)" : "School certificates (Matric and Intermediate or O/A levels), plus Studienkolleg or university study if required",
@@ -1102,13 +1361,14 @@ async function viewProgram() {
     <div class="prog-hero card">
       <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}<span class="pill">${esc(p.type || "")}</span></div>
       <h1>${esc(p.program)}</h1>
-      <p class="prog-uni big">${esc(p.university)} · ${esc(p.city)}, ${esc(p.state)}</p>
+      <p class="prog-uni big"><a href="#/university?name=${encodeURIComponent(p.university)}">${esc(p.university)}</a> · ${esc([p.city, p.state].filter(Boolean).join(", "))}</p>
       ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
       <div class="prog-cta">
         <a class="btn gold" href="${safeUrl(p.program_url || p.url)}" target="_blank" rel="noopener">Open university page ↗</a>
         ${p.apply_url ? `<a class="btn" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener">Go to application ↗</a>` : ""}
         <button class="btn ghost save-btn" data-save="${p.id}" aria-pressed="${saved.has(p.id)}">${saved.has(p.id) ? "★ Saved" : "☆ Save"}</button>
         <button class="btn ghost" id="trackBtn">+ Add to tracker</button>
+        <button class="btn ghost cmp-btn" data-compare="${p.id}" aria-pressed="${compareList().includes(p.id)}">${compareList().includes(p.id) ? "✓ Comparing" : "⇄ Compare"}</button>
       </div>
     </div>
 
@@ -1118,7 +1378,8 @@ async function viewProgram() {
         <div class="facts">
           ${row("Degree", p.title || p.degree)}
           ${row("Field", p.field)}
-          ${row("Language", p.language)}
+          ${row("Teaching language", p.language)}
+          ${row("English requirement", p.english_req)}
           ${row("Duration", p.duration ? `${p.duration} semesters` : "See official page")}
           ${row("Intake", (p.intakes || []).join(" and "))}
           ${row("Tuition (non EU)", tuitionText(p))}
@@ -1147,7 +1408,7 @@ async function viewProgram() {
         ${p.apply_url ? `<a class="apply-step" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener"><span>2</span><div><strong>Open the application page</strong><em>${/uni-assist/i.test(p.apply_url) ? "uni-assist portal" : "University application portal"}</em></div></a>` : `<div class="apply-step"><span>2</span><div><strong>Find "Apply" on the program page</strong><em>The university explains its portal there</em></div></div>`}
         <a class="apply-step" href="#/letter?program=${p.id}"><span>3</span><div><strong>Write your motivation letter</strong><em>For this program, in Raasta</em></div></a>
       </div>
-      <p class="notice">Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from the university and the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.</p>
+      <p class="notice">Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from ${p.curated ? "the university and " : ""}the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.</p>
     </section>
 
     <section class="grid cols-3" style="margin-top:16px">
@@ -1156,9 +1417,9 @@ async function viewProgram() {
       <a class="card" href="#/interview?program=${p.id}"><div class="icon">🎤</div><h3>Practise the interview</h3><p>Mock university or visa interview for this program.</p></a>
     </section>
 
-    ${similar.length ? `<section class="section"><div class="section-head"><div><h2>Similar programs</h2><p>Same field and degree.</p></div></div><div class="prog-grid">${similar.map((x) => progCard(x, saved)).join("")}</div></section>` : ""}`;
+    ${similar.length ? `<section class="section"><div class="section-head"><div><h2>Similar programs</h2><p>Same field and degree at other universities.</p></div></div><div class="prog-grid">${similar.map((x) => progCard(x, saved)).join("")}</div></section>` : ""}`;
 
-  bindSave(saved);
+  bindSave(saved); bindCompare();
   $("#trackBtn").onclick = async () => {
     if (LIVE && !session) { openLogin("Sign in free to track your applications."); return; }
     const d = nd ? nd.date : null;
