@@ -537,3 +537,4 @@ body { overflow-x: clip; }
 .fchip { font: inherit; font-size: .82rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--green-2); background: var(--green-soft); color: var(--green); cursor: pointer; }
 .fchip:hover { background: #fff; }
 .fchip span { margin-left: 4px; font-weight: 800; }
+.upd-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 70; display: flex; gap: 14px; justify-content: center; align-items: center; padding: 10px 16px; background: var(--navy); color: #fff; font-weight: 600; font-size: .92rem; }

@@ -139,6 +139,8 @@ const db = {
     return Object.fromEntries(data.map((r) => [r.item_key, r.done]));
   },
   async programs() {
+    // Refresh the catalog if it is older than 10 minutes, so open tabs pick up new programs
+    if (db._programs && Date.now() - (db._loadedAt || 0) > 10 * 60 * 1000) { db._programs = null; db._loading = null; }
     if (db._programs) return db._programs;
     if (db._loading) return db._loading;
     db._loading = (async () => {
@@ -155,7 +157,7 @@ const db = {
         }
         if (all.length) list = all;
       }
-      db._programs = list; return list;
+      db._programs = list; db._loadedAt = Date.now(); return list;
     })();
     return db._loading;
   },
@@ -772,7 +774,24 @@ function route() {
   window.scrollTo(0, 0); app.focus({ preventScroll: true });
 }
 
+const APP_VERSION = (document.querySelector('script[src*="app.js"]')?.src.match(/v=([\w]+)/) || [])[1] || "";
+async function checkVersion() {
+  try {
+    const html = await fetch(`./index.html?check=${Date.now()}`, { cache: "no-store" }).then((r) => r.text());
+    const live = (html.match(/app\.js\?v=([\w]+)/) || [])[1];
+    if (live && APP_VERSION && live !== APP_VERSION && !$("#updBar")) {
+      const bar = document.createElement("div");
+      bar.id = "updBar"; bar.className = "upd-bar";
+      bar.innerHTML = `<span>Raasta was updated with new programs and features.</span><button class="btn gold small" type="button">Refresh now</button>`;
+      bar.querySelector("button").onclick = () => location.reload();
+      document.body.appendChild(bar);
+    }
+  } catch {}
+}
+
 async function init() {
+  setInterval(checkVersion, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkVersion(); });
   if (!LIVE) {
     $("#demoBanner").hidden = false;
     // Configured but could not connect: never silently fall back to demo with real users
