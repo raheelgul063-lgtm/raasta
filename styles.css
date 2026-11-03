@@ -653,3 +653,14 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
 .uc-emp { font-size: .9rem; margin: 6px 0; }
 @media (max-width: 860px) { .uni-city { grid-template-columns: 1fr; } .uc-img { min-height: 160px; } .uc-facts { grid-template-columns: 1fr 1fr; } }
 .pill-nc { background: #FDE7DF; color: #9A3B1F; }
+.subj-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 14px; }
+.subj-chips .chip { text-decoration: none; }
+.dc-guide { margin-bottom: 16px; }
+.dc-docs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dc-doc { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
+.dc-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--green-soft); display: grid; place-items: center; font-size: 1.2rem; }
+.dc-doc p { margin: 2px 0 4px; font-size: .86rem; color: var(--ink); }
+.dc-doc em { font-style: normal; font-size: .82rem; color: var(--green-2); }
+.dc-out-list { margin-top: 12px; padding: 12px 14px; background: var(--cream); border-radius: 12px; font-size: .92rem; }
+@media (max-width: 960px) { .dc-docs { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .dc-docs { grid-template-columns: 1fr; } }

@@ -84,6 +84,33 @@ const FIELD_META = {
   "Design / Media / Arts": { ic: "🎨", name: "Design, Media & Arts", d: "Design, architecture, media, culture" },
   "Other": { ic: "📚", name: "Law, Social Sciences & more", d: "Law, politics, education, languages" }
 };
+// Specific subjects inside the broad fields, matched on the program name
+const SUBJECTS = [
+  ["Graphic and Communication Design", /graphic|communication design|visual communication|illustration|typograph|grafik/i],
+  ["Digital Marketing, Branding and Social Media", /marketing|social media|influencer|brand|advertising|public relations/i],
+  ["3D Animation, Games and VFX", /animation|\b3d\b|game|vfx|visual effects|motion design/i],
+  ["Film, Video and Photography", /film|cinema|video|photograph|documentary|television/i],
+  ["UX, UI and Interaction Design", /\bux\b|user experience|interaction design|interface design|human.computer/i],
+  ["Fashion and Textile", /fashion|textile/i],
+  ["Architecture and Interior Design", /architect|interior|urban design/i],
+  ["Product and Industrial Design", /product design|industrial design/i],
+  ["Media, Journalism and Communication", /journalis|\bmedia\b|communication(?! design)/i],
+  ["Fine Arts, Music and Performing Arts", /fine art|\barts?\b|music|theatre|dance|performing/i],
+  ["Data Science and AI", /data|artificial intelligence|machine learning|\bai\b/i],
+  ["Computer Science and Software", /computer science|informati|software|computing|devops|web development/i],
+  ["Cyber Security", /cyber|security/i],
+  ["Business Administration and Management", /business|management|\bmba\b|entrepreneur/i],
+  ["Finance, Accounting and Economics", /financ|accounting|banking|econom/i],
+  ["Logistics and Supply Chain", /logistic|supply chain/i],
+  ["Mechanical, Automotive and Aerospace", /mechanic|automotive|mechatron|aero|vehicle/i],
+  ["Electrical and Electronics", /electri|electronic|embedded|semiconductor/i],
+  ["Civil, Energy and Environment", /civil|energy|renewable|environment|water|sustainab|climate/i],
+  ["Health and Public Health", /health|medic|nurs|pharma/i],
+  ["Psychology", /psycholog/i],
+  ["Biology and Biotech", /\bbio|molecular|life science/i],
+  ["Physics, Chemistry and Mathematics", /physic|chemi|mathemat/i],
+  ["Law, Politics and Social Sciences", /\blaw\b|\bllm\b|legal|politic|international relations|governance|public policy|social science|sociolog/i]
+];
 const FIELDS = ["Computer Science / Data Science / AI", "Electrical / Electronics Engineering", "Mechanical / Mechatronics Engineering", "Energy / Environment / Civil Engineering", "Business / Management / Economics", "Life Sciences / Biotech / Health", "Natural Sciences", "Design / Media / Arts", "Other"];
 
 /* ---------------- Helpers ---------------- */
@@ -375,6 +402,7 @@ function viewHome() {
 
     <section class="section">
       <div class="section-head"><div><h2>Browse by field of study</h2><p>Pick a field to see every matching program.</p></div><a href="#/finder" class="btn ghost small">All programs</a></div>
+      <div class="subj-chips">${["Graphic and Communication Design", "Digital Marketing, Branding and Social Media", "3D Animation, Games and VFX", "UX, UI and Interaction Design", "Data Science and AI", "Business Administration and Management"].map((n) => `<a class="chip" href="#/finder?subject=${encodeURIComponent(n)}">${esc(n)}</a>`).join("")}</div>
       <div class="field-grid" id="fieldGrid">${FIELDS.map((f) => `<a class="field-card" href="#/finder?field=${encodeURIComponent(f)}"><span class="fc-ic">${FIELD_META[f].ic}</span><strong>${esc(FIELD_META[f].name)}</strong><em>${esc(FIELD_META[f].d)}</em><span class="fc-n" data-fcount="${esc(f)}"></span></a>`).join("")}</div>
     </section>
 
@@ -1248,6 +1276,19 @@ async function viewDocCheck() {
   const files = [];
   app.innerHTML = `${guideHero("AI tool", "AI document checker", "Upload your transcripts, degree, language certificate and ID. The AI checks completeness, consistency and fit for one program, and converts your grade to the German scale.")}
     <div class="callout"><strong>Important:</strong> this is a free pre-check, not an official evaluation. It does not replace uni-assist or the university, and it cannot certify documents. Your files are sent securely to the AI, analysed once and <strong>never stored</strong>.</div>
+    <section class="card dc-guide">
+      <h3>What can I upload, and what does the AI do with it?</h3>
+      <div class="dc-docs">
+        ${[["🎓", "Degree certificate", "Bachelor's degree (for a Master's) or Matric and Intermediate certificates (for a Bachelor's).", "Checks your name, degree title and graduation date, and whether the degree fits the program."],
+          ["📑", "Transcripts (marks sheets)", "All semesters, with the grading scale printed on the back.", "Reads your CGPA or percentage, converts it to the German grade and spots missing semesters."],
+          ["🏛️", "HEC attestation", "The HEC stamp on your degree and transcripts.", "Checks that the stamp is visible on each page. German embassies require HEC attested documents."],
+          ["🗣️", "Language certificate", "IELTS, TOEFL, PTE, Duolingo, or an English medium letter. German: Goethe, TestDaF, DSH.", "Compares your score with the program's requirement and checks it is not older than 2 years."],
+          ["🛂", "Passport (ID page)", "Only the page with your photo and name.", "Checks that your name is spelled the same on every document. Black out the passport number if you like."],
+          ["📄", "CV and motivation letter", "Your current versions as PDF.", "Checks they exist and match the dates in your other documents. For writing help use the Motivation letter tool."]]
+          .map(([ic, t, what, ai]) => `<div class="dc-doc"><div class="dc-ic">${ic}</div><div><strong>${t}</strong><p>${what}</p><em>AI: ${ai}</em></div></div>`).join("")}
+      </div>
+      <div class="dc-out-list"><strong>You get back:</strong> a checklist of present and missing documents, problems to fix before applying (name mismatches, missing stamps, unreadable scans, expired tests), your grade on the German scale, an eligibility score for the program you chose, a rough chance estimate and clear next steps.</div>
+    </section>
     <div class="grid cols-2" style="align-items:start">
       <section class="card">
         <h3>1. Target program</h3>
@@ -1808,7 +1849,7 @@ async function viewFinder() {
   ].map((x) => Promise.resolve(x).catch(() => null)));
   const saved = new Set(savedList || []);
   const hasParams = [...(route.params || [])].length > 0;
-  const f = Object.assign({ q: "", degree: "", field: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
+  const f = Object.assign({ q: "", degree: "", field: "", subject: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
     hasParams ? {} : local.get("finderFilters", {}), Object.fromEntries(route.params || []));
   if (!hasParams && !local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
   const states = [...new Set(progs.map((p) => p.state).filter(Boolean))].sort();
@@ -1828,6 +1869,7 @@ async function viewFinder() {
         <div class="field"><label>Degree</label>
           <div class="seg" role="radiogroup" aria-label="Degree">${["", "Master", "Bachelor"].map((d) => `<label><input type="radio" name="fdegree" value="${d}" ${f.degree === d ? "checked" : ""}/><span>${d || "All"}</span></label>`).join("")}</div></div>
         <div class="field"><label for="ffield">Field</label><select id="ffield">${opt("", "All fields", f.field)}${FIELDS.filter((x) => fields.includes(x)).map((x) => opt(x, x, f.field)).join("")}</select></div>
+        <div class="field"><label for="fsubj">Subject</label><select id="fsubj">${opt("", "All subjects", f.subject)}${SUBJECTS.map(([n, re]) => [n, progs.filter((p) => re.test(p.program)).length]).filter(([, c]) => c).map(([n, c]) => opt(n, `${n} (${c})`, f.subject)).join("")}</select></div>
         <div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
         <div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>
         <div class="field"><label for="ftuition">Tuition (non EU)</label><select id="ftuition">${opt("", "Any", f.tuition)}${opt("free", "Tuition free only", f.tuition)}${opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
@@ -1856,7 +1898,7 @@ async function viewFinder() {
 
   const read = () => ({
     q: $("#fq").value.trim(), degree: (app.querySelector("input[name=fdegree]:checked") || {}).value || "",
-    field: $("#ffield").value, lang: $("#flang").value, nc: $("#fnc").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
+    field: $("#ffield").value, subject: $("#fsubj").value, lang: $("#flang").value, nc: $("#fnc").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
     deadline: $("#fdeadline").value, state: $("#fstate").value, type: $("#ftype").value, sort: $("#fsort").value, savedOnly: $("#fsaved").checked ? "1" : ""
   });
   const render = () => {
@@ -1867,6 +1909,7 @@ async function viewFinder() {
       if (words.length) { const hay = `${p.program} ${p.university} ${p.city} ${p.field} ${p.title || ""}`.toLowerCase(); if (!words.every((w) => hay.includes(w))) return false; }
       if (c.degree && p.degree !== c.degree) return false;
       if (c.field && p.field !== c.field) return false;
+      if (c.subject) { const sj = SUBJECTS.find((x) => x[0] === c.subject); if (sj && !sj[1].test(p.program)) return false; }
       if (c.nc === "open" && !/^Open/.test(p.nc_status || "")) return false;
       if (c.nc === "restricted" && !/^Restricted/.test(p.nc_status || "")) return false;
       if (c.lang) { const l = p.language || "English", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
@@ -1896,7 +1939,7 @@ async function viewFinder() {
     if (prof?.field) list.sort((a, b) => (b.field === prof.field) - (a.field === prof.field));
     $("#count").textContent = `${list.length.toLocaleString("en-US")} program${list.length === 1 ? "" : "s"}`;
     // Show every active filter as a removable chip, so remembered filters are never hidden
-    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], nc: (v) => (v === "open" ? "NC-frei" : "NC or selection"), tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
+    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], nc: (v) => (v === "open" ? "NC-frei" : "NC or selection"), subject: (v) => v, tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
     const act = Object.entries(c).filter(([k, v]) => v && LBL[k]);
     $("#activeF").innerHTML = act.length ? `${act.map(([k, v]) => `<button type="button" class="fchip" data-clear="${k}">${esc(LBL[k](v))} <span aria-hidden="true">×</span><span class="sr-only">Remove filter</span></button>`).join("")}${act.length > 1 ? `<button type="button" class="btn link small" data-clear="all">Clear all</button>` : ""}` : "";
     $("#activeF").querySelectorAll("[data-clear]").forEach((b) => b.onclick = () => {
@@ -1904,7 +1947,7 @@ async function viewFinder() {
       if (k === "all") { $("#resetF").click(); return; }
       if (k === "degree") app.querySelector("input[name=fdegree][value='']").checked = true;
       else if (k === "savedOnly") $("#fsaved").checked = false;
-      else { const el = { q: "#fq", field: "#ffield", lang: "#flang", nc: "#fnc", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
+      else { const el = { q: "#fq", field: "#ffield", subject: "#fsubj", lang: "#flang", nc: "#fnc", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
       history.replaceState(null, "", "#/finder"); render();
     });
     $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";
