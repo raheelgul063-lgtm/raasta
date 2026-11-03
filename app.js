@@ -810,7 +810,7 @@ async function viewLetter() {
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
   finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
   cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, support: viewSupport, help: viewSupport, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
-  welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, admin: viewAdmin };
+  welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, impressum: viewImpressum, imprint: viewImpressum, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
   route.params = new URLSearchParams(location.hash.split("?")[1] || "");
@@ -866,7 +866,7 @@ async function maybeOnboard() {
   try {
     const p = await db.getProfile();
     const key = location.hash.replace(/^#\/?/, "");
-    if (!p && !["welcome", "privacy", "admin"].includes(key)) history.replaceState(null, "", location.pathname + "#/welcome");
+    if (!p && !["welcome", "privacy", "impressum", "imprint", "support", "help", "admin"].includes(key)) history.replaceState(null, "", location.pathname + "#/welcome");
   } catch {}
 }
 init();
@@ -1412,7 +1412,7 @@ function viewPrivacy() {
     <div class="page-head"><h1>Privacy policy</h1><p>Plain language. Last updated 3 November 2026.</p></div>
     <div class="card" style="max-width:760px">
       <h3>Who is responsible</h3>
-      <p><strong>Raheel Gul</strong>, Berlin, Germany<br/>Email: <a href="mailto:${esc(mail)}">${esc(mail)}</a><br/>For questions or help you can also use the <a href="#/support">support page</a>.</p>
+      <p><strong>Raheel Gul</strong>, Berlin, Germany (full address in the <a href="#/impressum">Impressum</a>)<br/>Email: <a href="mailto:${esc(mail)}">${esc(mail)}</a><br/>For questions or help you can also use the <a href="#/support">support page</a>.</p>
       <h3>What we store</h3>
       <p>Your email and name (from Google or your email login); the profile you fill in (phone number, city, province, study plans, academic background, profile photo); the universities in your tracker, your saved programs and ticked checklist items; how many AI requests you made per day; feedback and support messages you send.</p>
       <h3>What we do not store</h3>
@@ -1425,6 +1425,29 @@ function viewPrivacy() {
       <p>You can download all your data or delete your account at any time in your profile. You can also ask us by email to see, correct or delete your data. Under the GDPR you can complain to a data protection authority, for example the Berlin Commissioner for Data Protection and Freedom of Information.</p>
       <h3>Not official advice</h3>
       <p>Raasta is not affiliated with DAAD, uni-assist, any university or the German Missions in Pakistan. AI answers and estimates can be wrong. Always check the official sources before you submit anything.</p>
+    </div>`;
+}
+
+function viewImpressum() {
+  const mail = CFG.CONTACT_EMAIL || "raheelgul063@gmail.com";
+  const addr = (CFG.IMPRESSUM_ADDRESS || []).filter(Boolean);
+  const addrHtml = addr.length ? addr.map(esc).join("<br/>") : "Berlin, Germany";
+  app.innerHTML = `
+    <div class="page-head"><h1>Impressum</h1><p>Legal notice under § 5 DDG and § 18 MStV.</p></div>
+    <div class="card" style="max-width:760px">
+      <h3>Provider</h3>
+      <p><strong>Raheel Gul</strong><br/>${addrHtml}</p>
+      <h3>Contact</h3>
+      <p>Email: <a href="mailto:${esc(mail)}">${esc(mail)}</a><br/>For help with the platform please use the <a href="#/support">support page</a>.</p>
+      <h3>VAT ID</h3>
+      <p>Umsatzsteuer-Identifikationsnummer under § 27 a UStG: <strong>DE458327029</strong></p>
+      <h3>Responsible for content under § 18 (2) MStV</h3>
+      <p>Raheel Gul, address as above.</p>
+      <h3>Consumer dispute resolution</h3>
+      <p>We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>
+      <h3>Liability for content and links</h3>
+      <p>We prepare the program, visa and city information carefully but cannot guarantee that it is complete, correct or up to date. Universities, DAAD, uni-assist and the German Missions always have the final word. We are not responsible for the content of external websites we link to; if we learn that a linked page breaks the law, we remove the link.</p>
+      <p style="margin-top:14px"><a href="#/privacy">Privacy policy</a></p>
     </div>`;
 }
 
