@@ -1270,7 +1270,6 @@ async function shrinkImage(file) {
   return await new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
 }
 async function viewDocCheck() {
-  if (needsLogin("AI document checker", "Sign in free to check your documents. They are analysed and then discarded, never stored.")) return;
   const progs = await db.programs();
   let chosen = progs.find((x) => x.id === Number(route.params.get("program"))) || null;
   const files = [];
@@ -1337,6 +1336,7 @@ async function viewDocCheck() {
 
   runBtn.onclick = async () => {
     if (!LIVE) { toast("The document checker works once Raasta is connected."); return; }
+    if (!session) { openLogin("Sign in free to check your documents. They are analysed and then discarded, never stored."); return; }
     runBtn.disabled = true; runBtn.textContent = "Checking... this takes about 30 to 60 seconds";
     $("#dcOut").innerHTML = `<h3>Results</h3><p class="notice">Reading your documents...</p>`;
     try {
