@@ -147,7 +147,7 @@ const db = {
       let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
       if (LIVE) {
         // only the columns the lists need; the program page loads the full row
-        const cols = "id,university,program,degree,title,field,city,state,type,language,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
+        const cols = "id,university,program,degree,title,field,city,state,type,language,nc_status,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
         const all = [];
         for (let from = 0; from < 20000; from += 1000) {
           const { data, error } = await sb.from("programs").select(cols).eq("active", true).order("id").range(from, from + 999);
@@ -386,7 +386,7 @@ function viewHome() {
         <ul class="ticks"><li>Program matches from ${"<span data-total>1,800+</span>"} real listings</li><li>Motivation letters written for one specific program</li><li>Mock interviews by voice, with feedback</li><li>Student visa checklist and blocked account help</li></ul>
       </div>
       <form class="ai-ask card" id="aiAsk">
-        <div class="ai-bubble">Salam! Which program are you aiming for, and what did you study before?</div>
+        <div class="ai-bubble">Hello! Which program are you aiming for, and what did you study before?</div>
         <div class="chips">${["I have a BS Computer Science with 3.1 CGPA. Which Master's fit me?", "Which programs are tuition free and taught in English?", "What documents do I need for the German student visa?"].map((q) => `<button class="chip" type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
         <div class="ai-input"><input id="aiQ" placeholder="Ask anything about studying in Germany" aria-label="Ask the AI advisor" /><button class="btn" type="submit">Ask</button></div>
       </form>
@@ -690,7 +690,7 @@ function viewVisa() {
     intro: "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
     mode: "visa",
     chips: VISA_CHIPS,
-    opener: { show: "Assalam o Alaikum! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
+    opener: { show: "Hello! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
   });
   const q = route.params?.get("q");
   if (q && $("#chatInput")) { $("#chatInput").value = q; $("#chatInput").focus(); }
@@ -781,7 +781,7 @@ async function viewLetter() {
 /* ---------------- Router ---------------- */
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
   finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
-  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
+  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, support: viewSupport, help: viewSupport, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
   welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
@@ -1359,31 +1359,31 @@ function openFeedback() {
   $("#fbForm", bg).onsubmit = async (e) => {
     e.preventDefault();
     const rating = Number($("input[name=rating]:checked", bg)?.value || 0) || null;
-    try { await db.sendFeedback({ rating, message: $("#fbMsg", bg).value.trim(), page }); close(); toast("Thank you! Shukriya 🙏"); }
+    try { await db.sendFeedback({ rating, message: $("#fbMsg", bg).value.trim(), page }); close(); toast("Thank you for your feedback!"); }
     catch (err) { toast(err.message); }
   };
 }
 
 /* ---------------- Privacy ---------------- */
 function viewPrivacy() {
-  const contact = CFG.CONTACT_EMAIL ? `<a href="mailto:${esc(CFG.CONTACT_EMAIL)}">${esc(CFG.CONTACT_EMAIL)}</a>` : "[contact email]";
+  const mail = CFG.CONTACT_EMAIL || "raheelgul063@gmail.com";
   app.innerHTML = `
-    <div class="page-head"><h1>Privacy policy</h1><p>Plain language. Last updated ${new Date(2026, 10, 2).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.</p></div>
+    <div class="page-head"><h1>Privacy policy</h1><p>Plain language. Last updated 3 November 2026.</p></div>
     <div class="card" style="max-width:760px">
-      <h3>Who runs Raasta</h3>
-      <p>Raasta is a free project run from Berlin, Germany. Contact: ${contact}.</p>
+      <h3>Who is responsible</h3>
+      <p><strong>Raheel Gul</strong>, Berlin, Germany<br/>Email: <a href="mailto:${esc(mail)}">${esc(mail)}</a><br/>For questions or help you can also use the <a href="#/support">support page</a>.</p>
       <h3>What we store</h3>
-      <p>Your email and name (from Google or your email login), the profile you fill in (city, province, field, intake), the universities you add to your tracker, which checklist items you ticked, how many AI requests you made per day, and feedback you send.</p>
+      <p>Your email and name (from Google or your email login); the profile you fill in (phone number, city, province, study plans, academic background, profile photo); the universities in your tracker, your saved programs and ticked checklist items; how many AI requests you made per day; feedback and support messages you send.</p>
       <h3>What we do not store</h3>
-      <p>We do not save your chat messages, interview answers or motivation letter text. They are sent to the AI to create an answer and then only kept in your browser tab. Do not upload or type passport numbers, CNIC numbers or bank details.</p>
+      <p>We do not save your AI chat messages, interview answers or motivation letter text. Documents you upload to the AI document checker are analysed once and then discarded; they are never saved on our servers. Do not type passport numbers, CNIC numbers or bank details into chats.</p>
       <h3>Who processes your data</h3>
-      <p>Supabase (database and login, EU region), Anthropic (Claude AI, to answer your questions), Google (only if you choose Google login) and GitHub Pages (hosting the website).</p>
+      <p>Supabase (database, login and photo storage), Anthropic (Claude AI, to answer your questions and check documents), Google (only if you choose Google login), GitHub Pages (website hosting) and Wikipedia (city photos and population, loaded in your browser).</p>
       <h3>Why</h3>
-      <p>To run the service you asked for, to keep it free by limiting AI use per person, and to improve it from anonymous totals and your feedback. We never sell your data and send no marketing without asking.</p>
+      <p>To run the service you asked for, to keep it free by limiting AI use per person, and to improve it from anonymous totals and your feedback. We never sell your data and send no marketing. WhatsApp reminders are only sent if you turn them on in your profile.</p>
       <h3>Your rights</h3>
-      <p>You can ask to see, correct or delete all your data at any time by email. Under the GDPR you can also complain to a data protection authority.</p>
+      <p>You can download all your data or delete your account at any time in your profile. You can also ask us by email to see, correct or delete your data. Under the GDPR you can complain to a data protection authority, for example the Berlin Commissioner for Data Protection and Freedom of Information.</p>
       <h3>Not official advice</h3>
-      <p>Raasta is not affiliated with DAAD, uni-assist or the German Missions in Pakistan. AI answers can be wrong. Always check the official sources before you submit anything.</p>
+      <p>Raasta is not affiliated with DAAD, uni-assist, any university or the German Missions in Pakistan. AI answers and estimates can be wrong. Always check the official sources before you submit anything.</p>
     </div>`;
 }
 
@@ -1467,8 +1467,55 @@ async function viewAdmin() {
       ${st.recent_students?.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>City</th><th>Field</th><th>Intake</th><th>Login</th><th>Joined</th></tr></thead><tbody>
         ${st.recent_students.map((u) => `<tr><td>${esc(u.full_name || "")}</td><td>${esc(u.email || "")}</td><td>${esc(u.city || "")}</td><td>${esc(u.field || "")}</td><td>${esc(u.intake || "")}</td><td>${esc(u.provider)}</td><td>${fmt(u.created_at)}</td></tr>`).join("")}
       </tbody></table></div>` : `<div class="empty">No students yet</div>`}
-    </div>`;
+    </div>
+    <div class="card" style="margin-top:16px" id="supportBox"><h3>Support requests</h3><p class="notice">Loading...</p></div>`;
   $("#refresh").onclick = viewAdmin;
+  if (LIVE) {
+    const { data: reqs, error } = await sb.from("support_requests").select("*").order("created_at", { ascending: false }).limit(50);
+    const box = $("#supportBox"); if (!box) return;
+    const open = (reqs || []).filter((r) => r.status === "open").length;
+    box.innerHTML = `<h3>Support requests <span class="pill ${open ? "pill-gold" : ""}">${open} open</span></h3>` + (error ? `<div class="callout">${esc(error.message)}</div>` : reqs.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>From</th><th>Topic</th><th>Message</th><th>Status</th></tr></thead><tbody>${reqs.map((r) => `<tr><td>${fmt(r.created_at)}</td><td>${esc(r.name)}<br/><a href="mailto:${esc(r.email)}?subject=${encodeURIComponent("Raasta support: " + r.topic)}">${esc(r.email)}</a></td><td>${esc(r.topic)}</td><td style="max-width:420px;white-space:pre-wrap">${esc(r.message)}</td><td><select data-sid="${r.id}">${["open", "answered", "closed"].map((x) => `<option ${x === r.status ? "selected" : ""}>${x}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No support requests yet</div>`);
+    box.querySelectorAll("[data-sid]").forEach((sel) => sel.onchange = async () => { const { error: e } = await sb.from("support_requests").update({ status: sel.value }).eq("id", sel.dataset.sid); toast(e ? e.message : "Status saved"); });
+  }
+}
+
+const SUPPORT_TOPICS = ["Account and sign in", "Programs and data", "AI tools", "Visa and documents", "Privacy and data deletion", "Bug or error", "Other"];
+const FAQ = [
+  ["Is Raasta really free?", "Yes. Searching programs, the guides, the tracker and the AI tools are free. AI tools have a daily limit so the service stays free for everyone."],
+  ["I did not get my sign in code.", "Check your spam folder and wait one minute. Then use Resend code. If you set a password in your profile you can also sign in with it."],
+  ["A program or deadline looks wrong.", "Always trust the official university page first. Then tell us with the form below and include the program name, so we can fix it."],
+  ["Do I need an APS certificate from Pakistan?", "No. APS is for India, China, Vietnam and Mongolia. Read the step by step visa guide for the full process."],
+  ["Are my documents stored by the document checker?", "No. They are analysed once and then discarded. You can also download or delete all your data in your profile."],
+  ["How do I delete my account?", "Open your profile and use Delete my account at the bottom. Everything is removed, including your photo."]
+];
+function viewSupport() {
+  const mail = CFG.CONTACT_EMAIL || "raheelgul063@gmail.com";
+  const name = session?.user.user_metadata?.full_name || "", email = session?.user.email || "";
+  app.innerHTML = `${guideHero("Help and support", "How can we help?", "Read the quick answers below or send us a message. We usually reply within 2 working days.")}
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card"><h3>Quick answers</h3>${FAQ.map(([q, a]) => `<details class="faq"><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
+        <p class="notice" style="margin-top:12px">Prefer email? Write to <a href="mailto:${esc(mail)}">${esc(mail)}</a>.</p></section>
+      <form class="card" id="supForm">
+        <h3>Send us a message</h3>
+        <div class="form-row"><div class="field"><label for="sName">Your name</label><input id="sName" required maxlength="120" value="${esc(name)}" autocomplete="name" /></div>
+        <div class="field"><label for="sEmail">Email for our reply</label><input id="sEmail" type="email" required maxlength="200" value="${esc(email)}" autocomplete="email" /></div></div>
+        <div class="field"><label for="sTopic">Topic</label><select id="sTopic">${SUPPORT_TOPICS.map((t) => `<option>${esc(t)}</option>`).join("")}</select></div>
+        <div class="field"><label for="sMsg">Message</label><textarea id="sMsg" required minlength="10" maxlength="4000" placeholder="Tell us what happened, on which page, and what you expected."></textarea></div>
+        <p class="notice">Do not include passport, CNIC or bank numbers.</p>
+        <button class="btn gold" style="width:100%" id="supBtn">Send message</button>
+      </form>
+    </div>`;
+  $("#supForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const rec = { name: $("#sName").value.trim(), email: $("#sEmail").value.trim(), topic: $("#sTopic").value, message: $("#sMsg").value.trim(), page: document.referrer ? null : "support", user_id: session?.user.id || null };
+    if (rec.message.length < 10) { toast("Please write a few more words."); return; }
+    const btn = $("#supBtn"); btn.disabled = true; btn.textContent = "Sending...";
+    try {
+      if (!LIVE) { const all = local.get("support", []); all.unshift(rec); local.set("support", all); }
+      else { const { error } = await sb.from("support_requests").insert(rec); if (error) throw error; }
+      $("#supForm").innerHTML = `<h3>Message sent ✓</h3><p>Thank you, ${esc(rec.name)}. We will reply to <strong>${esc(rec.email)}</strong>, usually within 2 working days.</p><a class="btn ghost" href="#/">Back to home</a>`;
+    } catch (err) { btn.disabled = false; btn.textContent = "Send message"; toast(/Too many|busy/.test(err.message) ? err.message : "Could not send. Please email us instead."); }
+  };
 }
 
 function demoStats() {
@@ -1518,6 +1565,7 @@ const langPill = (p) => {
   if (/german/i.test(l)) return `<span class="pill pill-lang">German taught</span>`;
   return "";
 };
+const ncPill = (p) => /^Open/.test(p.nc_status || "") ? `<span class="pill pill-free">NC-frei</span>` : /^Restricted/.test(p.nc_status || "") ? `<span class="pill pill-nc">NC / selection</span>` : "";
 const compareList = () => local.get("compare", []);
 function langLevel(p) {
   const t = `${p.english_req || ""}`;
@@ -1539,7 +1587,7 @@ function progCard(p, saved) {
     <article class="prog-card">
       <a href="#/program?id=${p.id}" class="prog-main">
         <div class="prog-head"><span class="mono" aria-hidden="true">${esc(mono(p.university))}</span><div>
-          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${langPill(p)}</div>
+          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${langPill(p)}${ncPill(p)}</div>
         </div></div>
         <h3>${esc(p.program)}</h3>
         <p class="prog-uni">${esc(p.university)}</p>
@@ -1703,6 +1751,7 @@ async function viewUniversity() {
       <div><strong>${u.bachelor}</strong><span>Bachelor's</span></div>
       <div><strong>${u.free}</strong><span>Tuition free</span></div>
     </div>
+    <section class="card uni-city" id="uniCity"></section>
     ${u.type === "Private university" ? `<div class="callout"><strong>Private university:</strong> tuition is usually higher, but admission can be faster and more flexible. Check that the degree is state recognised before you pay any fee.</div>` : ""}
     <section class="section">
       <div class="section-head"><div><h2>Programs</h2><p>${fields.map(([f, n]) => `${esc(FIELD_META[f]?.name || f)} (${n})`).join(" · ")}</p></div>
@@ -1717,6 +1766,37 @@ async function viewUniversity() {
   };
   app.querySelectorAll("input[name=udeg]").forEach((r) => r.onchange = render);
   render();
+  renderUniCity(u);
+}
+
+// City summary inside a university page: uses the full city guide when we have one, otherwise live Wikipedia data
+async function renderUniCity(u) {
+  const box = $("#uniCity"); if (!box) return;
+  const cityName = String(u.city || "").split(",")[0].replace(/\s*\(.*$/, "").trim();
+  if (!cityName) { box.remove(); return; }
+  const guide = G().cities.find((c) => inCity({ city: u.city }, c));
+  const c = guide || { slug: "x-" + cityName.toLowerCase(), wiki: cityName, name: cityName };
+  const J = G().jobs || { apps: [], agencies: [] };
+  box.innerHTML = `<div class="uc-img" id="ucImg"></div>
+    <div class="uc-body">
+      <span class="eyebrow">Life in ${esc(guide ? guide.name : cityName)}</span>
+      <h3>${esc(guide ? guide.name : cityName)}${u.state ? `, ${esc(u.state)}` : ""}</h3>
+      <p id="ucText">${esc(guide ? guide.vibe : "")}</p>
+      <div class="uc-facts">
+        <div><span>Population</span><strong id="ucPop">…</strong></div>
+        <div><span>Student flat</span><strong>${esc(guide?.rent || "Check WG-Gesucht")}</strong></div>
+        <div><span>Health insurance</span><strong>about €141 to €146</strong></div>
+        <div><span>Transport</span><strong>Semester ticket</strong></div>
+      </div>
+      ${guide ? `<p class="uc-emp"><strong>Main employers:</strong> ${guide.employers.slice(0, 6).map(esc).join(", ")}</p>` : ""}
+      <p class="uc-emp"><strong>Student jobs:</strong> ${[...J.apps.slice(0, 2), ...J.agencies.slice(0, 3)].map((j) => `<a href="${safeUrl(j.url)}" target="_blank" rel="noopener">${esc(j.name)}</a>`).join(", ")}, and <a href="#/jobs">more job platforms</a>.</p>
+      <div class="prog-cta">${guide ? `<a class="btn small" href="#/city?c=${guide.slug}">Full ${esc(guide.name)} guide</a>` : ""}<a class="btn ghost small" href="#/moving">Moving to Germany</a></div>
+    </div>`;
+  const d = await cityLive(c);
+  if (!$("#uniCity")) return;
+  if (d.thumb || d.img) $("#ucImg").style.backgroundImage = `url("${d.thumb || d.img}")`; else $("#ucImg").remove();
+  $("#ucPop").textContent = d.pop ? d.pop.toLocaleString("en-US") + (d.popYear ? ` (${d.popYear})` : "") : "n/a";
+  if (!guide && d.extract) $("#ucText").textContent = d.extract.length > 260 ? d.extract.slice(0, 257).replace(/\s+\S*$/, "") + "…" : d.extract;
 }
 
 async function viewFinder() {
@@ -1728,7 +1808,7 @@ async function viewFinder() {
   ].map((x) => Promise.resolve(x).catch(() => null)));
   const saved = new Set(savedList || []);
   const hasParams = [...(route.params || [])].length > 0;
-  const f = Object.assign({ q: "", degree: "", field: "", lang: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
+  const f = Object.assign({ q: "", degree: "", field: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
     hasParams ? {} : local.get("finderFilters", {}), Object.fromEntries(route.params || []));
   if (!hasParams && !local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
   const states = [...new Set(progs.map((p) => p.state).filter(Boolean))].sort();
@@ -1749,6 +1829,7 @@ async function viewFinder() {
           <div class="seg" role="radiogroup" aria-label="Degree">${["", "Master", "Bachelor"].map((d) => `<label><input type="radio" name="fdegree" value="${d}" ${f.degree === d ? "checked" : ""}/><span>${d || "All"}</span></label>`).join("")}</div></div>
         <div class="field"><label for="ffield">Field</label><select id="ffield">${opt("", "All fields", f.field)}${FIELDS.filter((x) => fields.includes(x)).map((x) => opt(x, x, f.field)).join("")}</select></div>
         <div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
+        <div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>
         <div class="field"><label for="ftuition">Tuition (non EU)</label><select id="ftuition">${opt("", "Any", f.tuition)}${opt("free", "Tuition free only", f.tuition)}${opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
         <div class="field"><label for="fduration">Duration</label><select id="fduration">${opt("", "Any", f.duration)}${opt("3", "3 semesters or less", f.duration)}${opt("4", "4 semesters", f.duration)}${opt("6", "6 semesters or more", f.duration)}</select></div>
         <div class="field"><label for="fintake">Intake</label><select id="fintake">${opt("", "Any", f.intake)}${opt("Winter", "Winter (starts Oct)", f.intake)}${opt("Summer", "Summer (starts Apr)", f.intake)}</select></div>
@@ -1775,7 +1856,7 @@ async function viewFinder() {
 
   const read = () => ({
     q: $("#fq").value.trim(), degree: (app.querySelector("input[name=fdegree]:checked") || {}).value || "",
-    field: $("#ffield").value, lang: $("#flang").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
+    field: $("#ffield").value, lang: $("#flang").value, nc: $("#fnc").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
     deadline: $("#fdeadline").value, state: $("#fstate").value, type: $("#ftype").value, sort: $("#fsort").value, savedOnly: $("#fsaved").checked ? "1" : ""
   });
   const render = () => {
@@ -1786,6 +1867,8 @@ async function viewFinder() {
       if (words.length) { const hay = `${p.program} ${p.university} ${p.city} ${p.field} ${p.title || ""}`.toLowerCase(); if (!words.every((w) => hay.includes(w))) return false; }
       if (c.degree && p.degree !== c.degree) return false;
       if (c.field && p.field !== c.field) return false;
+      if (c.nc === "open" && !/^Open/.test(p.nc_status || "")) return false;
+      if (c.nc === "restricted" && !/^Restricted/.test(p.nc_status || "")) return false;
       if (c.lang) { const l = p.language || "English", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
       if (c.tuition === "free" && p.tuition !== 0) return false;
       if (c.tuition === "1500" && !(p.tuition != null && p.tuition <= 1500)) return false;
@@ -1813,7 +1896,7 @@ async function viewFinder() {
     if (prof?.field) list.sort((a, b) => (b.field === prof.field) - (a.field === prof.field));
     $("#count").textContent = `${list.length.toLocaleString("en-US")} program${list.length === 1 ? "" : "s"}`;
     // Show every active filter as a removable chip, so remembered filters are never hidden
-    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
+    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], nc: (v) => (v === "open" ? "NC-frei" : "NC or selection"), tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
     const act = Object.entries(c).filter(([k, v]) => v && LBL[k]);
     $("#activeF").innerHTML = act.length ? `${act.map(([k, v]) => `<button type="button" class="fchip" data-clear="${k}">${esc(LBL[k](v))} <span aria-hidden="true">×</span><span class="sr-only">Remove filter</span></button>`).join("")}${act.length > 1 ? `<button type="button" class="btn link small" data-clear="all">Clear all</button>` : ""}` : "";
     $("#activeF").querySelectorAll("[data-clear]").forEach((b) => b.onclick = () => {
@@ -1821,7 +1904,7 @@ async function viewFinder() {
       if (k === "all") { $("#resetF").click(); return; }
       if (k === "degree") app.querySelector("input[name=fdegree][value='']").checked = true;
       else if (k === "savedOnly") $("#fsaved").checked = false;
-      else { const el = { q: "#fq", field: "#ffield", lang: "#flang", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
+      else { const el = { q: "#fq", field: "#ffield", lang: "#flang", nc: "#fnc", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
       history.replaceState(null, "", "#/finder"); render();
     });
     $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";

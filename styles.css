@@ -636,3 +636,20 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
 .pg-gap { align-self: center; color: var(--muted); padding: 0 2px; }
 @media (max-width: 960px) { .job-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .job-grid { grid-template-columns: 1fr; } }
+.faq { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.faq summary { cursor: pointer; font-weight: 700; list-style: none; }
+.faq summary::after { content: "+"; float: right; color: var(--green); font-weight: 800; }
+.faq[open] summary::after { content: "−"; }
+.faq p { margin: 8px 0 0; color: var(--muted); font-size: .93rem; }
+.uni-city { display: grid; grid-template-columns: 300px 1fr; gap: 0; padding: 0; overflow: hidden; margin: 14px 0; }
+.uc-img { background: linear-gradient(135deg, var(--green), var(--navy)) center / cover no-repeat; min-height: 220px; }
+.uc-body { padding: 20px 22px; }
+.uc-body h3 { margin: 6px 0 4px; font-size: 1.3rem; }
+.uc-body > p { color: var(--muted); margin: 0 0 10px; font-size: .93rem; }
+.uc-facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.uc-facts div { background: var(--cream); border-radius: 12px; padding: 8px 10px; display: grid; }
+.uc-facts span { font-size: .74rem; color: var(--muted); font-weight: 600; }
+.uc-facts strong { font-size: .92rem; }
+.uc-emp { font-size: .9rem; margin: 6px 0; }
+@media (max-width: 860px) { .uni-city { grid-template-columns: 1fr; } .uc-img { min-height: 160px; } .uc-facts { grid-template-columns: 1fr 1fr; } }
+.pill-nc { background: #FDE7DF; color: #9A3B1F; }
