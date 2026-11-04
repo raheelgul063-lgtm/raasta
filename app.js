@@ -406,6 +406,8 @@ function viewHome() {
       <div class="field-grid" id="fieldGrid">${FIELDS.map((f) => `<a class="field-card" href="#/finder?field=${encodeURIComponent(f)}"><span class="fc-ic">${FIELD_META[f].ic}</span><strong>${esc(FIELD_META[f].name)}</strong><em>${esc(FIELD_META[f].d)}</em><span class="fc-n" data-fcount="${esc(f)}"></span></a>`).join("")}</div>
     </section>
 
+    <section class="section"><a class="sch-home card" href="#/scholarships"><span class="fc-ic">🎓</span><div><strong>Scholarships for Pakistani students</strong><em>DAAD, Erasmus Mundus, foundations and university discounts, with criteria, documents and deadlines.</em></div><span class="btn gold small">See scholarships</span></a></section>
+
     <section class="section ai-moat">
       <div class="ai-moat-copy">
         <span class="eyebrow">Your AI advisor</span>
@@ -809,7 +811,7 @@ async function viewLetter() {
 /* ---------------- Router ---------------- */
 const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa: viewVisa, letter: viewLetter, interview: viewInterview,
   finder: viewFinder, program: viewProgram, universities: viewUniversities, university: viewUniversity, compare: viewCompare,
-  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, support: viewSupport, help: viewSupport, tools: () => viewHub("tools"), guides: () => viewHub("guides"), doccheck: () => viewDocCheck(),
+  cities: viewCities, city: viewCity, "visa-guide": viewVisaGuide, moving: viewMoving, grades: viewGrades, jobs: viewJobs, support: viewSupport, help: viewSupport, tools: () => viewHub("tools"), guides: () => viewHub("guides"), scholarships: viewScholarships, scholarship: viewScholarship, doccheck: () => viewDocCheck(),
   welcome: () => viewProfile(true), profile: () => viewProfile(false), privacy: viewPrivacy, impressum: viewImpressum, imprint: viewImpressum, admin: viewAdmin };
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
@@ -817,7 +819,7 @@ function route() {
   // Supabase magic link returns tokens in the hash; let the client read them first
   if (key.startsWith("access_token") || key.startsWith("error")) { history.replaceState(null, "", location.pathname + "#/"); return route(); }
   (routes[key] || viewHome)();
-  const navKey = { program: "finder", university: "universities", city: "cities", "visa-guide": "guides", moving: "guides", jobs: "guides", letter: "tools", interview: "tools", doccheck: "tools", grades: "tools", compare: "tools" }[key] || key;
+  const navKey = { scholarship: "scholarships", program: "finder", university: "universities", city: "cities", "visa-guide": "guides", moving: "guides", jobs: "guides", letter: "tools", interview: "tools", doccheck: "tools", grades: "tools", compare: "tools" }[key] || key;
   renderCompareBar();
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active", a.dataset.nav === (navKey || "home")));
   window.scrollTo(0, 0); app.focus({ preventScroll: true });
@@ -1254,10 +1256,123 @@ function viewHub(kind) {
     : [["#/visa-guide", "🛂", "Student visa from Pakistan", "Step by step, with fees and the blocked account. Dated."],
     ["#/moving", "🧳", "Moving to Germany", "Registration, insurance, housing, banks, transport and culture."],
     ["#/cities", "🏙️", "City guides", "Jobs, internships and rent in 12 student cities."],
+    ["#/scholarships", "🎓", "Scholarships", "DAAD, Erasmus Mundus, foundations and university scholarships, with deadlines."],
     ["#/jobs", "💼", "Student jobs", "Zenjob, Jobvalley, TimePartner, Randstad and more, with 2026 work rules."],
     ["#/roadmap", "🧭", "10 step roadmap", "From choosing a program to your first day."]];
   app.innerHTML = `${guideHero(kind === "tools" ? "AI tools" : "Guides", kind === "tools" ? "Free AI tools for your application" : "Guides for every step", kind === "tools" ? "Built for students from Pakistan. Free, with a daily AI limit." : "Checked facts, with dates, so you know what is current.")}
     <div class="grid cols-3">${items.map(([h, ic, t, d]) => `<a class="card" href="${h}"><div class="icon">${ic}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></a>`).join("")}</div>`;
+}
+
+/* ---------------- Scholarships ---------------- */
+const SCH = () => G().scholarships || { list: [], unis: {}, current: [], howto: [], docs: [] };
+const todayISO = () => new Date().toISOString().slice(0, 10);
+function daysLeft(iso) { if (!iso) return null; return Math.ceil((new Date(iso + "T23:59:59") - new Date()) / 864e5); }
+function schDeadlineTag(s) {
+  const d = daysLeft(s.next);
+  if (d == null) return `<span class="pill">Deadline varies</span>`;
+  if (d < 0) return `<span class="pill">Next round soon</span>`;
+  const when = new Date(s.next + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return `<span class="pill ${d <= 45 ? "pill-nc" : "pill-gold"}">${s.approx ? "About " : ""}${esc(when)} · ${d === 0 ? "today" : d + " days left"}</span>`;
+}
+function schCard(s) {
+  return `<a class="sch-card" href="#/scholarship?id=${s.id}">
+    <div class="sch-top"><span class="pill ${s.kind === "Full" ? "pill-green" : "pill-lang"}">${s.kind === "Full" ? "Fully funded" : "Partial"}</span>${s.levels.map((l) => `<span class="pill">${esc(l)}</span>`).join("")}${s.german ? `<span class="pill">German needed</span>` : ""}</div>
+    <strong>${esc(s.name)}</strong><em>${esc(s.by)}</em>
+    <div class="sch-amt">${esc(s.amount)}</div>
+    <p>${esc(s.fields)}</p>
+    <div class="sch-foot">${schDeadlineTag(s)}<span class="sch-from">${s.fromPk ? "Apply from Pakistan" : "Apply once admitted in Germany"}</span></div>
+  </a>`;
+}
+function viewScholarships() {
+  const S = SCH();
+  const p = route.params;
+  const f = { level: p.get("level") || "", kind: p.get("kind") || "", q: p.get("q") || "" };
+  const upcoming = S.list.filter((s) => daysLeft(s.next) != null && daysLeft(s.next) >= 0).sort((a, b) => a.next.localeCompare(b.next)).slice(0, 3);
+  app.innerHTML = `${guideHero("Scholarships", "Scholarships to study in Germany", `Fully funded and partial scholarships that students from Pakistan can really get, with criteria, documents and deadlines. Checked <strong>${esc(S.checked)}</strong>. Always confirm on the official page before you apply.`)}
+    ${upcoming.length ? `<section class="sch-soon"><h2>Next deadlines</h2><div class="sch-soon-row">${upcoming.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong>${schDeadlineTag(s)}</a>`).join("")}</div></section>` : ""}
+    <form class="card sch-filters" id="schF">
+      <div class="field"><label for="sq">Search</label><input id="sq" type="search" placeholder="e.g. design, PhD, public policy" value="${esc(f.q)}" /></div>
+      <div class="field"><label for="slv">Level</label><select id="slv">${["", "Bachelor", "Master", "PhD"].map((v) => `<option value="${v}" ${v === f.level ? "selected" : ""}>${v || "Any level"}</option>`).join("")}</select></div>
+      <div class="field"><label for="skd">Funding</label><select id="skd">${[["", "Any"], ["Full", "Fully funded"], ["Partial", "Partial"]].map(([v, t]) => `<option value="${v}" ${v === f.kind ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+    </form>
+    <div class="sch-grid" id="schList"></div>
+
+    <section class="section"><div class="section-head"><div><h2>How to apply, step by step</h2><p>The same plan works for almost every scholarship.</p></div></div>
+      <ol class="steps">${S.howto.map(([t, d], i) => `<li class="step"><span class="step-num">${i + 1}</span><div><h3>${esc(t)}</h3><p>${esc(d)}</p></div></li>`).join("")}</ol></section>
+
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card"><h3>Documents you usually need</h3><ul class="needs">${S.docs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><a class="btn gold small" href="#/doccheck">Check my documents with AI</a></section>
+      <section class="card"><h3>Already studying in Germany?</h3>${S.current.map(([t, d]) => `<div class="sch-cur"><strong>${esc(t)}</strong><p>${esc(d)}</p></div>`).join("")}</section>
+    </div>
+
+    <section class="section"><div class="section-head"><div><h2>Private university scholarships</h2><p>Tuition discounts change every intake, so each link opens the university's own scholarship page.</p></div></div>
+      <div class="job-grid">${Object.entries(S.unis).map(([n, u]) => `<a class="job-card" href="#/university?name=${encodeURIComponent(n)}"><strong>${esc(n)}</strong><span>${esc(u.items[0])}${u.items.length > 1 ? ` and ${u.items.length - 1} more` : ""}</span></a>`).join("")}</div></section>
+
+    <div class="ai-strip card"><div><h3>Not sure which scholarship fits you?</h3><p>Tell the AI your degree, CGPA, work experience and field. It will suggest scholarships and a plan.</p></div><a class="btn gold" href="#/visa?q=${encodeURIComponent("Which scholarships for Germany fit me? My degree is ..., CGPA ..., work experience ...")}">Ask the AI advisor</a></div>
+    <p class="notice">Not affiliated with DAAD or any foundation. Amounts are 2026 rates. Deadlines marked "About" are approximate because the provider only says "generally".</p>`;
+  const render = () => {
+    const q = $("#sq").value.trim().toLowerCase(), lv = $("#slv").value, kd = $("#skd").value;
+    const words = q.split(/\s+/).filter(Boolean);
+    const list = S.list.filter((s) => (!lv || s.levels.includes(lv)) && (!kd || s.kind === kd) && words.every((w) => (s.name + " " + s.by + " " + s.fields + " " + s.levels.join(" ")).toLowerCase().includes(w)))
+      .sort((a, b) => (daysLeft(a.next) ?? 9999) - (daysLeft(b.next) ?? 9999));
+    $("#schList").innerHTML = list.map(schCard).join("") || `<div class="empty">No scholarship matches. Try another level or word.</div>`;
+  };
+  $("#schF").oninput = render; $("#schF").onsubmit = (e) => e.preventDefault();
+  render();
+}
+function viewScholarship() {
+  const s = SCH().list.find((x) => x.id === route.params.get("id"));
+  if (!s) { app.innerHTML = `<div class="empty">Scholarship not found. <a href="#/scholarships">All scholarships</a></div>`; return; }
+  const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join("");
+  app.innerHTML = `${guideHero(s.by, s.name, `${esc(s.fields)}<br/>Checked ${esc(SCH().checked)}.`)}
+    <a href="#/scholarships" class="back">← All scholarships</a>
+    <div class="stat-row">
+      <div><strong>${s.kind === "Full" ? "Full" : "Partial"}</strong><span>Funding</span></div>
+      <div><strong>${esc(s.levels.join(", "))}</strong><span>Level</span></div>
+      <div><strong>${s.fromPk ? "Yes" : "After admission"}</strong><span>Apply from Pakistan</span></div>
+      <div><strong>${s.german ? "Yes" : "Not always"}</strong><span>German needed</span></div>
+    </div>
+    <div class="callout"><strong>Deadline:</strong> ${esc(s.deadline)} ${schDeadlineTag(s)}</div>
+    ${s.tip ? `<div class="callout" style="margin-top:10px"><strong>Our tip:</strong> ${esc(s.tip)}</div>` : ""}
+    <div class="grid cols-2" style="margin-top:16px;align-items:start">
+      <section class="card"><h2>What you get</h2><p class="sch-amt">${esc(s.amount)}</p><ul class="needs">${li(s.covers)}</ul>${s.notCovered ? `<p class="notice">Not covered: ${esc(s.notCovered)}</p>` : ""}</section>
+      <section class="card"><h2>Who can apply</h2><ul class="needs">${li(s.who)}</ul></section>
+      <section class="card"><h2>Documents</h2><ul class="needs">${li(s.docs)}</ul><a class="btn gold small" href="#/doccheck">Check my documents with AI</a></section>
+      <section class="card"><h2>How to apply</h2><ol class="sch-steps">${li(s.steps)}</ol></section>
+    </div>
+    <div class="prog-cta" style="margin-top:16px">
+      <a class="btn gold" href="${safeUrl(s.apply || s.info)}" target="_blank" rel="noopener">Go to the application ↗</a>
+      <a class="btn ghost" href="${safeUrl(s.info)}" target="_blank" rel="noopener">Official information ↗</a>
+      <a class="btn ghost" href="#/visa?q=${encodeURIComponent(`Do I qualify for the ${s.name}? My degree is ..., CGPA ..., work experience ...`)}">Ask the AI if I qualify</a>
+      <a class="btn ghost" href="#/letter">Draft my motivation letter</a>
+    </div>
+    <p class="notice">Raasta is not the scholarship provider. The official page always has the final word.</p>`;
+}
+// Scholarship block for a university page
+function uniScholarshipBlock(u) {
+  const S = SCH(); const own = S.unis[u.name];
+  const general = S.list.filter((s) => ["daad-art", "daad-epos", "daad-hsp", "deutschland", "boell"].includes(s.id) && (u.type !== "Private university" || s.id === "deutschland"));
+  return `<section class="card" style="margin-top:16px"><h2>Scholarships at ${esc(u.name)}</h2>
+    ${own ? `<ul class="needs">${own.items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="notice"><strong>How to apply:</strong> ${esc(own.how)}</p>
+      <div class="prog-cta"><a class="btn gold small" href="${safeUrl(own.url)}" target="_blank" rel="noopener">Scholarship page and application ↗</a><a class="btn ghost small" href="#/scholarships">All scholarships</a></div>`
+    : `<p>${u.type === "Private university" ? "This university may offer tuition discounts. Ask admissions before you pay a deposit." : "Most public universities in Germany take part in the Deutschlandstipendium (€300 per month) and give DAAD graduation scholarships through the International Office. Search the university website for \"Stipendien\" or \"Deutschlandstipendium\"."}</p>
+      <div class="sch-mini">${general.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong><span>${esc(s.amount)}</span></a>`).join("")}</div>
+      <div class="prog-cta">${u.site ? `<a class="btn ghost small" href="${safeUrl(u.site)}" target="_blank" rel="noopener">University website ↗</a>` : ""}<a class="btn gold small" href="#/scholarships">All scholarships</a></div>`}
+  </section>`;
+}
+// Scholarship suggestions for a program page
+function programScholarshipBlock(p) {
+  const S = SCH(); const own = S.unis[p.university];
+  const txt = (p.program + " " + (p.field || "")).toLowerCase();
+  const art = /design|art|film|animation|illustration|visual|media|photograph|fashion/.test(txt);
+  const pol = /policy|governance|public admin|development|peace|international relations/.test(txt);
+  const ids = [art && p.degree === "Master" ? "daad-art" : null, pol && p.degree === "Master" ? "daad-hsp" : null, p.degree === "Master" ? "daad-epos" : null, p.degree === "Master" ? "erasmus" : null, "deutschland"].filter(Boolean);
+  const list = ids.map((id) => S.list.find((s) => s.id === id)).filter(Boolean).slice(0, 4);
+  return `<section class="card" style="margin-top:16px"><h2>Scholarships for this program</h2>
+    ${own ? `<div class="callout"><strong>${esc(p.university)}:</strong> ${esc(own.items.join("; "))}. <a href="${safeUrl(own.url)}" target="_blank" rel="noopener">Scholarship page ↗</a></div>` : ""}
+    <div class="sch-mini">${list.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong><span>${esc(s.amount)} · ${esc(s.deadline.split(".")[0])}</span></a>`).join("")}</div>
+    <p class="notice">EPOS only funds courses on DAAD's EPOS list. Check each scholarship's rules for this exact program.</p>
+    <div class="prog-cta"><a class="btn ghost small" href="#/scholarships">All scholarships</a></div></section>`;
 }
 
 /* ---------------- AI document checker ---------------- */
@@ -1816,6 +1931,7 @@ async function viewUniversity() {
       <div><strong>${u.free}</strong><span>Tuition free</span></div>
     </div>
     <section class="card uni-city" id="uniCity"></section>
+    ${uniScholarshipBlock(u)}
     ${u.type === "Private university" ? `<div class="callout"><strong>Private university:</strong> tuition is usually higher, but admission can be faster and more flexible. Check that the degree is state recognised before you pay any fee.</div>` : ""}
     <section class="section">
       <div class="section-head"><div><h2>Programs</h2><p>${fields.map(([f, n]) => `${esc(FIELD_META[f]?.name || f)} (${n})`).join(" · ")}</p></div>
@@ -2087,6 +2203,8 @@ async function viewProgram() {
       ${p.admission_req ? `<div class="adm-req"><strong>Academic requirements</strong><p>${esc(p.admission_req)}</p><span class="notice">From the program's DAAD listing.</span></div>` : ""}
       <div class="prog-cta"><a class="btn gold small" href="#/doccheck?program=${p.id}">Check my documents for this program</a><a class="btn ghost small" href="#/grades">Convert my grade</a></div>
     </section>
+
+    ${programScholarshipBlock(p)}
 
     <section class="card" style="margin-top:16px">
       <h2>What you need to apply</h2>
