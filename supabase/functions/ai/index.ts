@@ -43,11 +43,24 @@ Universities:
 
 const SITE = Deno.env.get("SITE_URL") ?? "https://raheelgul063-lgtm.github.io/raasta/";
 
+// Scholarship, jobs, moving and city facts: generated from the website's guides (ai-knowledge.json), cached for 30 minutes
+let KNOW = { text: "", at: 0 };
+async function knowledge(): Promise<string> {
+  if (KNOW.text && Date.now() - KNOW.at < 30 * 60 * 1000) return KNOW.text;
+  try {
+    const r = await fetch(`${SITE}ai-knowledge.json?t=${Date.now()}`);
+    if (r.ok) { const j = await r.json(); if (typeof j.text === "string" && j.text.length > 1000) KNOW = { text: j.text.slice(0, 60000), at: Date.now() }; }
+  } catch (e) { console.warn("knowledge fetch failed", String(e)); }
+  return KNOW.text;
+}
+
 function systemFor(mode: string, ctx: Record<string, string>, catalog = ""): string {
   if (mode === "visa") {
-    return `You are Raasta's assistant, helping Pakistani students who want to study in Germany: choosing programs, university applications (uni-assist, documents, deadlines), and the student visa. You are friendly, clear and practical, like a senior student who already went through the process.
+    return `You are Raasta's assistant, helping Pakistani students who want to study in Germany or already study there: choosing programs, applications (uni-assist, documents, deadlines), scholarships, the student visa and student life. You are friendly, clear and practical, like a senior student who already went through the process.
 
 ${VISA_FACTS}
+
+(Scholarships, student jobs, moving and city facts are in the knowledge block above. Use them.)
 
 Raasta has about 2,000 international Bachelor's and Master's programs in Germany (public, applied sciences and private universities; English or German taught). Below are the ones that best match this conversation, found by a keyword search. Format: [id] degree | program | university (type) | city | field | teaching language | tuition per semester for non EU | next deadlines (non EU)
 ${catalog || "(no keyword matches for this message)"}
@@ -60,12 +73,16 @@ Program recommendations:
 - German taught programs usually need German at C1 (DSH 2 or TestDaF 4x4). Mention this whenever you suggest one.
 - Remind them to check the requirements on the university page linked on each Raasta program page.
 
-Rules:
-- Base answers on the facts above. If a question goes beyond them or depends on an individual case, say what you know, then tell the student to check the portal checklist or the official page, with the link.
-- Never invent document names, fees, processing times or rules. Never promise a visa outcome.
-- Do not help with forged or borrowed bank statements, fake documents, false information or any way to mislead the embassy. Explain briefly that it leads to refusal and possible bans.
-- Keep answers short (under 200 words) unless the student asks for detail. End with one helpful next step when it fits.
-- Only answer questions related to studying in Germany, the visa and student life in Germany. Politely decline other topics.
+How to answer (most important):
+- Answer the student's actual question first, in the first 1 to 2 sentences, with a clear verdict: "Yes", "Likely", "Unlikely", "No" or "It depends on X". Then give the reasons, using everything the student told you (semester, university, degree, grades, years in Germany) and the knowledge below.
+- Never answer with only "check the official website" or "ask the university". That is useless to the student. Work it out for them. A link or contact is the final next step, after you have given a real answer.
+- If one fact decides the answer and you do not have it, give the answer for each case ("If your standard period ends this semester: unlikely. If you still have 2 or more semesters: yes, apply in the next call.") and ask that one question at the end.
+- Use web_search only when you need a current or specific fact you do not have, for example a university's current scholarship call, an exact deadline or a recent rule change. Prefer official sources (university, DAAD, government, the scholarship provider). Never search for facts that are already in your knowledge. Say briefly what you found and from where.
+- Recommend Raasta pages when they help, with the full link (scholarship pages, the program finder, guides).
+- Never invent document names, fees, deadlines or rules. Never promise a visa or scholarship outcome. If sources disagree, say so.
+- Do not help with forged or borrowed bank statements, fake documents or misleading the embassy. Explain briefly that it leads to refusal and possible bans.
+- Keep answers focused: under 250 words unless the student asks for detail. End with one concrete next step.
+- Only answer questions about studying in Germany, scholarships, the visa and student life in Germany. Politely decline other topics.
 ${STYLE}`;
   }
   if (mode === "letter") {
@@ -173,9 +190,15 @@ Deno.serve(async (req) => {
     // Haiku: turn it off. Sonnet 5.5: "between_tools" is its lowest setting (no up-front thinking without tools).
     thinking: { type: mode === "letter" ? "between_tools" : "disabled" },
     max_tokens: mode === "letter" ? 4000 : 2000,
-    system: systemFor(mode, ctx, catalog),
+    system: mode === "visa"
+      ? [{ type: "text", text: `RAASTA KNOWLEDGE (checked facts shown on the Raasta website)\n\n${(await knowledge()) || "(not available right now)"}`, cache_control: { type: "ephemeral" } }, { type: "text", text: systemFor(mode, ctx, catalog) }]
+      : systemFor(mode, ctx, catalog),
     messages,
   };
+  if (mode === "visa") {
+    payload.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
+    payload.max_tokens = 3000;
+  }
   const callClaude = (body: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -185,6 +208,7 @@ Deno.serve(async (req) => {
   if (res.status === 400) {
     const t = await res.text();
     if (/thinking/i.test(t)) { console.warn("thinking setting rejected, retrying without it", t.slice(0, 200)); delete payload.thinking; payload.max_tokens = 6000; res = await callClaude(payload); }
+    else if (payload.tools) { console.warn("tools rejected, retrying without web search", t.slice(0, 200)); delete payload.tools; res = await callClaude(payload); }
     else res = new Response(t, { status: 400 });
   }
 
@@ -192,8 +216,17 @@ Deno.serve(async (req) => {
     console.error("Claude API error", res.status, await res.text());
     return json({ error: "The AI is busy right now. Please try again in a minute." }, 502);
   }
-  const data = await res.json();
-  const reply = (data.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("\n").trim();
+  let data = await res.json();
+  let content = data.content ?? [];
+  // Web search can pause a long turn; continue it (at most twice)
+  for (let i = 0; i < 2 && data.stop_reason === "pause_turn"; i++) {
+    payload.messages = [...messages, { role: "assistant", content }];
+    const r2 = await callClaude(payload);
+    if (!r2.ok) break;
+    data = await r2.json();
+    content = [...content, ...(data.content ?? [])];
+  }
+  const reply = content.filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("").trim();
   if (data.stop_reason === "max_tokens") console.warn("AI reply hit max_tokens", mode, reply.length);
   if (!reply) return json({ error: "The AI could not finish this answer. Please ask again, a bit shorter." }, 502);
   return json({ reply: reply.replace(/[\u2013\u2014]/g, ", ") });
