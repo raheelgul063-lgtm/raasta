@@ -1363,7 +1363,7 @@ function uniScholarshipBlock(u) {
 // Scholarship suggestions for a program page
 function programScholarshipBlock(p) {
   const S = SCH(); const own = S.unis[p.university];
-  const txt = (p.program + " " + (p.field || "")).toLowerCase();
+  const txt = ((p.program || "") + " " + (p.title || "") + " " + (p.field || "")).toLowerCase();
   const art = /design|art|film|animation|illustration|visual|media|photograph|fashion/.test(txt);
   const pol = /policy|governance|public admin|development|peace|international relations/.test(txt);
   const ids = [art && p.degree === "Master" ? "daad-art" : null, pol && p.degree === "Master" ? "daad-hsp" : null, p.degree === "Master" ? "daad-epos" : null, p.degree === "Master" ? "erasmus" : null, "deutschland"].filter(Boolean);
