@@ -698,3 +698,16 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
 @media (max-width: 900px) { .sch-grid, .sch-soon-row { grid-template-columns: 1fr 1fr; } .sch-filters { grid-template-columns: 1fr 1fr; } .sch-filters .field:first-child { grid-column: 1 / -1; } }
 @media (max-width: 600px) { .sch-grid, .sch-soon-row, .sch-mini { grid-template-columns: 1fr; } .sch-home { grid-template-columns: 1fr; } }
 .uni-coverage { margin-bottom: 16px; }
+
+/* Country switcher (Germany / UK) */
+.ctry-switch { display: flex; gap: 4px; margin-left: 14px; padding: 3px; border-radius: 12px; background: #F1F4F2; border: 1px solid var(--line); }
+.ctry { display: grid; justify-items: center; gap: 2px; padding: 4px 8px 3px; border: 1px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; font: inherit; color: var(--muted); }
+.ctry:hover { color: var(--ink); background: #fff; }
+.ctry.on { background: #fff; color: var(--green); border-color: var(--green-2); box-shadow: 0 1px 3px rgba(14, 77, 58, .12); }
+.ctry-flag svg { width: 24px; height: 15px; display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); }
+.ctry-name { font-size: .68rem; font-weight: 800; letter-spacing: .02em; line-height: 1; }
+.ctry:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.dest .flag svg { width: 44px; height: 28px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); }
+@media (max-width: 1180px) { .ctry-switch { margin-left: 8px; } }
+@media (max-width: 860px) { .ctry-switch { margin-left: auto; } .ctry { padding: 3px 6px 2px; } }
+@media (max-width: 860px) { .auth-area { margin-left: 8px; } }

@@ -135,6 +135,97 @@ const local = {
   get(k, d) { try { return JSON.parse(localStorage.getItem("raasta_" + k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem("raasta_" + k, JSON.stringify(v)); } catch {} }
 };
+
+/* ---------------- Countries ---------------- */
+const UK_OFFICIAL = {
+  visaPage: "https://www.gov.uk/student-visa",
+  money: "https://www.gov.uk/student-visa/money",
+  ucas: "https://www.ucas.com",
+  tb: "https://www.gov.uk/tb-test-visa",
+  vfs: "https://visa.vfsglobal.com/pak/en/gbr/"
+};
+const ROADMAP_UK = [
+  { t: "Shortlist your courses", d: "Use the Raasta finder to filter UK programs by field, fees and intake, then read each course page. Note the English score, fees and deadlines.", tag: "Start 9 to 12 months before September", link: "#/finder", linkText: "Open the finder" },
+  { t: "Take an English test", d: "Most Master's ask for IELTS Academic 6.0 to 6.5 overall. Some universities accept other tests or your degree's medium of instruction. Check each course.", tag: "Results take about 1 to 2 weeks" },
+  { t: "Get your documents attested", d: "Many UK universities and scholarships ask for HEC attested degrees and transcripts. Do it early, it takes time.", tag: "Do this before applying", link: OFFICIAL.hec, linkText: "HEC attestation" },
+  { t: "Write your personal statement and CV", d: "A personal statement for each course (or one for UCAS), a 2 page CV and usually two references.", tag: "Use the AI letter builder" },
+  { t: "Apply", d: "Master's: apply on each university's website, early for September and by about October for January. Bachelor's: apply through UCAS, the main deadline for 2027 entry is 13 January 2027.", tag: "Track every application", link: UK_OFFICIAL.ucas, linkText: "UCAS" },
+  { t: "Offer, deposit and credibility check", d: "Meet the offer conditions, pay the tuition deposit and pass the university's pre-CAS interview. Ask about the refund if the visa is refused.", tag: "Use Interview practice" },
+  { t: "Show your money for 28 days", d: "Unpaid first year tuition plus living costs (from 30 November 2026: £1,570 a month in London, £1,203 elsewhere, up to 9 months), held 28 days in a row.", tag: "Statement max 31 days old", link: UK_OFFICIAL.money, linkText: "GOV.UK money rules" },
+  { t: "Get your CAS and TB test", d: "The university sends your CAS number. Book a TB test at an approved clinic in Pakistan (valid 6 months).", tag: "Check every CAS detail" },
+  { t: "Apply for the Student visa", d: "Apply on GOV.UK, pay the £558 fee and the £776 per year health surcharge, then give biometrics at VFS in Islamabad, Lahore, Karachi or Mirpur.", tag: "Decision in about 3 weeks", link: UK_OFFICIAL.visaPage, linkText: "GOV.UK Student visa" },
+  { t: "Fly, enrol and settle in", d: "Enrol at the university, register with a GP, open a bank account and get a National Insurance number if you will work.", tag: "Welcome to the UK" }
+];
+const CHECKLIST_UK = [
+  { group: "For your university applications", items: [
+    { k: "ukuni_transcripts", t: "Degree and transcripts", n: "Clear scans of every semester." },
+    { k: "ukuni_hec", t: "HEC attestation", n: "Many universities and scholarships ask for it." },
+    { k: "ukuni_school", t: "Matric and Intermediate or O/A level certificates", n: "Needed for Bachelor's, often asked for Master's too." },
+    { k: "ukuni_english", t: "IELTS Academic or an accepted English test", n: "Check the minimum score per course." },
+    { k: "ukuni_ps", t: "Personal statement", n: "Specific to the course (one statement for UCAS)." },
+    { k: "ukuni_cv", t: "CV", n: "UK style, 2 pages, no photo." },
+    { k: "ukuni_refs", t: "Two references", n: "From professors or employers." },
+    { k: "ukuni_passport", t: "Passport copy", n: "Data page." }
+  ]},
+  { group: "For your visa (GOV.UK)", items: [
+    { k: "ukvisa_offer", t: "Unconditional offer", n: "All conditions met." },
+    { k: "ukvisa_deposit", t: "Deposit paid and receipt", n: "Paid tuition counts towards your funds." },
+    { k: "ukvisa_cas", t: "CAS number, details checked", n: "Name, course, fees, dates and English evidence must be right." },
+    { k: "ukvisa_funds", t: "Bank statement: 28 days, max 31 days old", n: "Tuition left to pay plus living costs for up to 9 months." },
+    { k: "ukvisa_parents", t: "If the account is your parent's: their letter and your FRC or birth certificate", n: "Shows the relationship and their consent." },
+    { k: "ukvisa_tb", t: "TB test certificate", n: "From an approved clinic, valid 6 months." },
+    { k: "ukvisa_passport", t: "Valid passport", n: "" },
+    { k: "ukvisa_atas", t: "ATAS certificate (only if your CAS says so)", n: "Some science and engineering subjects." },
+    { k: "ukvisa_translations", t: "Certified translations", n: "For any document not in English." },
+    { k: "ukvisa_fee", t: "Visa fee £558 and health surcharge paid", n: "Surcharge £776 per year of the visa." },
+    { k: "ukvisa_vfs", t: "VFS biometrics appointment", n: "Islamabad, Lahore, Karachi or Mirpur." }
+  ]}
+];
+const VISA_CHIPS_UK = [
+  "Which UK Master's fit my Bachelor's? (tell me your degree and CGPA)",
+  "How much money do I need to show for the UK visa?",
+  "What is a CAS and when do I get it?",
+  "How does the 28 day bank statement rule work?",
+  "UK credibility interview mein kya poocha jata hai?",
+  "September or January intake: which is better?"
+];
+const FLAG = {
+  DE: `<svg viewBox="0 0 5 3" aria-hidden="true"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>`,
+  UK: `<svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ukc)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>`
+};
+const COUNTRIES = {
+  DE: { code: "DE", name: "Germany", the: "Germany", label: "Germany", roadmap: ROADMAP, checklist: CHECKLIST, chips: VISA_CHIPS, guides: () => window.RAASTA_GUIDES,
+    officialName: "German Missions in Pakistan", officialUrl: OFFICIAL.visaPage, portals: ["uni-assist", "University portal", "Email / other"], uniPh: "e.g. TU Dortmund", progPh: "e.g. M.Sc. Data Science" },
+  UK: { code: "UK", name: "United Kingdom", the: "the UK", label: "UK", roadmap: ROADMAP_UK, checklist: CHECKLIST_UK, chips: VISA_CHIPS_UK, guides: () => window.RAASTA_GUIDES_UK,
+    officialName: "GOV.UK Student visa", officialUrl: UK_OFFICIAL.visaPage, portals: ["University website", "UCAS", "Email / other"], uniPh: "e.g. University of Manchester", progPh: "e.g. MSc Data Science" }
+};
+let CTRY = local.get("country", "DE") === "UK" ? "UK" : "DE";
+const C = () => COUNTRIES[CTRY];
+const isUK = () => CTRY === "UK";
+const progCountry = (p) => (p && p.country) || "DE";
+function renderCountrySwitch() {
+  const box = document.getElementById("ctrySwitch");
+  if (box) {
+    box.innerHTML = ["DE", "UK"].map((c) => `<button type="button" class="ctry ${c === CTRY ? "on" : ""}" data-ctry="${c}" aria-pressed="${c === CTRY}" title="Study in ${COUNTRIES[c].name}"><span class="ctry-flag">${FLAG[c]}</span><span class="ctry-name">${COUNTRIES[c].label}</span></button>`).join("");
+    box.querySelectorAll("[data-ctry]").forEach((b) => b.onclick = () => setCountry(b.dataset.ctry));
+  }
+  document.body.dataset.country = CTRY;
+  document.title = `Raasta · Study in ${C().name}, with a free AI advisor`;
+  const fg = document.getElementById("footGuides"), fl = document.getElementById("footLegal");
+  if (fg) fg.innerHTML = `<h4>Guides</h4><a href="#/scholarships">Scholarships</a><a href="#/support">Help and support</a><a href="#/visa-guide">Student visa from Pakistan</a><a href="#/moving">Moving to ${C().the}</a><a href="#/cities">City guides</a><a href="#/jobs">Student jobs</a><a href="#/roadmap">Step by step roadmap</a><a href="#/tracker">Application tracker</a>` +
+    (isUK() ? `<a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">GOV.UK Student visa ↗</a><a href="${UK_OFFICIAL.ucas}" target="_blank" rel="noopener">UCAS ↗</a>` : `<a href="${OFFICIAL.visaPage}" target="_blank" rel="noopener">German Missions in Pakistan ↗</a><a href="${OFFICIAL.portal}" target="_blank" rel="noopener">Consular Services Portal ↗</a>`);
+  if (fl) fl.firstChild.textContent = isUK()
+    ? "Not affiliated with UCAS, UKVI or any university. UK program data comes from each university's own website; the university page always has the final word. "
+    : "Not affiliated with DAAD, uni-assist or the German Missions. Program data comes from the DAAD International Programmes database and the official websites of private universities; the university page always has the final word. ";
+}
+function setCountry(c, { silent = false } = {}) {
+  c = String(c).toUpperCase() === "UK" ? "UK" : "DE";
+  if (c === CTRY) { if (!silent) route(); return; }
+  CTRY = c; local.set("country", c); local.set("finderFilters", {});
+  renderCountrySwitch();
+  if (LIVE && session) sb.from("profiles").update({ country: c }).eq("id", session.user.id).then(() => {}, () => {});
+  if (!silent) { toast(`Showing ${C().name}`); route(); }
+}
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const d = new Date(dateStr + "T00:00:00"); const now = new Date(); now.setHours(0, 0, 0, 0);
@@ -144,11 +235,12 @@ function daysUntil(dateStr) {
 /* ---------------- Data layer ---------------- */
 const db = {
   async listApps() {
-    if (!LIVE) return local.get("apps", []);
-    const { data, error } = await sb.from("applications").select("*").order("deadline", { ascending: true, nullsFirst: false });
+    if (!LIVE) return local.get("apps", []).filter((a) => (a.country || "DE") === CTRY);
+    const { data, error } = await sb.from("applications").select("*").eq("country", CTRY).order("deadline", { ascending: true, nullsFirst: false });
     if (error) throw error; return data;
   },
   async addApp(a) {
+    a = { country: CTRY, ...a };
     if (!LIVE) { const all = local.get("apps", []); all.push({ ...a, id: crypto.randomUUID() }); local.set("apps", all); return; }
     const { error } = await sb.from("applications").insert({ ...a, user_id: session.user.id }); if (error) throw error;
   },
@@ -166,27 +258,30 @@ const db = {
     return Object.fromEntries(data.map((r) => [r.item_key, r.done]));
   },
   async programs() {
-    // Refresh the catalog if it is older than 10 minutes, so open tabs pick up new programs
-    if (db._programs && Date.now() - (db._loadedAt || 0) > 10 * 60 * 1000) { db._programs = null; db._loading = null; }
-    if (db._programs) return db._programs;
-    if (db._loading) return db._loading;
-    db._loading = (async () => {
-      let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false);
+    // One catalog per country; refresh after 10 minutes so open tabs pick up new programs
+    const key = CTRY;
+    db._cache = db._cache || {};
+    const c = db._cache[key] || (db._cache[key] = {});
+    if (c.list && Date.now() - (c.at || 0) > 10 * 60 * 1000) { c.list = null; c.loading = null; }
+    if (c.list) return c.list;
+    if (c.loading) return c.loading;
+    c.loading = (async () => {
+      let list = (window.RAASTA_PROGRAMS || []).filter((p) => p.active !== false && progCountry(p) === key);
       if (LIVE) {
         // only the columns the lists need; the program page loads the full row
-        const cols = "id,university,program,degree,title,field,city,state,type,language,nc_status,duration,tuition,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
+        const cols = "id,country,university,program,degree,title,field,city,state,type,language,nc_status,duration,duration_months,tuition,currency,fee_period,intakes,deadline_winter,deadline_summer,url,program_url,apply_url,apply_via,verified_on,curated";
         const all = [];
         for (let from = 0; from < 20000; from += 1000) {
-          const { data, error } = await sb.from("programs").select(cols).eq("active", true).order("id").range(from, from + 999);
+          const { data, error } = await sb.from("programs").select(cols).eq("active", true).eq("country", key).order("id").range(from, from + 999);
           if (error) { all.length = 0; break; }
           all.push(...data);
           if (data.length < 1000) break;
         }
-        if (all.length) list = all;
+        if (all.length || key === "UK") list = all;
       }
-      db._programs = list; db._loadedAt = Date.now(); return list;
+      c.list = list; c.at = Date.now(); return list;
     })();
-    return db._loading;
+    return c.loading;
   },
   async program(id) {
     if (LIVE) {
@@ -233,7 +328,7 @@ async function askAI(payload) {
     await new Promise((r) => setTimeout(r, 700));
     return demoReply(payload);
   }
-  const { data, error } = await sb.functions.invoke("ai", { body: payload });
+  const { data, error } = await sb.functions.invoke("ai", { body: { ...payload, context: { ...(payload.context || {}), country: CTRY } } });
   if (error) {
     let msg = "Something went wrong. Please try again.";
     try { const body = await error.context.json(); if (body?.error) msg = body.error; } catch {}
@@ -245,7 +340,7 @@ async function askAI(payload) {
 function demoReply({ mode }) {
   if (mode === "letter") return "Dear Admissions Committee,\n\n[Demo mode] Once Supabase and the Claude API key are connected, your personal motivation letter will be written here, using only the facts you entered.\n\nSincerely,\n[Your name]";
   if (mode === "interview") return "[Demo mode] Question 1: Why did you choose this program, and why in Germany rather than Pakistan or another country?";
-  return "[Demo mode] For the student visa you apply online on the Consular Services Portal: https://digital.diplo.de\n\nConnect Supabase and your Claude API key to get real answers.";
+  return isUK() ? "[Demo mode] For the UK Student visa you apply online on GOV.UK after you receive your CAS: https://www.gov.uk/student-visa" : "[Demo mode] For the student visa you apply online on the Consular Services Portal: https://digital.diplo.de\n\nConnect Supabase and your Claude API key to get real answers.";
 }
 
 /* ---------------- Auth ---------------- */
@@ -378,19 +473,21 @@ function needsLogin(title, text) {
 
 /* ---------------- Views ---------------- */
 function viewHome() {
+  const uk = isUK();
+  const homeChips = uk ? ["I have a BS Computer Science with 3.1 CGPA. Which UK Master's fit me?", "Which UK universities have a January intake?", "How much money do I need to show for the UK student visa?"] : ["I have a BS Computer Science with 3.1 CGPA. Which Master's fit me?", "Which programs are tuition free and taught in English?", "What documents do I need for the German student visa?"];
   app.innerHTML = `
     <section class="home-hero">
       <div class="home-hero-in">
-        <span class="eyebrow light">Free for students · Germany now, more of Europe next</span>
-        <h1>Find your study program in Germany.<br/><span>Get in with your own AI advisor.</span></h1>
-        <p class="lead">Search every international Bachelor's and Master's program in Germany, compare them side by side, then let AI help with your motivation letter, interview and student visa.</p>
+        <span class="eyebrow light">${uk ? "Free for students · United Kingdom" : "Free for students · Germany and the UK"}</span>
+        <h1>Find your study program in ${uk ? "the UK" : "Germany"}.<br/><span>Get in with your own AI advisor.</span></h1>
+        <p class="lead">${uk ? "Search Bachelor's and Master's programs at UK universities popular with Pakistani students, compare fees and intakes, then let AI help with your personal statement, credibility interview and student visa." : "Search every international Bachelor's and Master's program in Germany, compare them side by side, then let AI help with your motivation letter, interview and student visa."}</p>
         <form class="mega-search" id="megaSearch" role="search">
           <div class="ms-field ms-q"><label for="msQ">What do you want to study?</label><input id="msQ" type="search" placeholder="e.g. Data Science, MBA, Mechatronics" autocomplete="off" /></div>
           <div class="ms-field"><label for="msDeg">Degree</label><select id="msDeg"><option value="Master">Master's</option><option value="Bachelor">Bachelor's</option><option value="">Any degree</option></select></div>
-          <div class="ms-field"><label for="msLang">Language</label><select id="msLang"><option value="">Any language</option><option value="en">English</option><option value="de">German</option></select></div>
+          ${uk ? `<div class="ms-field"><label for="msLang">Intake</label><select id="msLang"><option value="">Any intake</option><option value="September">September</option><option value="January">January</option></select></div>` : `<div class="ms-field"><label for="msLang">Language</label><select id="msLang"><option value="">Any language</option><option value="en">English</option><option value="de">German</option></select></div>`}
           <button class="btn gold ms-go" type="submit">Search programs</button>
         </form>
-        <div class="hero-stats" id="heroStats"><div><strong>…</strong><span>programs</span></div><div><strong>…</strong><span>universities</span></div><div><strong>…</strong><span>tuition free</span></div><div><strong>24/7</strong><span>AI advisor</span></div></div>
+        <div class="hero-stats" id="heroStats"><div><strong>…</strong><span>programs</span></div><div><strong>…</strong><span>universities</span></div><div><strong>…</strong><span>${uk ? "January intake" : "tuition free"}</span></div><div><strong>24/7</strong><span>AI advisor</span></div></div>
       </div>
     </section>
 
@@ -400,26 +497,26 @@ function viewHome() {
       <div class="field-grid" id="fieldGrid">${FIELDS.map((f) => `<a class="field-card" href="#/finder?field=${encodeURIComponent(f)}"><span class="fc-ic">${FIELD_META[f].ic}</span><strong>${esc(FIELD_META[f].name)}</strong><em>${esc(FIELD_META[f].d)}</em><span class="fc-n" data-fcount="${esc(f)}"></span></a>`).join("")}</div>
     </section>
 
-    <section class="section"><a class="sch-home card" href="#/scholarships"><span class="fc-ic">🎓</span><div><strong>Scholarships for Pakistani students</strong><em>DAAD, Erasmus Mundus, foundations and university discounts, with criteria, documents and deadlines.</em></div><span class="btn gold small">See scholarships</span></a></section>
+    <section class="section"><a class="sch-home card" href="#/scholarships"><span class="fc-ic">🎓</span><div><strong>Scholarships for Pakistani students</strong><em>${uk ? "Chevening, Commonwealth, GREAT and university scholarships, with criteria, documents and deadlines." : "DAAD, Erasmus Mundus, foundations and university discounts, with criteria, documents and deadlines."}</em></div><span class="btn gold small">See scholarships</span></a></section>
 
     <section class="section ai-moat">
       <div class="ai-moat-copy">
         <span class="eyebrow">Your AI advisor</span>
         <h2>Like a consultant, but free and awake at 2am.</h2>
         <p>Tell it your degree, CGPA and budget. It suggests real programs from our database, checks honestly if you fit, and explains every visa step in English or Urdu.</p>
-        <ul class="ticks"><li>Program matches from ${"<span data-total>1,800+</span>"} real listings</li><li>Motivation letters written for one specific program</li><li>Mock interviews by voice, with feedback</li><li>Student visa checklist and blocked account help</li></ul>
+        <ul class="ticks"><li>Program matches from ${"<span data-total>1,800+</span>"} real listings</li><li>Motivation letters written for one specific program</li><li>Mock interviews by voice, with feedback</li><li>${uk ? "Student visa checklist, CAS and the 28 day funds rule" : "Student visa checklist and blocked account help"}</li></ul>
       </div>
       <form class="ai-ask card" id="aiAsk">
         <div class="ai-bubble">Hello! Which program are you aiming for, and what did you study before?</div>
-        <div class="chips">${["I have a BS Computer Science with 3.1 CGPA. Which Master's fit me?", "Which programs are tuition free and taught in English?", "What documents do I need for the German student visa?"].map((q) => `<button class="chip" type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
-        <div class="ai-input"><input id="aiQ" placeholder="Ask anything about studying in Germany" aria-label="Ask the AI advisor" /><button class="btn" type="submit">Ask</button></div>
+        <div class="chips">${homeChips.map((q) => `<button class="chip" type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+        <div class="ai-input"><input id="aiQ" placeholder="Ask anything about studying in ${uk ? "the UK" : "Germany"}" aria-label="Ask the AI advisor" /><button class="btn" type="submit">Ask</button></div>
       </form>
     </section>
 
     <section class="section">
       <div class="section-head"><div><h2>From search to visa in four steps</h2><p>One place for the whole journey.</p></div></div>
       <div class="steps4">
-        <a href="#/finder" class="s4"><span>1</span><strong>Explore</strong><em>Filter by field, language, tuition, deadline and city.</em></a>
+        <a href="#/finder" class="s4"><span>1</span><strong>Explore</strong><em>${uk ? "Filter by field, fees, intake and city." : "Filter by field, language, tuition, deadline and city."}</em></a>
         <a href="#/compare" class="s4"><span>2</span><strong>Compare</strong><em>Put up to 3 programs side by side and shortlist them.</em></a>
         <a href="#/letter" class="s4"><span>3</span><strong>Apply</strong><em>AI motivation letter, interview practice and a deadline tracker.</em></a>
         <a href="#/visa" class="s4"><span>4</span><strong>Get your visa</strong><em>Document checklist and step by step answers for Pakistan.</em></a>
@@ -430,11 +527,11 @@ function viewHome() {
     <section class="section" id="homeSuggest"></section>
 
     <section class="section">
-      <div class="section-head"><div><h2>Study destinations</h2><p>We start with Germany and add one country at a time, with the same depth.</p></div></div>
+      <div class="section-head"><div><h2>Study destinations</h2><p>Switch country any time with the flags at the top. We add one country at a time, with the same depth.</p></div></div>
       <div class="dest-grid">
-        <a class="dest live" href="#/finder"><span class="flag">🇩🇪</span><strong>Germany</strong><em>Low or no tuition at public universities, 18 months post study work visa.</em><span class="dest-tag">Live</span></a>
+        <a class="dest live" href="#/finder?country=de"><span class="flag">${FLAG.DE}</span><strong>Germany</strong><em>Low or no tuition at public universities, 18 months post study work visa.</em><span class="dest-tag">Live</span></a>
+        <a class="dest live" href="#/finder?country=uk"><span class="flag">${FLAG.UK}</span><strong>United Kingdom</strong><em>One year Master's, English everywhere and the 18 month Graduate Route.</em><span class="dest-tag">Live</span></a>
         <div class="dest"><span class="flag">🇮🇹</span><strong>Italy</strong><em>Affordable tuition and regional scholarships.</em><span class="dest-tag soon">Coming next</span></div>
-        <div class="dest"><span class="flag">🇬🇧</span><strong>United Kingdom</strong><em>One year Master's and the Graduate Route.</em><span class="dest-tag soon">Planned</span></div>
         <div class="dest"><span class="flag">🇪🇺</span><strong>Rest of Europe</strong><em>Netherlands, France, Sweden and more.</em><span class="dest-tag soon">Planned</span></div>
       </div>
     </section>
@@ -445,15 +542,15 @@ function viewHome() {
         <a class="card" href="#/letter"><div class="icon">✍️</div><h3>Motivation letter</h3><p>A personal first draft for one program, with an honest fit check.</p></a>
         <a class="card" href="#/interview"><div class="icon">🎤</div><h3>Interview practice</h3><p>University and visa mock interviews, by voice or text.</p></a>
         <a class="card" href="#/tracker"><div class="icon">✅</div><h3>Application tracker</h3><p>Deadlines, status and every visa document in one checklist.</p></a>
-        <a class="card" href="#/doccheck"><div class="icon">📄</div><h3>AI document checker</h3><p>Completeness, consistency and fit for a program, plus your German grade.</p></a>
-        <a class="card" href="#/visa-guide"><div class="icon">🛂</div><h3>Visa guide for Pakistan</h3><p>Step by step, with 2026 fees and the blocked account. Dated.</p></a>
-        <a class="card" href="#/moving"><div class="icon">🧳</div><h3>Moving to Germany</h3><p>Registration, insurance, housing, banks, transport and culture.</p></a>
+        <a class="card" href="#/doccheck"><div class="icon">📄</div><h3>AI document checker</h3><p>Completeness, consistency and fit for a program${uk ? "" : ", plus your German grade"}.</p></a>
+        <a class="card" href="#/visa-guide"><div class="icon">🛂</div><h3>Visa guide for Pakistan</h3><p>${uk ? "Step by step, with 2026 fees, the 28 day rule and the TB test. Dated." : "Step by step, with 2026 fees and the blocked account. Dated."}</p></a>
+        <a class="card" href="#/moving"><div class="icon">🧳</div><h3>Moving to ${uk ? "the UK" : "Germany"}</h3><p>${uk ? "GP, bank, housing, transport and culture." : "Registration, insurance, housing, banks, transport and culture."}</p></a>
       </div>
     </section>`;
   $("#megaSearch").onsubmit = (e) => {
     e.preventDefault();
     const q = new URLSearchParams(); const v = $("#msQ").value.trim();
-    if (v) q.set("q", v); if ($("#msDeg").value) q.set("degree", $("#msDeg").value); if ($("#msLang").value) q.set("lang", $("#msLang").value);
+    if (v) q.set("q", v); if ($("#msDeg").value) q.set("degree", $("#msDeg").value); if ($("#msLang").value) q.set(uk ? "intake" : "lang", $("#msLang").value);
     location.hash = `#/finder${q.toString() ? "?" + q : ""}`;
   };
   const ask = (q) => { location.hash = `#/visa?q=${encodeURIComponent(q)}`; };
@@ -468,12 +565,12 @@ async function homeStats() {
   if (!$("#heroStats")) return;
   const unis = uniAggregate(progs);
   const n = (x) => x.toLocaleString("en-US");
-  $("#heroStats").innerHTML = `<div><strong>${n(progs.length)}</strong><span>programs</span></div><div><strong>${n(unis.length)}</strong><span>universities</span></div><div><strong>${n(progs.filter((p) => p.tuition === 0).length)}</strong><span>tuition free</span></div><div><strong>24/7</strong><span>AI advisor</span></div>`;
+  $("#heroStats").innerHTML = `<div><strong>${n(progs.length)}</strong><span>programs</span></div><div><strong>${n(unis.length)}</strong><span>universities</span></div><div><strong>${n(isUK() ? progs.filter((p) => (p.intakes || []).includes("January")).length : progs.filter((p) => p.tuition === 0).length)}</strong><span>${isUK() ? "January intake" : "tuition free"}</span></div><div><strong>24/7</strong><span>AI advisor</span></div>`;
   app.querySelectorAll("[data-total]").forEach((x) => (x.textContent = n(progs.length)));
   const counts = {}; progs.forEach((p) => (counts[p.field] = (counts[p.field] || 0) + 1));
   app.querySelectorAll("[data-fcount]").forEach((x) => (x.textContent = counts[x.dataset.fcount] ? `${n(counts[x.dataset.fcount])} programs` : ""));
   const top = unis.sort((a, b) => b.n - a.n).slice(0, 6);
-  if ($("#homeUnis")) $("#homeUnis").innerHTML = `<div class="section-head"><div><h2>Popular universities</h2><p>Most international programs. Public, applied sciences and private.</p></div><a href="#/universities" class="btn ghost small">All ${unis.length} universities</a></div><div class="uni-grid">${top.map(uniCard).join("")}</div>`;
+  if ($("#homeUnis")) $("#homeUnis").innerHTML = `<div class="section-head"><div><h2>Popular universities</h2><p>${isUK() ? "Universities with the most programs in Raasta." : "Most international programs. Public, applied sciences and private."}</p></div><a href="#/universities" class="btn ghost small">All ${unis.length} universities</a></div><div class="uni-grid">${top.map(uniCard).join("")}</div>`;
 }
 
 async function homeSuggestions() {
@@ -495,9 +592,9 @@ async function homeSuggestions() {
 
 function viewRoadmap() {
   app.innerHTML = `
-    <div class="page-head"><h1>Your roadmap to Germany</h1><p>Ten steps for a Master's student applying from Pakistan. Most winter semester deadlines fall in the first half of the year, so start early.</p></div>
+    <div class="page-head"><h1>Your roadmap to ${C().the}</h1><p>${isUK() ? "Ten steps for a student applying from Pakistan. Most students start in September; many universities also have a January intake." : "Ten steps for a Master's student applying from Pakistan. Most winter semester deadlines fall in the first half of the year, so start early."}</p></div>
     <ol class="steps">
-      ${ROADMAP.map((s, i) => `
+      ${C().roadmap.map((s, i) => `
         <li class="step">
           <div class="step-num">${i + 1}</div>
           <div>
@@ -519,13 +616,14 @@ async function viewTracker() {
   try { [apps, checks, savedIds, progs] = await Promise.all([db.listApps(), db.getChecklist(), db.listSaved(), db.programs()]); }
   catch (e) { app.innerHTML = `<div class="empty">Could not load your data: ${esc(e.message)}</div>`; return; }
 
-  const allItems = CHECKLIST.flatMap((g) => g.items);
+  const CHK = C().checklist;
+  const allItems = CHK.flatMap((g) => g.items);
   const doneCount = allItems.filter((i) => checks[i.k]).length;
   const pct = Math.round((doneCount / allItems.length) * 100);
 
   app.innerHTML = `
     <div class="page-head">
-      <h1>Application tracker</h1>
+      <h1>Application tracker · ${esc(C().name)}</h1>
       <div class="progress-wrap"><div class="progress"><span style="width:${pct}%"></span></div><span class="progress-label">${pct}%</span></div>
       <p>${doneCount} of ${allItems.length} documents ready.</p>
     </div>
@@ -534,11 +632,11 @@ async function viewTracker() {
         <div class="card">
           <h2>My universities</h2>
           <form id="appForm">
-            <div class="field"><label for="uni">University</label><input id="uni" required placeholder="e.g. TU Dortmund" /></div>
-            <div class="field"><label for="prog">Program</label><input id="prog" required placeholder="e.g. M.Sc. Data Science" /></div>
+            <div class="field"><label for="uni">University</label><input id="uni" required placeholder="${esc(C().uniPh)}" /></div>
+            <div class="field"><label for="prog">Program</label><input id="prog" required placeholder="${esc(C().progPh)}" /></div>
             <div class="form-row">
               <div class="field"><label for="portal">Apply via</label>
-                <select id="portal"><option>uni-assist</option><option>University portal</option><option>Email / other</option></select></div>
+                <select id="portal">${C().portals.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div>
               <div class="field"><label for="deadline">Deadline</label><input id="deadline" type="date" /></div>
             </div>
             <button class="btn" style="width:100%">Add university</button>
@@ -555,7 +653,7 @@ async function viewTracker() {
       </section>
       <section class="card">
         <h2>Document checklist</h2>
-        ${CHECKLIST.map((g) => `
+        ${CHK.map((g) => `
           <h3 style="margin-top:18px">${esc(g.group)}</h3>
           <ul class="checklist">
             ${g.items.map((i) => `
@@ -567,7 +665,7 @@ async function viewTracker() {
                 </label>
               </li>`).join("")}
           </ul>`).join("")}
-        <p class="notice">Based on the German Missions in Pakistan checklist. The portal questionnaire shows the final list for your case: <a href="${OFFICIAL.portal}" target="_blank" rel="noopener">digital.diplo.de</a></p>
+        ${isUK() ? `<p class="notice">Based on the GOV.UK Student visa rules. Your CAS and the online form decide the final list for your case: <a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">gov.uk/student-visa</a>. Switch to the Germany flag to see your German tracker.</p>` : `<p class="notice">Based on the German Missions in Pakistan checklist. The portal questionnaire shows the final list for your case: <a href="${OFFICIAL.portal}" target="_blank" rel="noopener">digital.diplo.de</a>. Switch to the UK flag to see your UK tracker.</p>`}
       </section>
     </div>`;
 
@@ -653,7 +751,7 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
         <button class="btn" id="sendBtn">Send</button>
       </form>
     </div>
-    <p class="notice">AI answers can be wrong. Always confirm on the official <a href="${OFFICIAL.visaPage}" target="_blank" rel="noopener">German Missions in Pakistan</a> page before you submit anything.</p>`;
+    <p class="notice">AI answers can be wrong. Always confirm on the official <a href="${C().officialUrl}" target="_blank" rel="noopener">${esc(C().officialName)}</a> page before you submit anything.</p>`;
 
   const log = $("#log");
   const add = (role, text, cls = "") => {
@@ -702,7 +800,7 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
 
 function profileSummary(p) {
   if (!p) return "";
-  const parts = [p.degree_level && `wants: ${p.degree_level}`, p.field && `field: ${p.field}`, p.bachelor_degree && `current degree: ${p.bachelor_degree}`, p.bachelor_university && `from ${p.bachelor_university}`, p.cgpa && `CGPA: ${p.cgpa}`, p.grad_year && `graduated: ${p.grad_year}`, p.english_test && `English: ${p.english_test}${p.english_score ? " " + p.english_score : ""}`, p.german_level && `German: ${p.german_level}`, p.budget && `budget: ${p.budget}`, p.intake && `intake: ${p.intake}`, p.province && `province: ${p.province}`];
+  const parts = [p.degree_level && `wants: ${p.degree_level}`, p.field && `field: ${p.field}`, p.bachelor_degree && `current degree: ${p.bachelor_degree}`, p.bachelor_university && `from ${p.bachelor_university}`, p.cgpa && `CGPA: ${p.cgpa}`, p.grad_year && `graduated: ${p.grad_year}`, p.english_test && `English: ${p.english_test}${p.english_score ? " " + p.english_score : ""}`, p.german_level && `German: ${p.german_level}`, p.budget && `budget: ${p.budget}`, (isUK() ? p.uk_intake && `UK intake: ${p.uk_intake}` : p.intake && `intake: ${p.intake}`), p.province && `province: ${p.province}`];
   return parts.filter(Boolean).join("; ");
 }
 function viewVisa() {
@@ -710,11 +808,11 @@ function viewVisa() {
   if (LIVE && session) db.getProfile().then((p) => { prof = profileSummary(p); }).catch(() => {});
   chatView({
     getContext: () => ({ profile: prof }),
-    title: "Your AI study advisor",
-    intro: "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
+    title: `Your AI study advisor · ${C().name}`,
+    intro: isUK() ? "Tell it your degree, CGPA and budget and it suggests matching UK programs from our listings. It also answers every question about UCAS, offers, the CAS and the UK Student visa from Pakistan. English, Urdu and Roman Urdu all work." : "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
     mode: "visa",
-    chips: VISA_CHIPS,
-    opener: { show: "Hello! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
+    chips: C().chips,
+    opener: { show: isUK() ? "Hello! I can find UK programs that fit your background, explain how to apply, and help with the UK Student visa: the CAS, the 28 day funds rule, the TB test and the credibility interview. What did you study, and what do you want to study in the UK?" : "Hello! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
   });
   const q = route.params?.get("q");
   if (q && $("#chatInput")) { $("#chatInput").value = q; $("#chatInput").focus(); }
@@ -725,8 +823,8 @@ function viewInterview() {
     <div class="card" style="margin-bottom:16px">
       <div class="form-row">
         <div class="field" style="margin:0"><label for="ivType">Interview type</label>
-          <select id="ivType"><option value="visa">Visa interview (embassy)</option><option value="university">University admission interview</option></select></div>
-        <div class="field" style="margin:0"><label for="ivProg">Your program and university</label><input id="ivProg" placeholder="e.g. M.Sc. Data Science, TU Dortmund" /></div>
+          <select id="ivType">${isUK() ? `<option value="visa">Credibility interview (university or UKVI)</option><option value="university">University admission interview</option>` : `<option value="visa">Visa interview (embassy)</option><option value="university">University admission interview</option>`}</select></div>
+        <div class="field" style="margin:0"><label for="ivProg">Your program and university</label><input id="ivProg" placeholder="${isUK() ? "e.g. MSc Data Science, University of Leeds" : "e.g. M.Sc. Data Science, TU Dortmund"}" /></div>
       </div>
       <button class="btn gold" id="ivStart" style="margin-top:14px">Start mock interview</button>
     </div>`;
@@ -738,7 +836,7 @@ function viewInterview() {
     const type = $("#ivType").value, program = $("#ivProg").value.trim();
     chatView({
       title: "Interview practice",
-      intro: type === "visa" ? "Mock visa interview. Answer honestly and specifically, like you would at the embassy." : "Mock university admission interview. Show you know the program.",
+      intro: type === "visa" ? (isUK() ? "Mock UK credibility interview. Answer honestly and specifically: why this course, this university, the UK, and how you will pay." : "Mock visa interview. Answer honestly and specifically, like you would at the embassy.") : "Mock university admission interview. Show you know the program.",
       mode: "interview",
       voice: true,
       opener: { auto: "Start the interview now with question 1." },
@@ -757,18 +855,18 @@ async function viewLetter() {
     <div class="field"><label for="${id}">${label} ${hint ? `<span class="hint">${hint}</span>` : ""}</label>
     ${area ? `<textarea id="${id}" placeholder="${esc(ph)}">${esc(saved[id] || "")}</textarea>` : `<input id="${id}" placeholder="${esc(ph)}" value="${esc(saved[id] || "")}" />`}</div>`;
   app.innerHTML = `
-    <div class="page-head"><h1>Motivation letter builder</h1><p>Tell us your real story. We turn it into a personal first draft. You then edit it in your own words.</p></div>
+    <div class="page-head"><h1>${isUK() ? "Personal statement builder" : "Motivation letter builder"}</h1><p>Tell us your real story. We turn it into a personal first draft${isUK() ? " for a UK university (or your UCAS statement)" : ""}. You then edit it in your own words.</p></div>
     ${lprog ? `<div class="callout" style="background:var(--green-soft);border-color:#C9E2D6;color:var(--green)"><strong>Writing for:</strong> ${esc(lprog.program)}, ${esc(lprog.university)}. Open the <a href="${safeUrl(lprog.program_url || lprog.url)}" target="_blank" rel="noopener">official page</a> and name real modules or labs in "Why this program".</div>` : ""}
     ${!LIVE ? `<div class="callout" style="background:var(--red-soft);border-color:#EBC4BB;color:var(--red)"><strong>Preview mode:</strong> letters are only written on the live site (GitHub Pages, connected to Supabase with the Claude API key). This preview shows a sample.</div>` : ""}
     <div class="callout"><strong>Why we don't give templates:</strong> universities check letters for copied text, and the visa officer compares your letter with your interview answers. A letter built from your own facts is safer and stronger.</div>
     <div class="grid cols-2" style="align-items:start">
       <form class="card" id="letterForm">
         <div class="form-row">${f("name", "Your name", "Ali Raza")}${f("program", "Program", "M.Sc. Data Science")}</div>
-        ${f("university", "University", "TU Dortmund")}
+        ${f("university", "University", isUK() ? "University of Manchester" : "TU Dortmund")}
         <div class="form-row">${f("degree", "Your Bachelor's", "BS Computer Science, FAST Lahore")}${f("cgpa", "CGPA", "3.4 / 4.0", false, "(optional)")}</div>
         ${f("experience", "Your strongest project, job or research", "Final year project on crop yield prediction using satellite data...", true)}
         ${f("whyProgram", "Why this program? Name specific courses, labs or professors", "The courses on machine learning and big data systems, the lab of...", true)}
-        ${f("whyGermany", "Why Germany?", "Strong research in applied AI, practical focus, industry links...", true)}
+        ${f("whyGermany", isUK() ? "Why the UK?" : "Why Germany?", isUK() ? "One year Master's, industry links, the Graduate Route..." : "Strong research in applied AI, practical focus, industry links...", true)}
         ${f("goals", "Your career goal after the degree", "Work on agricultural data systems, later bring this to Pakistan...", true)}
         <button class="btn gold" style="width:100%" id="genBtn">Write my draft</button>
         <p class="notice">Uses 5 of your daily AI credits.</p>
@@ -810,6 +908,7 @@ const routes = { "": viewHome, roadmap: viewRoadmap, tracker: viewTracker, visa:
 function route() {
   const key = location.hash.replace(/^#\/?/, "").split("?")[0];
   route.params = new URLSearchParams(location.hash.split("?")[1] || "");
+  const cq = route.params.get("country"); if (cq) setCountry(cq, { silent: true });
   // Supabase magic link returns tokens in the hash; let the client read them first
   if (key.startsWith("access_token") || key.startsWith("error")) { history.replaceState(null, "", location.pathname + "#/"); return route(); }
   (routes[key] || viewHome)();
@@ -851,6 +950,8 @@ async function init() {
     });
   }
   renderAuth();
+  renderCountrySwitch();
+  if (LIVE && session && local.get("country", null) == null) { const pr = await db.getProfile().catch(() => null); if (pr?.country) setCountry(pr.country, { silent: true }); }
   window.addEventListener("hashchange", route);
   $("#fbBtn").onclick = openFeedback;
   await maybeOnboard();
@@ -896,7 +997,9 @@ async function viewProfile(isWelcome) {
   const INTAKES = [`Summer ${year + 1}`, `Winter ${year + 1}/${String(year + 2).slice(2)}`, `Summer ${year + 2}`, `Winter ${year + 2}/${String(year + 3).slice(2)}`, "Not sure yet"];
   const TESTS = ["Not taken yet", "IELTS Academic", "TOEFL iBT", "PTE Academic", "Duolingo English Test", "Cambridge (C1 / C2)", "English medium of instruction letter"];
   const GERMAN = ["None", "A1", "A2", "B1", "B2", "C1", "C2"];
-  const BUDGETS = ["Only tuition free public universities", "Up to €3,000 per year", "€3,000 to €8,000 per year", "€8,000 to €15,000 per year", "More than €15,000 per year"];
+  const INTAKES_UK = [`January ${year + 1}`, `September ${year + 1}`, `January ${year + 2}`, `September ${year + 2}`, "Not sure yet"];
+  const BUDGETS_UK = ["Up to £15,000 per year", "£15,000 to £20,000 per year", "£20,000 to £30,000 per year", "More than £30,000 per year"];
+  const BUDGETS = isUK() ? BUDGETS_UK : ["Only tuition free public universities", "Up to €3,000 per year", "€3,000 to €8,000 per year", "€8,000 to €15,000 per year", "More than €15,000 per year"];
   const name = p.full_name || metaName;
   const phone = p.phone || "";
   const cc = COUNTRY_CODES.map((c) => c[0]).sort((x, y) => y.length - x.length).find((c) => phone.startsWith(c)) || "+92";
@@ -948,7 +1051,7 @@ async function viewProfile(isWelcome) {
             <div class="field"><label for="pField">Field</label><select id="pField"><option value="">Choose</option>${opt(FIELDS, p.field)}</select></div>
           </div>
           <div class="form-row">
-            <div class="field"><label for="pIntake">Target intake</label><select id="pIntake"><option value="">Choose</option>${opt(INTAKES, p.intake)}</select></div>
+            <div class="field"><label for="pIntake">Target intake${isUK() ? " (UK)" : " (Germany)"}</label><select id="pIntake"><option value="">Choose</option>${isUK() ? opt(INTAKES_UK, p.uk_intake) : opt(INTAKES, p.intake)}</select></div>
             <div class="field"><label for="pBudget">Tuition budget</label><select id="pBudget"><option value="">Choose</option>${opt(BUDGETS, p.budget)}</select></div>
           </div>
         </section>
@@ -969,7 +1072,7 @@ async function viewProfile(isWelcome) {
             <div class="field"><label for="pScore">Score <span class="hint">(if taken)</span></label><input id="pScore" maxlength="20" value="${esc(p.english_score || "")}" placeholder="IELTS 6.5" /></div>
           </div>
           <div class="form-row">
-            <div class="field"><label for="pGer">German level</label><select id="pGer"><option value="">Choose</option>${opt(GERMAN, p.german_level)}</select></div>
+            <div class="field"><label for="pGer">German level <span class="hint">(${isUK() ? "only for Germany" : "optional"})</span></label><select id="pGer"><option value="">Choose</option>${opt(GERMAN, p.german_level)}</select></div>
             <div></div>
           </div>
         </section>
@@ -1036,7 +1139,7 @@ async function viewProfile(isWelcome) {
     const rec = {
       full_name: $("#pName").value.trim(), phone: num ? $("#pCC").value + num : null, whatsapp_ok: Boolean(num) && $("#pWa").checked,
       city: $("#pCity").value.trim(), province: $("#pProv").value, degree_level: $("#pLevel").value, field: $("#pField").value,
-      intake: $("#pIntake").value, budget: $("#pBudget").value || null, bachelor_degree: $("#pDeg").value.trim() || null,
+      ...(isUK() ? { uk_intake: $("#pIntake").value || null } : { intake: $("#pIntake").value }), budget: $("#pBudget").value || null, bachelor_degree: $("#pDeg").value.trim() || null,
       bachelor_university: $("#pUni").value.trim() || null, cgpa: $("#pCgpa").value.trim() || null, grad_year: y,
       english_test: $("#pTest").value || null, english_score: $("#pScore").value.trim() || null, german_level: $("#pGer").value || null
     };
@@ -1073,7 +1176,7 @@ async function viewProfile(isWelcome) {
 }
 
 /* ---------------- Guides: cities, visa, moving, grades ---------------- */
-const G = () => window.RAASTA_GUIDES || { cities: [], visa: { steps: [], missions: [], money: [] }, moving: [] };
+const G = () => C().guides() || { cities: [], visa: { steps: [], missions: [], money: [] }, moving: [] };
 const wikiCache = {};
 async function cityLive(c) {
   if (wikiCache[c.slug]) return wikiCache[c.slug];
@@ -1103,9 +1206,9 @@ function inCity(p, c) {
 async function viewCities() {
   const progs = await db.programs();
   const count = (c) => progs.filter((p) => inCity(p, c)).length;
-  app.innerHTML = `${guideHero("City guides", "Where will you live?", "Jobs, internships, rent and daily life in Germany's main student cities. Population and photos come live from Wikipedia.")}
+  app.innerHTML = `${guideHero("City guides", "Where will you live?", `Jobs, internships${isUK() ? "" : ", rent"} and daily life in ${isUK() ? "the UK's" : "Germany's"} main student cities. Population and photos come live from Wikipedia.`)}
     <div class="city-grid">${G().cities.map((c) => `<a class="city-card" href="#/city?c=${c.slug}"><div class="city-img" data-cimg="${c.slug}"></div><div class="city-body"><h3>${esc(c.name)}</h3><p>${esc(c.state)}</p><div class="uni-tags"><span class="pill">${count(c)} programs</span>${c.rent ? `<span class="pill pill-gold">Flat ${esc(c.rent)}</span>` : ""}</div></div></a>`).join("")}</div>
-    <p class="notice">Rent figures: MLP Studentenwohnreport 2026 (30 m² student flat, warm rent). Cities without a figure were not covered by the report.</p>`;
+    <p class="notice">${isUK() ? "UK rents change by area and term, so we link to live listings (SpareRoom, Rightmove, university halls) instead of quoting one number." : "Rent figures: MLP Studentenwohnreport 2026 (30 m² student flat, warm rent). Cities without a figure were not covered by the report."}</p>`;
   for (const c of G().cities) cityLive(c).then((d) => { const el = app.querySelector(`[data-cimg="${c.slug}"]`); if (el && d.thumb) el.style.backgroundImage = `url("${d.thumb}")`; });
 }
 
@@ -1116,20 +1219,24 @@ async function viewCity() {
   const unis = uniAggregate(progs).sort((a, b) => b.n - a.n);
   app.innerHTML = `<a href="#/cities" class="back">← All cities</a>
     <div class="city-hero" id="cityHero"><div class="city-hero-in"><span class="eyebrow light">${esc(c.state)}</span><h1>${esc(c.name)}</h1><p>${esc(c.vibe)}</p></div></div>
-    <div class="stat-row"><div><strong id="cPop">…</strong><span id="cPopL">Population</span></div><div><strong>${progs.length}</strong><span>International programs</span></div><div><strong>${unis.length}</strong><span>Universities</span></div><div><strong>${esc(c.rent || "n/a")}</strong><span>Student flat per month</span></div></div>
+    <div class="stat-row"><div><strong id="cPop">…</strong><span id="cPopL">Population</span></div><div><strong>${progs.length}</strong><span>${isUK() ? "Programs in Raasta" : "International programs"}</span></div><div><strong>${unis.length}</strong><span>Universities</span></div>${isUK() ? `<div><strong>${c.slug === "london" ? "£1,570" : "£1,203"}</strong><span>Visa living costs per month</span></div>` : `<div><strong>${esc(c.rent || "n/a")}</strong><span>Student flat per month</span></div>`}</div>
     <div class="grid cols-2" style="align-items:start">
       <section class="card"><h3>Job market and industries</h3><ul class="needs">${c.industries.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
         <h3 style="margin-top:16px">Major employers nearby</h3><div class="uni-tags">${c.employers.map((x) => `<span class="pill">${esc(x)}</span>`).join("")}</div></section>
       <section class="card"><h3>Internships and student jobs</h3><p>${esc(c.internships)}</p>
-        <p class="notice">Non EU students may work 140 full days or 280 half days per year. Search "Werkstudent ${esc(c.name)}" on LinkedIn, StepStone and Indeed.</p>
+        ${isUK() ? `<p class="notice">Degree students may work up to 20 hours per week in term time and full time in holidays. Search "part time ${esc(c.name)}" on Indeed and your university job shop.</p>
+        <h3 style="margin-top:16px">Cost of living</h3>
+        <div class="facts"><div class="fact"><span>Rooms</span><strong><a href="https://www.spareroom.co.uk" target="_blank" rel="noopener">SpareRoom</a> or university halls</strong></div>
+        <div class="fact"><span>Health care</span><strong>NHS, covered by the IHS</strong></div><div class="fact"><span>Transport</span><strong>16-25 Railcard, local student bus passes</strong></div><div class="fact"><span>Visa living cost amount (from 30 Nov 2026)</span><strong>${c.slug === "london" ? "£1,570" : "£1,203"} per month</strong></div></div>
+        <p class="notice">Visa amounts: GOV.UK Student visa rules, for applications from 30 November 2026.</p></section>` : `<p class="notice">Non EU students may work 140 full days or 280 half days per year. Search "Werkstudent ${esc(c.name)}" on LinkedIn, StepStone and Indeed.</p>
         <h3 style="margin-top:16px">Cost of living</h3>
         <div class="facts">${c.rent ? `<div class="fact"><span>Student flat (30 m², warm)</span><strong>${esc(c.rent)}</strong></div>` : `<div class="fact"><span>Rent</span><strong>Check WG-Gesucht for current prices</strong></div>`}${c.wg ? `<div class="fact"><span>Room in a shared flat</span><strong>${esc(c.wg)}</strong></div>` : ""}
         <div class="fact"><span>Health insurance</span><strong>about €141 to €146</strong></div><div class="fact"><span>Transport</span><strong>Semester ticket or €63 Deutschlandticket</strong></div><div class="fact"><span>Official living cost minimum</span><strong>€992 per month</strong></div></div>
-        <p class="notice">Rent: MLP Studentenwohnreport 2026. Insurance: 2026 student rates.</p></section>
+        <p class="notice">Rent: MLP Studentenwohnreport 2026. Insurance: 2026 student rates.</p></section>`}
     </div>
     <section class="section"><div class="section-head"><div><h2>Find a job in ${esc(c.name)}</h2><p>Apps and agencies that work in ${esc(c.name)}. Search with the city name.</p></div><a class="btn ghost small" href="#/jobs">All job platforms</a></div>
       ${jobCards([...(G().jobs?.apps || []).slice(0, 3), ...(G().jobs?.agencies || []).slice(0, 3)])}</section>
-    <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?state=${encodeURIComponent(c.state)}">All programs in ${esc(c.state)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
+    <section class="section"><div class="section-head"><div><h2>Universities in ${esc(c.name)}</h2></div><a class="btn ghost small" href="#/finder?${isUK() ? "q=" + encodeURIComponent(c.name) : "state=" + encodeURIComponent(c.state)}">All programs in ${esc(isUK() ? c.name : c.state)}</a></div><div class="uni-grid">${unis.slice(0, 9).map(uniCard).join("") || `<div class="empty">No programs listed yet.</div>`}</div></section>
     <p class="notice" id="cSrc"></p>`;
   const d = await cityLive(c);
   if (d.img && $("#cityHero")) $("#cityHero").style.backgroundImage = `linear-gradient(180deg, rgba(11,46,36,.35), rgba(11,46,36,.85)), url("${d.img}")`;
@@ -1139,19 +1246,19 @@ async function viewCity() {
 
 function viewVisaGuide() {
   const v = G().visa;
-  app.innerHTML = `${guideHero("Student visa from Pakistan", "German student visa, step by step", `Last updated <strong>${esc(G().checked)}</strong>. Amounts and rules change, so always confirm on the official <a href="https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104" target="_blank" rel="noopener">German Missions in Pakistan</a> page.`)}
-    <div class="callout"><strong>APS certificate:</strong> ${esc(v.apsNote)}</div>
+  app.innerHTML = `${guideHero("Student visa from Pakistan", isUK() ? "UK Student visa, step by step" : "German student visa, step by step", `Last updated <strong>${esc(G().checked)}</strong>. Amounts and rules change, so always confirm on the official <a href="${C().officialUrl}" target="_blank" rel="noopener">${esc(C().officialName)}</a> page.`)}
+    ${v.note ? `<div class="callout"><strong>${esc(v.note.t)}:</strong> ${esc(v.note.d)}</div>` : `<div class="callout"><strong>APS certificate:</strong> ${esc(v.apsNote)}</div>`}
     <ol class="steps">${v.steps.map((s, i) => `<li class="step"><span class="step-num">${i + 1}</span><div><h3>${esc(s.t)}</h3><p>${esc(s.d)}</p></div></li>`).join("")}</ol>
     <div class="grid cols-2" style="margin-top:16px;align-items:start">
-      <section class="card"><h3>Where to apply</h3>${v.missions.map((m) => `<div class="fact"><span>${esc(m.name)}</span><strong>${esc(m.covers)}</strong></div>`).join("")}<p class="notice">Apply online at the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.</p></section>
-      <section class="card"><h3>Fees and money</h3>${v.money.map(([k, x]) => `<div class="fact"><span>${esc(k)}</span><strong>${esc(x)}</strong></div>`).join("")}<p class="notice">Processing times change with demand. Apply as soon as you have your admission letter.</p></section>
+      <section class="card"><h3>${isUK() ? "Where to give biometrics" : "Where to apply"}</h3>${v.missions.map((m) => `<div class="fact"><span>${esc(m.name)}</span><strong>${esc(m.covers)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Apply online on <a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">GOV.UK</a>, then book biometrics with <a href="${UK_OFFICIAL.vfs}" target="_blank" rel="noopener">VFS Global</a>.` : `Apply online at the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.`}</p></section>
+      <section class="card"><h3>Fees and money</h3>${v.money.map(([k, x]) => `<div class="fact"><span>${esc(k)}</span><strong>${esc(x)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Processing usually takes about 3 weeks; priority services cost extra. Official amounts: <a href="${UK_OFFICIAL.money}" target="_blank" rel="noopener">GOV.UK money rules</a>.` : "Processing times change with demand. Apply as soon as you have your admission letter."}</p></section>
     </div>
     <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers in English or Urdu.</p></div><a class="btn gold" href="#/visa">Ask the AI advisor</a></div>`;
 }
 
 function viewMoving() {
   const M = G().moving;
-  app.innerHTML = `${guideHero("After your admission", "Moving to Germany", `Everything for your first weeks, from registration to recycling. Last updated ${esc(G().checked)}.`)}
+  app.innerHTML = `${guideHero("After your admission", `Moving to ${C().the}`, `${isUK() ? "Everything for your first weeks, from your GP to your bank account" : "Everything for your first weeks, from registration to recycling"}. Last updated ${esc(G().checked)}.`)}
     <nav class="toc">${M.map((m) => `<a href="#/moving?s=${m.id}" data-s="${m.id}">${m.ic} ${esc(m.t)}</a>`).join("")}</nav>
     ${M.map((m) => `<section class="card guide-sec" id="g-${m.id}"><h2>${m.ic} ${esc(m.t)}</h2><ul class="needs">${m.items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section>`).join("")}`;
   const s = route.params.get("s"); if (s) setTimeout(() => document.getElementById("g-" + s)?.scrollIntoView({ behavior: "smooth" }), 50);
@@ -1165,7 +1272,36 @@ function bavarian(nd, nmax, nmin) {
 }
 const gradeWord = (g) => g <= 1.5 ? "Very good (sehr gut)" : g <= 2.5 ? "Good (gut)" : g <= 3.5 ? "Satisfactory (befriedigend)" : g <= 4.0 ? "Sufficient (ausreichend)" : "Below passing";
 
+function viewGradesUK() {
+  app.innerHTML = `${guideHero("Free tool", "What is my CGPA in the UK system?", "UK universities ask for a degree class: First, Upper Second (2:1) or Lower Second (2:2). This tool shows the usual Pakistani equivalent. Each university publishes its own table, so treat this as a guide.")}
+    <div class="grid cols-2" style="align-items:start">
+      <form class="card" id="gForm">
+        <div class="field"><label>Your grading system</label><div class="seg"><label><input type="radio" name="gs" value="cgpa" checked/><span>CGPA (out of 4)</span></label><label><input type="radio" name="gs" value="pct"/><span>Percentage</span></label></div></div>
+        <div class="field"><label for="gNd">Your grade</label><input id="gNd" inputmode="decimal" placeholder="3.20" required /></div>
+        <button class="btn" style="width:100%">Show my UK equivalent</button>
+      </form>
+      <section class="card" id="gOut"><h3>Your UK equivalent</h3><p class="notice">Enter your grade to see the result.</p></section>
+    </div>
+    <section class="card" style="margin-top:16px"><h3>Good to know</h3><ul class="needs">
+      <li>Typical guide for Pakistani degrees: First about CGPA 3.5 or 70%, 2:1 about CGPA 3.0 or 60%, 2:2 about CGPA 2.5 or 50%. Some universities ask for more, some for less.</li>
+      <li>Many Master's ask for a 2:1. Plenty of good universities accept a 2:2, and some offer a pre-Master's course below that.</li>
+      <li>Your university in Pakistan and relevant work experience can change the decision.</li>
+      <li>Search "[university name] Pakistan entry requirements" to see each university's own table.</li></ul></section>`;
+  const sync = () => { $("#gNd").placeholder = app.querySelector("input[name=gs]:checked").value === "pct" ? "65" : "3.20"; };
+  app.querySelectorAll("input[name=gs]").forEach((r) => r.onchange = sync);
+  $("#gForm").onsubmit = (e) => {
+    e.preventDefault();
+    const pct = app.querySelector("input[name=gs]:checked").value === "pct";
+    const v = parseFloat($("#gNd").value);
+    if (!Number.isFinite(v) || v < 0 || (pct ? v > 100 : v > 4)) { $("#gOut").innerHTML = `<h3>Your UK equivalent</h3><p>Please check the number.</p>`; return; }
+    const t = pct ? [70, 60, 50] : [3.5, 3.0, 2.5];
+    const [cls, say] = v >= t[0] ? ["First class (1st)", "Excellent: you meet the grade for almost every Master's, including top universities."] : v >= t[1] ? ["Upper Second (2:1)", "Good: you meet the usual Master's requirement at most universities."] : v >= t[2] ? ["Lower Second (2:2)", "Many universities accept a 2:2, especially with work experience. Focus your search on courses that ask for a 2:2."] : ["Below a 2:2", "Look for universities with a pre-Master's or flexible entry, and highlight work experience."];
+    $("#gOut").innerHTML = `<h3>Your UK equivalent</h3><div class="grade-big" style="font-size:2rem">${cls}</div><p>${say}</p><p class="notice">Guide only. Each university decides with its own table for Pakistan.</p><a class="btn gold" href="#/finder">Find courses</a>`;
+  };
+}
+
 function viewGrades() {
+  if (isUK()) return viewGradesUK();
   app.innerHTML = `${guideHero("Free tool", "Convert your Pakistani grades to the German scale", "Uses the modified Bavarian formula that uni-assist and German universities use. In Germany 1.0 is the best grade and 4.0 is the lowest pass.")}
     <div class="grid cols-2" style="align-items:start">
       <form class="card" id="gForm">
@@ -1197,11 +1333,11 @@ function jobCards(list) {
 }
 function viewJobs() {
   const J = G().jobs || { apps: [], agencies: [], portals: [], tips: [] };
-  app.innerHTML = `${guideHero("Jobs for students", "Find a student job in Germany", "Shift apps, staffing agencies and job portals that hire international students, with the 2026 work rules.")}
+  app.innerHTML = `${guideHero("Jobs for students", `Find a student job in ${C().the}`, "Shift apps, staffing agencies and job portals that hire international students, with the 2026 work rules.")}
     <div class="callout"><strong>Work rules 2026:</strong> ${esc(J.rules || "")}</div>
     <section class="section"><div class="section-head"><div><h2>Shift apps</h2><p>Flexible shifts you choose yourself, often paid weekly. Great for your first months.</p></div></div>${jobCards(J.apps)}</section>
     <section class="section"><div class="section-head"><div><h2>Staffing agencies</h2><p>They place you with companies in logistics, office, industry and IT. Registration is free.</p></div></div>${jobCards(J.agencies)}</section>
-    <section class="section"><div class="section-head"><div><h2>Job portals</h2><p>For Werkstudent jobs, internships and graduate roles.</p></div></div>${jobCards(J.portals)}</section>
+    <section class="section"><div class="section-head"><div><h2>Job portals</h2><p>${isUK() ? "For part-time jobs, internships, placements and graduate schemes." : "For Werkstudent jobs, internships and graduate roles."}</p></div></div>${jobCards(J.portals)}</section>
     <section class="card" style="margin-top:16px"><h3>Tips</h3><ul class="needs">${(J.tips || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section>`;
 }
 
@@ -1209,17 +1345,23 @@ function viewHub(kind) {
   const items = kind === "tools" ? [
     ["#/visa", "✦", "AI advisor", "Program matches and visa answers in English or Urdu."],
     ["#/doccheck", "📄", "AI document checker", "Upload your documents and get a completeness and eligibility check."],
-    ["#/grades", "🧮", "Grade converter", "Your CGPA or percentage on the German scale."],
+    ["#/grades", "🧮", "Grade converter", isUK() ? "Your CGPA or percentage as a UK degree class." : "Your CGPA or percentage on the German scale."],
     ["#/letter", "✍️", "Motivation letter", "A personal first draft for one program."],
     ["#/interview", "🎤", "Interview practice", "University and visa mock interviews by voice."],
     ["#/compare", "⇄", "Compare programs", "Up to 3 programs side by side."]]
+    : isUK() ? [["#/visa-guide", "🛂", "UK Student visa from Pakistan", "Step by step: CAS, the 28 day rule, TB test, fees. Dated."],
+    ["#/moving", "🧳", "Moving to the UK", "GP, bank, housing, transport and culture."],
+    ["#/cities", "🏙️", "City guides", `Jobs and daily life in ${G().cities.length} student cities.`],
+    ["#/scholarships", "🎓", "Scholarships", "Chevening, Commonwealth, GREAT and university scholarships, with deadlines."],
+    ["#/jobs", "💼", "Student jobs", "Indeed Flex, Coople, agencies and graduate job sites, with the 20 hour rule."],
+    ["#/roadmap", "🧭", "10 step roadmap", "From choosing a course to your first day."]]
     : [["#/visa-guide", "🛂", "Student visa from Pakistan", "Step by step, with fees and the blocked account. Dated."],
     ["#/moving", "🧳", "Moving to Germany", "Registration, insurance, housing, banks, transport and culture."],
     ["#/cities", "🏙️", "City guides", "Jobs, internships and rent in 12 student cities."],
     ["#/scholarships", "🎓", "Scholarships", "DAAD, Erasmus Mundus, foundations and university scholarships, with deadlines."],
     ["#/jobs", "💼", "Student jobs", "Zenjob, Jobvalley, TimePartner, Randstad and more, with 2026 work rules."],
     ["#/roadmap", "🧭", "10 step roadmap", "From choosing a program to your first day."]];
-  app.innerHTML = `${guideHero(kind === "tools" ? "AI tools" : "Guides", kind === "tools" ? "Free AI tools for your application" : "Guides for every step", kind === "tools" ? "Built for students from Pakistan. Free, with a daily AI limit." : "Checked facts, with dates, so you know what is current.")}
+  app.innerHTML = `${guideHero(kind === "tools" ? "AI tools" : "Guides", kind === "tools" ? "Free AI tools for your application" : "Guides for every step", kind === "tools" ? "Built for students from Pakistan. Free, with a daily AI limit." : `Checked facts for ${C().the}, with dates, so you know what is current.`)}
     <div class="grid cols-3">${items.map(([h, ic, t, d]) => `<a class="card" href="${h}"><div class="icon">${ic}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></a>`).join("")}</div>`;
 }
 
@@ -1240,7 +1382,7 @@ function schCard(s) {
     <strong>${esc(s.name)}</strong><em>${esc(s.by)}</em>
     <div class="sch-amt">${esc(s.amount)}</div>
     <p>${esc(s.fields)}</p>
-    <div class="sch-foot">${schDeadlineTag(s)}<span class="sch-from">${s.fromPk ? "Apply from Pakistan" : "Apply once admitted in Germany"}</span></div>
+    <div class="sch-foot">${schDeadlineTag(s)}<span class="sch-from">${s.fromPk ? "Apply from Pakistan" : `Apply once admitted in ${C().the}`}</span></div>
   </a>`;
 }
 function viewScholarships() {
@@ -1248,7 +1390,7 @@ function viewScholarships() {
   const p = route.params;
   const f = { level: p.get("level") || "", kind: p.get("kind") || "", q: p.get("q") || "" };
   const upcoming = S.list.filter((s) => daysLeft(s.next) != null && daysLeft(s.next) >= 0).sort((a, b) => a.next.localeCompare(b.next)).slice(0, 3);
-  app.innerHTML = `${guideHero("Scholarships", "Scholarships to study in Germany", `Fully funded and partial scholarships that students from Pakistan can really get, with criteria, documents and deadlines. Checked <strong>${esc(S.checked)}</strong>. Always confirm on the official page before you apply.`)}
+  app.innerHTML = `${guideHero("Scholarships", `Scholarships to study in ${C().the}`, `Fully funded and partial scholarships that students from Pakistan can really get, with criteria, documents and deadlines. Checked <strong>${esc(S.checked)}</strong>. Always confirm on the official page before you apply.`)}
     ${upcoming.length ? `<section class="sch-soon"><h2>Next deadlines</h2><div class="sch-soon-row">${upcoming.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong>${schDeadlineTag(s)}</a>`).join("")}</div></section>` : ""}
     <form class="card sch-filters" id="schF">
       <div class="field"><label for="sq">Search</label><input id="sq" type="search" placeholder="e.g. design, PhD, public policy" value="${esc(f.q)}" /></div>
@@ -1262,14 +1404,14 @@ function viewScholarships() {
 
     <div class="grid cols-2" style="align-items:start">
       <section class="card"><h3>Documents you usually need</h3><ul class="needs">${S.docs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><a class="btn gold small" href="#/doccheck">Check my documents with AI</a></section>
-      <section class="card"><h3>Already studying in Germany?</h3>${S.current.map(([t, d]) => `<div class="sch-cur"><strong>${esc(t)}</strong><p>${esc(d)}</p></div>`).join("")}</section>
+      <section class="card"><h3>Already studying in ${esc(C().the)}?</h3>${S.current.map(([t, d]) => `<div class="sch-cur"><strong>${esc(t)}</strong><p>${esc(d)}</p></div>`).join("")}</section>
     </div>
 
-    <section class="section"><div class="section-head"><div><h2>Private university scholarships</h2><p>Tuition discounts change every intake, so each link opens the university's own scholarship page.</p></div></div>
-      <div class="job-grid">${Object.entries(S.unis).map(([n, u]) => `<a class="job-card" href="#/university?name=${encodeURIComponent(n)}"><strong>${esc(n)}</strong><span>${esc(u.items[0])}${u.items.length > 1 ? ` and ${u.items.length - 1} more` : ""}</span></a>`).join("")}</div></section>
+    ${Object.keys(S.unis).length ? `<section class="section"><div class="section-head"><div><h2>Private university scholarships</h2><p>Tuition discounts change every intake, so each link opens the university's own scholarship page.</p></div></div>
+      <div class="job-grid">${Object.entries(S.unis).map(([n, u]) => `<a class="job-card" href="#/university?name=${encodeURIComponent(n)}"><strong>${esc(n)}</strong><span>${esc(u.items[0])}${u.items.length > 1 ? ` and ${u.items.length - 1} more` : ""}</span></a>`).join("")}</div></section>` : ""}
 
-    <div class="ai-strip card"><div><h3>Not sure which scholarship fits you?</h3><p>Tell the AI your degree, CGPA, work experience and field. It will suggest scholarships and a plan.</p></div><a class="btn gold" href="#/visa?q=${encodeURIComponent("Which scholarships for Germany fit me? My degree is ..., CGPA ..., work experience ...")}">Ask the AI advisor</a></div>
-    <p class="notice">Not affiliated with DAAD or any foundation. Amounts are 2026 rates. Deadlines marked "About" are approximate because the provider only says "generally".</p>`;
+    <div class="ai-strip card"><div><h3>Not sure which scholarship fits you?</h3><p>Tell the AI your degree, CGPA, work experience and field. It will suggest scholarships and a plan.</p></div><a class="btn gold" href="#/visa?q=${encodeURIComponent(`Which scholarships for ${C().the} fit me? My degree is ..., CGPA ..., work experience ...`)}">Ask the AI advisor</a></div>
+    <p class="notice">${isUK() ? "Not affiliated with Chevening, the CSC, the British Council or any university." : "Not affiliated with DAAD or any foundation. Amounts are 2026 rates."} Deadlines marked "About" are approximate because the provider only gives a usual date.</p>`;
   const render = () => {
     const q = $("#sq").value.trim().toLowerCase(), lv = $("#slv").value, kd = $("#skd").value;
     const words = q.split(/\s+/).filter(Boolean);
@@ -1290,7 +1432,7 @@ function viewScholarship() {
       <div><strong>${s.kind === "Full" ? "Full" : "Partial"}</strong><span>Funding</span></div>
       <div><strong>${esc(s.levels.join(", "))}</strong><span>Level</span></div>
       <div><strong>${s.fromPk ? "Yes" : "After admission"}</strong><span>Apply from Pakistan</span></div>
-      <div><strong>${s.german ? "Yes" : "Not always"}</strong><span>German needed</span></div>
+      ${isUK() ? `<div><strong>${esc(s.amount.split(",")[0])}</strong><span>Award</span></div>` : `<div><strong>${s.german ? "Yes" : "Not always"}</strong><span>German needed</span></div>`}
     </div>
     <div class="callout"><strong>Deadline:</strong> ${esc(s.deadline)} ${schDeadlineTag(s)}</div>
     ${s.tip ? `<div class="callout" style="margin-top:10px"><strong>Our tip:</strong> ${esc(s.tip)}</div>` : ""}
@@ -1304,13 +1446,20 @@ function viewScholarship() {
       <a class="btn gold" href="${safeUrl(s.apply || s.info)}" target="_blank" rel="noopener">Go to the application ↗</a>
       <a class="btn ghost" href="${safeUrl(s.info)}" target="_blank" rel="noopener">Official information ↗</a>
       <a class="btn ghost" href="#/visa?q=${encodeURIComponent(`Do I qualify for the ${s.name}? My degree is ..., CGPA ..., work experience ...`)}">Ask the AI if I qualify</a>
-      <a class="btn ghost" href="#/letter">Draft my motivation letter</a>
+      <a class="btn ghost" href="#/letter">Draft my ${isUK() ? "personal statement" : "motivation letter"}</a>
     </div>
     <p class="notice">Raasta is not the scholarship provider. The official page always has the final word.</p>`;
 }
 // Scholarship block for a university page
 function uniScholarshipBlock(u) {
   const S = SCH(); const own = S.unis[u.name];
+  if (isUK()) {
+    const list = ["great", "chevening", "uni-intl"].map((id) => S.list.find((s) => s.id === id)).filter(Boolean);
+    return `<section class="card" style="margin-top:16px"><h2>Scholarships at ${esc(u.name)}</h2>
+      <p>Most UK universities offer international scholarships or early payment discounts, and many take part in GREAT Scholarships for Pakistan. Search the university website for "international scholarships" and ask admissions before you pay a deposit.</p>
+      <div class="sch-mini">${list.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong><span>${esc(s.amount)}</span></a>`).join("")}</div>
+      <div class="prog-cta">${u.site ? `<a class="btn ghost small" href="${safeUrl(u.site)}" target="_blank" rel="noopener">University website ↗</a>` : ""}<a class="btn gold small" href="#/scholarships">All UK scholarships</a></div></section>`;
+  }
   const general = S.list.filter((s) => ["daad-art", "daad-epos", "daad-hsp", "deutschland", "boell"].includes(s.id) && (u.type !== "Private university" || s.id === "deutschland"));
   return `<section class="card" style="margin-top:16px"><h2>Scholarships at ${esc(u.name)}</h2>
     ${own ? `<ul class="needs">${own.items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="notice"><strong>How to apply:</strong> ${esc(own.how)}</p>
@@ -1323,6 +1472,14 @@ function uniScholarshipBlock(u) {
 // Scholarship suggestions for a program page
 function programScholarshipBlock(p) {
   const S = SCH(); const own = S.unis[p.university];
+  if (progCountry(p) === "UK") {
+    const ids = p.degree === "Master" ? ["chevening", "commonwealth-masters", "great", "uni-intl"] : ["uni-intl"];
+    const list = ids.map((id) => S.list.find((s) => s.id === id)).filter(Boolean);
+    return `<section class="card" style="margin-top:16px"><h2>Scholarships for this program</h2>
+      <div class="sch-mini">${list.map((s) => `<a href="#/scholarship?id=${s.id}"><strong>${esc(s.name)}</strong><span>${esc(s.amount)}</span></a>`).join("")}</div>
+      <p class="notice">${p.degree === "Master" ? "Chevening and Commonwealth fund one-year Master's at any UK university. GREAT covers selected courses at participating universities." : "Bachelor's scholarships in the UK are mostly university awards. Check the university's scholarship page."}</p>
+      <div class="prog-cta"><a class="btn ghost small" href="#/scholarships">All UK scholarships</a></div></section>`;
+  }
   const txt = ((p.program || "") + " " + (p.title || "") + " " + (p.field || "")).toLowerCase();
   const art = /design|art|film|animation|illustration|visual|media|photograph|fashion/.test(txt);
   const pol = /policy|governance|public admin|development|peace|international relations/.test(txt);
@@ -1348,8 +1505,8 @@ async function viewDocCheck() {
   const progs = await db.programs();
   let chosen = progs.find((x) => x.id === Number(route.params.get("program"))) || null;
   const files = [];
-  app.innerHTML = `${guideHero("AI tool", "AI document checker", "Upload your transcripts, degree, language certificate and ID. The AI checks completeness, consistency and fit for one program, and converts your grade to the German scale.")}
-    <div class="callout"><strong>Important:</strong> this is a free pre-check, not an official evaluation. It does not replace uni-assist or the university, and it cannot certify documents. Your files are sent securely to the AI, analysed once and <strong>never stored</strong>.</div>
+  app.innerHTML = `${guideHero("AI tool", "AI document checker", `Upload your transcripts, degree, language certificate and ID. The AI checks completeness, consistency and fit for one program, and ${isUK() ? "shows your UK degree class equivalent" : "converts your grade to the German scale"}.`)}
+    <div class="callout"><strong>Important:</strong> this is a free pre-check, not an official evaluation. It does not replace ${isUK() ? "the university's own check" : "uni-assist or the university"}, and it cannot certify documents. Your files are sent securely to the AI, analysed once and <strong>never stored</strong>.</div>
     <section class="card dc-guide">
       <h3>What can I upload, and what does the AI do with it?</h3>
       <div class="dc-docs">
@@ -1416,7 +1573,7 @@ async function viewDocCheck() {
     $("#dcOut").innerHTML = `<h3>Results</h3><p class="notice">Reading your documents...</p>`;
     try {
       const prof = profileSummary(await db.getProfile().catch(() => null));
-      const payload = { program_id: chosen?.id || null, profile: prof, files: await Promise.all(files.map(async (f) => ({ name: f.name, type: f.type, data: await toB64(f.blob) }))) };
+      const payload = { country: CTRY, program_id: chosen?.id || null, profile: prof, files: await Promise.all(files.map(async (f) => ({ name: f.name, type: f.type, data: await toB64(f.blob) }))) };
       const { data, error } = await sb.functions.invoke("doc-check", { body: payload });
       if (error) { let m = "Something went wrong. Please try again."; try { const b = await error.context.json(); if (b?.error) m = b.error; } catch {} throw new Error(m); }
       renderDocResult(data.result, chosen);
@@ -1433,7 +1590,11 @@ function renderDocResult(r, prog) {
     const pct = ex.grade_type === "percentage" || num > 10;
     const mx = Number(ex.grade_max) || (pct ? 100 : 4), mn = Number(ex.grade_min_pass) || (pct ? 40 : 2);
     const g = bavarian(num, mx, mn);
-    if (g != null) conv = `<div class="dc-grade"><div><span>Your grade</span><strong>${esc(ex.grade)}</strong></div><div><span>German grade (estimate)</span><strong>${g.toFixed(1)}</strong></div><em>${gradeWord(g)}. Modified Bavarian formula with best ${mx}, minimum pass ${mn}${ex.grade_min_pass ? " (from your transcript)" : " (assumed, check your transcript)"}.</em></div>`;
+    if (isUK()) {
+      const t = pct ? [70, 60, 50] : [3.5, 3.0, 2.5];
+      const cls = num >= t[0] ? "First class" : num >= t[1] ? "Upper Second (2:1)" : num >= t[2] ? "Lower Second (2:2)" : "Below a 2:2";
+      conv = `<div class="dc-grade"><div><span>Your grade</span><strong>${esc(ex.grade)}</strong></div><div><span>UK equivalent (guide)</span><strong>${cls}</strong></div><em>Usual Pakistani equivalents. Each university uses its own table for Pakistan.</em></div>`;
+    } else if (g != null) conv = `<div class="dc-grade"><div><span>Your grade</span><strong>${esc(ex.grade)}</strong></div><div><span>German grade (estimate)</span><strong>${g.toFixed(1)}</strong></div><em>${gradeWord(g)}. Modified Bavarian formula with best ${mx}, minimum pass ${mn}${ex.grade_min_pass ? " (from your transcript)" : " (assumed, check your transcript)"}.</em></div>`;
   }
   const score = Math.max(0, Math.min(100, Number(r.eligibility?.score) || 0));
   const lvl = (r.chance?.level || "unknown").toLowerCase();
@@ -1446,7 +1607,7 @@ function renderDocResult(r, prog) {
     <h4>Documents found</h4><ul class="dc-check">${(r.documents || []).map((d) => `<li>${d.ok ? "✅" : "⚠️"} <strong>${esc(d.type)}</strong> <span>${esc(d.file)}${(d.issues || []).length ? ": " + esc(d.issues.join("; ")) : ""}</span></li>`).join("")}</ul>
     ${(r.eligibility?.gaps || []).filter(Boolean).length ? `<h4>Gaps</h4><ul class="needs">${r.eligibility.gaps.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
     ${(r.next_steps || []).length ? `<h4>Next steps</h4><ol class="needs">${r.next_steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
-    <p class="notice">Not an official evaluation. uni-assist or the university makes the final decision. Your files were not stored.</p>`;
+    <p class="notice">Not an official evaluation. ${isUK() ? "The university" : "uni-assist or the university"} makes the final decision. Your files were not stored.</p>`;
 }
 
 /* ---------------- Feedback ---------------- */
@@ -1713,7 +1874,7 @@ function nextDeadline(p) {
     const [m, d] = mmdd.split("-").map(Number);
     let dt = new Date(today.getFullYear(), m - 1, d);
     if (dt < today) dt = new Date(today.getFullYear() + 1, m - 1, d);
-    opts.push({ date: dt, intake, days: Math.round((dt - today) / 86400000) });
+    opts.push({ date: dt, intake: intakeName(p, intake), days: Math.round((dt - today) / 86400000) });
   }
   return opts.sort((a, b) => a.date - b.date)[0] || null;
 }
@@ -1722,8 +1883,17 @@ const mmddText = (mmdd) => { const [m, d] = mmdd.split("-").map(Number); return 
 function tuitionText(p) {
   if (p.tuition === 0) return "No tuition";
   if (p.tuition == null) return "Check page";
+  if (p.currency === "GBP") return `£${Number(p.tuition).toLocaleString("en-US")} / year`;
   return `€${Number(p.tuition).toLocaleString("en-US")} / semester`;
 }
+// UK programs store the September intake in deadline_winter and the January intake in deadline_summer
+const intakeName = (p, which) => progCountry(p) === "UK" ? (which === "Winter" ? "September" : "January") : which;
+function durText(p) {
+  const m = p.duration_months;
+  if (m) return m % 12 === 0 ? `${m / 12} year${m === 12 ? "" : "s"}` : `${m} months`;
+  return p.duration ? `${p.duration} semesters` : "";
+}
+const durMonths = (p) => p.duration_months || (p.duration ? p.duration * 6 : null);
 const mono = (name) => (String(name || "?").replace(/\b(University|of|the|Applied|Sciences|and|for|Hochschule|Technische|Universität|in)\b/gi, " ").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("") || String(name || "?")[0]).toUpperCase();
 const langPill = (p) => {
   const l = p.language || "English";
@@ -1753,13 +1923,13 @@ function progCard(p, saved) {
     <article class="prog-card">
       <a href="#/program?id=${p.id}" class="prog-main">
         <div class="prog-head"><span class="mono" aria-hidden="true">${esc(mono(p.university))}</span><div>
-          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${langPill(p)}${ncPill(p)}</div>
+          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${p.type === "Russell Group" ? `<span class="pill pill-lang">Russell Group</span>` : ""}${langPill(p)}${ncPill(p)}</div>
         </div></div>
         <h3>${esc(p.program)}</h3>
         <p class="prog-uni">${esc(p.university)}</p>
         <div class="prog-facts">
-          <span>📍 ${esc(p.city || "Germany")}</span>
-          <span>⏱ ${p.duration ? `${p.duration} semesters` : "Duration: see page"}</span>
+          <span>📍 ${esc(p.city || (progCountry(p) === "UK" ? "UK" : "Germany"))}</span>
+          <span>⏱ ${esc(durText(p) || "Duration: see page")}</span>
           <span>💶 ${esc(tuitionText(p))}</span>
           <span>📅 ${dl}</span>
         </div>
@@ -1799,20 +1969,21 @@ async function viewCompare() {
   const ids = compareList();
   app.innerHTML = `<div class="page-head"><h1>Compare programs</h1><p>Loading...</p></div>`;
   if (!ids.length) { app.innerHTML = `<div class="page-head"><h1>Compare programs</h1><p>Pick up to 3 programs with the ⇄ Compare button in the finder.</p></div><div class="empty"><a href="#/finder" class="btn">Find programs</a></div>`; renderCompareBar(); return; }
-  const rows = (await Promise.all(ids.map((id) => db.program(id).catch(() => null)))).filter(Boolean);
+  const rows = (await Promise.all(ids.map((id) => db.program(id).catch(() => null)))).filter(Boolean).filter((p) => progCountry(p) === CTRY);
+  if (!rows.length) { app.innerHTML = `<div class="page-head"><h1>Compare programs</h1><p>Your compare list has programs from the other country. Switch the flag at the top, or pick programs in ${esc(C().the)}.</p></div><div class="empty"><a href="#/finder" class="btn">Find programs</a></div>`; return; }
   const nd = (p) => { const n = nextDeadline(p); return n ? `${fmtDate(n.date)} (${n.intake})` : "See page"; };
   const R = [
     ["University", (p) => `<a href="#/university?name=${encodeURIComponent(p.university)}">${esc(p.university)}</a>`],
     ["Degree", (p) => esc(p.title || p.degree)], ["City", (p) => esc([p.city, p.state].filter(Boolean).join(", "))],
     ["University type", (p) => esc(p.type || "")], ["Teaching language", (p) => esc(p.language || "English")],
-    ["Duration", (p) => (p.duration ? `${p.duration} semesters` : "See page")], ["Tuition (non EU)", (p) => esc(tuitionText(p))],
-    ["Semester fee", (p) => esc(p.semester_fee || "See page")], ["Intakes", (p) => esc((p.intakes || []).join(", ") || "See page")],
+    ["Duration", (p) => esc(durText(p) || "See page")], [isUK() ? "Tuition (international)" : "Tuition (non EU)", (p) => esc(tuitionText(p))],
+    ...(isUK() ? [] : [["Semester fee", (p) => esc(p.semester_fee || "See page")]]), ["Intakes", (p) => esc((p.intakes || []).join(", ") || "See page")],
     ["Next deadline", (p) => nd(p)], ["English requirement", (p) => esc(p.english_req || "See page")],
     ["Apply via", (p) => esc(p.apply_via || "See page")]
   ];
   app.innerHTML = `
     <a href="#/finder" class="back">← Back to programs</a>
-    <div class="page-head"><h1>Compare programs</h1><p>Side by side, with deadlines for non EU applicants. Always confirm on the official page.</p></div>
+    <div class="page-head"><h1>Compare programs</h1><p>Side by side, with deadlines for ${isUK() ? "international" : "non EU"} applicants. Always confirm on the official page.</p></div>
     <div class="card table-wrap cmp-table"><table>
       <thead><tr><th></th>${rows.map((p) => `<th><a href="#/program?id=${p.id}" class="cmp-name">${esc(p.program)}</a><button class="btn link small" data-rm="${p.id}" type="button">Remove</button></th>`).join("")}</tr></thead>
       <tbody>${R.map(([k, f]) => `<tr><td class="cmp-k">${k}</td>${rows.map((p) => `<td>${f(p)}</td>`).join("")}</tr>`).join("")}
@@ -1830,6 +2001,7 @@ function uniAggregate(progs) {
     let u = m.get(k);
     if (!u) { u = { name: k, city: p.city, state: p.state, type: p.type, n: 0, master: 0, bachelor: 0, free: 0, fields: new Map(), hosts: new Map() }; m.set(k, u); }
     u.n++; p.degree === "Master" ? u.master++ : u.bachelor++; if (p.tuition === 0) u.free++;
+    if (p.currency === "GBP" && p.tuition) u.minFee = Math.min(u.minFee || Infinity, p.tuition);
     u.fields.set(p.field, (u.fields.get(p.field) || 0) + 1);
     try { if (p.program_url) { const h = new URL(p.program_url).origin; u.hosts.set(h, (u.hosts.get(h) || 0) + 1); } } catch {}
   }
@@ -1842,8 +2014,8 @@ function uniAggregate(progs) {
 function uniCard(u) {
   return `<a class="uni-card" href="#/university?name=${encodeURIComponent(u.name)}">
     <span class="mono big" aria-hidden="true">${esc(mono(u.name))}</span>
-    <div class="uni-body"><h3>${esc(u.name)}</h3><p>📍 ${esc([u.city, u.state].filter(Boolean).join(", ") || "Germany")}</p>
-      <div class="uni-tags"><span class="pill">${esc(u.type || "University")}</span>${u.free ? `<span class="pill pill-free">${u.free} tuition free</span>` : ""}</div></div>
+    <div class="uni-body"><h3>${esc(u.name)}</h3><p>📍 ${esc([u.city, u.state === u.city ? "" : u.state].filter(Boolean).join(", ") || C().label)}</p>
+      <div class="uni-tags"><span class="pill">${esc(u.type || "University")}</span>${u.free ? `<span class="pill pill-free">${u.free} tuition free</span>` : ""}${u.minFee ? `<span class="pill pill-gold">From £${u.minFee.toLocaleString("en-US")} / year</span>` : ""}</div></div>
     <div class="uni-count"><strong>${u.n}</strong><span>program${u.n === 1 ? "" : "s"}</span></div>
   </a>`;
 }
@@ -1860,22 +2032,22 @@ function pager(page, pages) {
   return out + `<button type="button" class="pg" data-page="${page + 1}" ${page === pages ? "disabled" : ""} aria-label="Next page">›</button>`;
 }
 async function viewUniversities() {
-  app.innerHTML = `<div class="page-head"><h1>Universities in Germany</h1><p>Loading...</p></div>`;
+  app.innerHTML = `<div class="page-head"><h1>Universities in ${esc(C().the)}</h1><p>Loading...</p></div>`;
   const unis = uniAggregate(await db.programs());
   const f = Object.assign({ q: "", type: "", state: "", sort: "n" }, Object.fromEntries(route.params || []));
   const states = [...new Set(unis.map((u) => u.state).filter(Boolean))].sort();
   const opt = (v, l, c) => `<option value="${esc(v)}" ${v === c ? "selected" : ""}>${esc(l)}</option>`;
   app.innerHTML = `
     <div class="page-hero">
-      <span class="eyebrow light">Germany</span>
-      <h1>${unis.length} universities with international programs</h1>
-      <p>Public universities, universities of applied sciences and private universities. Open a university to see all of its programs.</p>
+      <span class="eyebrow light">${esc(C().name)}</span>
+      <h1>${unis.length} universities ${isUK() ? "popular with Pakistani students" : "with international programs"}</h1>
+      <p>${isUK() ? "A mix of Russell Group and affordable universities across the UK. Open a university to see its Bachelor's and Master's programs, fees and intakes." : "Public universities, universities of applied sciences and private universities. Open a university to see all of its programs."}</p>
     </div>
     <div class="uni-tools card">
       <input id="uq" type="search" placeholder="Search a university or city" value="${esc(f.q)}" aria-label="Search universities" />
-      <select id="utype" aria-label="Type">${opt("", "All types", f.type)}${opt("University", "Public university", f.type)}${opt("University of Applied Sciences", "University of Applied Sciences", f.type)}${opt("Private university", "Private university", f.type)}</select>
-      <select id="ustate" aria-label="State">${opt("", "All states", f.state)}${states.map((x) => opt(x, x, f.state)).join("")}</select>
-      <select id="usort" aria-label="Sort">${opt("n", "Most programs", f.sort)}${opt("free", "Most tuition free", f.sort)}${opt("az", "A to Z", f.sort)}</select>
+      <select id="utype" aria-label="Type">${opt("", "All types", f.type)}${isUK() ? opt("Russell Group", "Russell Group", f.type) + opt("University", "Other universities", f.type) : opt("University", "Public university", f.type) + opt("University of Applied Sciences", "University of Applied Sciences", f.type) + opt("Private university", "Private university", f.type)}</select>
+      <select id="ustate" aria-label="${isUK() ? "Region" : "State"}">${opt("", isUK() ? "All regions" : "All states", f.state)}${states.map((x) => opt(x, x, f.state)).join("")}</select>
+      <select id="usort" aria-label="Sort">${opt("n", "Most programs", f.sort)}${isUK() ? opt("fee", "Lowest fees", f.sort) : opt("free", "Most tuition free", f.sort)}${opt("az", "A to Z", f.sort)}</select>
     </div>
     <p class="count" id="ucount"></p>
     <div class="uni-grid" id="ulist"></div>
@@ -1883,7 +2055,7 @@ async function viewUniversities() {
   const render = () => {
     const q = $("#uq").value.trim().toLowerCase(), t = $("#utype").value, st = $("#ustate").value, so = $("#usort").value;
     let list = unis.filter((u) => (!q || `${u.name} ${u.city}`.toLowerCase().includes(q)) && (!t || u.type === t) && (!st || u.state === st));
-    list.sort(so === "az" ? (a, b) => a.name.localeCompare(b.name) : so === "free" ? (a, b) => b.free - a.free : (a, b) => b.n - a.n);
+    list.sort(so === "az" ? (a, b) => a.name.localeCompare(b.name) : so === "free" ? (a, b) => b.free - a.free : so === "fee" ? (a, b) => (a.minFee || 1e9) - (b.minFee || 1e9) : (a, b) => b.n - a.n);
     const PER = 12, pages = Math.max(1, Math.ceil(list.length / PER));
     page = Math.min(Math.max(1, page), pages);
     $("#ucount").textContent = `${list.length} universit${list.length === 1 ? "y" : "ies"}${pages > 1 ? ` · page ${page} of ${pages}` : ""}`;
@@ -1915,11 +2087,12 @@ async function viewUniversity() {
       <div><strong>${u.n}</strong><span>Programs</span></div>
       <div><strong>${u.master}</strong><span>Master's</span></div>
       <div><strong>${u.bachelor}</strong><span>Bachelor's</span></div>
-      <div><strong>${u.free}</strong><span>Tuition free</span></div>
+      ${isUK() ? `<div><strong>${u.minFee ? "£" + u.minFee.toLocaleString("en-US") : "See page"}</strong><span>Fees from, per year</span></div>` : `<div><strong>${u.free}</strong><span>Tuition free</span></div>`}
     </div>
-    ${u.type === "Private university" ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} international program${u.n === 1 ? "" : "s"}.</strong> ${esc(u.name)} offers more degrees, including German-taught programs, that are not in our list yet. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
+    ${u.type === "Private university" || isUK() ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} international program${u.n === 1 ? "" : "s"}.</strong> ${esc(u.name)} offers more degrees, including German-taught programs, that are not in our list yet. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
     <section class="card uni-city" id="uniCity"></section>
     ${uniScholarshipBlock(u)}
+    ${isUK() ? `<div class="callout"><strong>Fees and offers:</strong> UK fees are per year and set by each university. Fees shown are the university's published international fee for each course where we found it. Always check the course page, and ask about scholarships for Pakistani students before you pay a deposit.</div>` : ""}
     ${u.type === "Private university" ? `<div class="callout"><strong>Private university:</strong> tuition is usually higher, but admission can be faster and more flexible. Check that the degree is state recognised before you pay any fee.</div>` : ""}
     <section class="section">
       <div class="section-head"><div><h2>Programs</h2><p>${fields.map(([f, n]) => `${esc(FIELD_META[f]?.name || f)} (${n})`).join(" · ")}</p></div>
@@ -1952,13 +2125,13 @@ async function renderUniCity(u) {
       <p id="ucText">${esc(guide ? guide.vibe : "")}</p>
       <div class="uc-facts">
         <div><span>Population</span><strong id="ucPop">…</strong></div>
-        <div><span>Student flat</span><strong>${esc(guide?.rent || "Check WG-Gesucht")}</strong></div>
+        ${isUK() ? `<div><span>Rooms</span><strong>Check SpareRoom</strong></div><div><span>Health care</span><strong>NHS, via the IHS</strong></div><div><span>Visa living costs</span><strong>${/london/i.test(u.city || "") ? "£1,570" : "£1,203"} / month</strong></div>` : `<div><span>Student flat</span><strong>${esc(guide?.rent || "Check WG-Gesucht")}</strong></div>
         <div><span>Health insurance</span><strong>about €141 to €146</strong></div>
-        <div><span>Transport</span><strong>Semester ticket</strong></div>
+        <div><span>Transport</span><strong>Semester ticket</strong></div>`}
       </div>
       ${guide ? `<p class="uc-emp"><strong>Main employers:</strong> ${guide.employers.slice(0, 6).map(esc).join(", ")}</p>` : ""}
       <p class="uc-emp"><strong>Student jobs:</strong> ${[...J.apps.slice(0, 2), ...J.agencies.slice(0, 3)].map((j) => `<a href="${safeUrl(j.url)}" target="_blank" rel="noopener">${esc(j.name)}</a>`).join(", ")}, and <a href="#/jobs">more job platforms</a>.</p>
-      <div class="prog-cta">${guide ? `<a class="btn small" href="#/city?c=${guide.slug}">Full ${esc(guide.name)} guide</a>` : ""}<a class="btn ghost small" href="#/moving">Moving to Germany</a></div>
+      <div class="prog-cta">${guide ? `<a class="btn small" href="#/city?c=${guide.slug}">Full ${esc(guide.name)} guide</a>` : ""}<a class="btn ghost small" href="#/moving">Moving to ${esc(C().the)}</a></div>
     </div>`;
   const d = await cityLive(c);
   if (!$("#uniCity")) return;
@@ -1976,35 +2149,38 @@ async function viewFinder() {
   ].map((x) => Promise.resolve(x).catch(() => null)));
   const saved = new Set(savedList || []);
   const hasParams = [...(route.params || [])].length > 0;
-  const f = Object.assign({ q: "", degree: "", field: "", subject: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
+  const f0 = Object.assign({ q: "", degree: "", field: "", subject: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
     hasParams ? {} : local.get("finderFilters", {}), Object.fromEntries(route.params || []));
+  delete f0.country;
+  const f = f0;
   if (!hasParams && !local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
   const states = [...new Set(progs.map((p) => p.state).filter(Boolean))].sort();
   const fields = [...new Set(progs.map((p) => p.field))];
   const opt = (v, label, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(label)}</option>`;
   const lastCheck = progs.map((p) => p.verified_on).filter(Boolean).sort().pop();
+  const uk = isUK();
 
   app.innerHTML = `
     <div class="page-head">
-      <h1>Find your study program</h1>
-      <p>Bachelor's and Master's programs at public and private universities in Germany, taught in English or German. Filter, compare, then go to the official page.</p>
+      <h1>Find your study program in ${uk ? "the UK" : "Germany"}</h1>
+      <p>${uk ? "Bachelor's and Master's programs at UK universities popular with Pakistani students. Filter by fees and intake, compare, then go to the official course page." : "Bachelor's and Master's programs at public and private universities in Germany, taught in English or German. Filter, compare, then go to the official page."}</p>
     </div>
     <div class="finder">
       <aside class="filters card" id="filters">
         <div class="filters-head"><h3>Filters</h3><button class="btn link small" id="resetF" type="button">Reset</button></div>
-        <div class="field"><label for="fq">Search</label><input id="fq" type="search" placeholder="e.g. data science, Munich, MBA" value="${esc(f.q)}" /></div>
+        <div class="field"><label for="fq">Search</label><input id="fq" type="search" placeholder="${uk ? "e.g. data science, Manchester, MBA" : "e.g. data science, Munich, MBA"}" value="${esc(f.q)}" /></div>
         <div class="field"><label>Degree</label>
           <div class="seg" role="radiogroup" aria-label="Degree">${["", "Master", "Bachelor"].map((d) => `<label><input type="radio" name="fdegree" value="${d}" ${f.degree === d ? "checked" : ""}/><span>${d || "All"}</span></label>`).join("")}</div></div>
         <div class="field"><label for="ffield">Field</label><select id="ffield">${opt("", "All fields", f.field)}${FIELDS.filter((x) => fields.includes(x)).map((x) => opt(x, x, f.field)).join("")}</select></div>
         <div class="field"><label for="fsubj">Subject</label><select id="fsubj">${opt("", "All subjects", f.subject)}${SUBJECTS.map(([n, re]) => [n, progs.filter((p) => re.test(p.program)).length]).filter(([, c]) => c).map(([n, c]) => opt(n, `${n} (${c})`, f.subject)).join("")}</select></div>
-        <div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
-        <div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>
-        <div class="field"><label for="ftuition">Tuition (non EU)</label><select id="ftuition">${opt("", "Any", f.tuition)}${opt("free", "Tuition free only", f.tuition)}${opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
-        <div class="field"><label for="fduration">Duration</label><select id="fduration">${opt("", "Any", f.duration)}${opt("3", "3 semesters or less", f.duration)}${opt("4", "4 semesters", f.duration)}${opt("6", "6 semesters or more", f.duration)}</select></div>
-        <div class="field"><label for="fintake">Intake</label><select id="fintake">${opt("", "Any", f.intake)}${opt("Winter", "Winter (starts Oct)", f.intake)}${opt("Summer", "Summer (starts Apr)", f.intake)}</select></div>
+        ${uk ? "" : `<div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
+        <div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>`}
+        <div class="field"><label for="ftuition">${uk ? "Tuition per year (international)" : "Tuition (non EU)"}</label><select id="ftuition">${opt("", "Any", f.tuition)}${uk ? opt("15000", "Up to £15,000", f.tuition) + opt("18000", "Up to £18,000", f.tuition) + opt("22000", "Up to £22,000", f.tuition) : opt("free", "Tuition free only", f.tuition) + opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
+        <div class="field"><label for="fduration">Duration</label><select id="fduration">${opt("", "Any", f.duration)}${uk ? opt("12", "1 year or less", f.duration) + opt("24", "2 years", f.duration) + opt("36", "3 years or more", f.duration) : opt("3", "3 semesters or less", f.duration) + opt("4", "4 semesters", f.duration) + opt("6", "6 semesters or more", f.duration)}</select></div>
+        <div class="field"><label for="fintake">Intake</label><select id="fintake">${opt("", "Any", f.intake)}${uk ? opt("September", "September", f.intake) + opt("January", "January", f.intake) : opt("Winter", "Winter (starts Oct)", f.intake) + opt("Summer", "Summer (starts Apr)", f.intake)}</select></div>
         <div class="field"><label for="fdeadline">Next deadline</label><select id="fdeadline">${opt("", "Any", f.deadline)}${opt("30", "Within 1 month", f.deadline)}${opt("90", "Within 3 months", f.deadline)}${opt("180", "Within 6 months", f.deadline)}${opt("known", "Has a listed deadline", f.deadline)}</select></div>
-        <div class="field"><label for="fstate">State</label><select id="fstate">${opt("", "All of Germany", f.state)}${states.map((x) => opt(x, x, f.state)).join("")}</select></div>
-        <div class="field"><label for="ftype">University type</label><select id="ftype">${opt("", "Any", f.type)}${opt("University", "University", f.type)}${opt("University of Applied Sciences", "University of Applied Sciences", f.type)}${opt("Private university", "Private university", f.type)}</select></div>
+        <div class="field"><label for="fstate">${uk ? "Region" : "State"}</label><select id="fstate">${opt("", uk ? "All of the UK" : "All of Germany", f.state)}${states.map((x) => opt(x, x, f.state)).join("")}</select></div>
+        <div class="field"><label for="ftype">University type</label><select id="ftype">${opt("", "Any", f.type)}${uk ? opt("Russell Group", "Russell Group", f.type) + opt("University", "Other universities", f.type) : opt("University", "University", f.type) + opt("University of Applied Sciences", "University of Applied Sciences", f.type) + opt("Private university", "Private university", f.type)}</select></div>
         <label class="check"><input type="checkbox" id="fsaved" ${f.savedOnly ? "checked" : ""}/> Only my saved programs</label>
       </aside>
       <section>
@@ -2019,13 +2195,13 @@ async function viewFinder() {
         <div id="activeF" class="active-filters"></div>
         <div id="bachelorNote"></div>
         <div id="results" class="prog-list"></div>
-        <p class="notice">${progs.length.toLocaleString("en-US")} programs from the DAAD International Programmes database and the official websites of private universities, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. Deadlines shown are for non EU applicants and can change, always confirm on the official university page. Missing something? Tell us with the Feedback button.</p>
+        <p class="notice">${progs.length.toLocaleString("en-US")} programs from ${uk ? "the official websites of each university" : "the DAAD International Programmes database and the official websites of private universities"}, last checked ${lastCheck ? fmtDate(new Date(lastCheck)) : "recently"}. ${uk ? "Fees are for international students per year and can change every year" : "Deadlines shown are for non EU applicants and can change"}, always confirm on the official university page. Missing something? Tell us with the Feedback button.</p>
       </section>
     </div>`;
 
   const read = () => ({
     q: $("#fq").value.trim(), degree: (app.querySelector("input[name=fdegree]:checked") || {}).value || "",
-    field: $("#ffield").value, subject: $("#fsubj").value, lang: $("#flang").value, nc: $("#fnc").value, tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
+    field: $("#ffield").value, subject: $("#fsubj").value, lang: $("#flang")?.value || "", nc: $("#fnc")?.value || "", tuition: $("#ftuition").value, duration: $("#fduration").value, intake: $("#fintake").value,
     deadline: $("#fdeadline").value, state: $("#fstate").value, type: $("#ftype").value, sort: $("#fsort").value, savedOnly: $("#fsaved").checked ? "1" : ""
   });
   const render = () => {
@@ -2041,10 +2217,13 @@ async function viewFinder() {
       if (c.nc === "restricted" && !/^Restricted/.test(p.nc_status || "")) return false;
       if (c.lang) { const l = p.language || "English", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
       if (c.tuition === "free" && p.tuition !== 0) return false;
-      if (c.tuition === "1500" && !(p.tuition != null && p.tuition <= 1500)) return false;
+      if (["1500", "15000", "18000", "22000"].includes(c.tuition) && !(p.tuition != null && p.tuition <= Number(c.tuition))) return false;
       if (c.duration === "3" && !(p.duration && p.duration <= 3)) return false;
       if (c.duration === "4" && p.duration !== 4) return false;
       if (c.duration === "6" && !(p.duration && p.duration >= 6)) return false;
+      if (c.duration === "12" && !(durMonths(p) && durMonths(p) <= 12)) return false;
+      if (c.duration === "24" && !(durMonths(p) > 12 && durMonths(p) <= 24)) return false;
+      if (c.duration === "36" && !(durMonths(p) >= 36)) return false;
       if (c.intake && !(p.intakes || []).includes(c.intake)) return false;
       const nd = nextDeadline(p);
       if (c.deadline === "known" && !nd) return false;
@@ -2058,7 +2237,7 @@ async function viewFinder() {
     const key = {
       deadline: (p) => nextDeadline(p)?.days ?? big,
       tuition: (p) => p.tuition ?? big,
-      duration: (p) => p.duration ?? big,
+      duration: (p) => durMonths(p) ?? big,
       az: (p) => p.program.toLowerCase()
     }[c.sort];
     list.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
@@ -2066,7 +2245,7 @@ async function viewFinder() {
     if (prof?.field) list.sort((a, b) => (b.field === prof.field) - (a.field === prof.field));
     $("#count").textContent = `${list.length.toLocaleString("en-US")} program${list.length === 1 ? "" : "s"}`;
     // Show every active filter as a removable chip, so remembered filters are never hidden
-    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], nc: (v) => (v === "open" ? "NC-frei" : "NC or selection"), subject: (v) => v, tuition: (v) => (v === "free" ? "Tuition free" : "Up to €1,500"), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
+    const LBL = { q: (v) => `“${v}”`, degree: (v) => v, field: (v) => FIELD_META[v]?.name || v, lang: (v) => ({ en: "English", de: "German", both: "English and German" })[v], nc: (v) => (v === "open" ? "NC-frei" : "NC or selection"), subject: (v) => v, tuition: (v) => (v === "free" ? "Tuition free" : v === "1500" ? "Up to €1,500" : `Up to £${Number(v).toLocaleString("en-US")}`), duration: (v) => ({ 3: "3 semesters or less", 4: "4 semesters", 6: "6+ semesters", 12: "1 year or less", 24: "2 years", 36: "3+ years" })[v], intake: (v) => `${v} intake`, deadline: (v) => (v === "known" ? "Has a deadline" : `Deadline within ${Math.round(v / 30)} month${v > 30 ? "s" : ""}`), state: (v) => v, type: (v) => v, savedOnly: () => "Saved only" };
     const act = Object.entries(c).filter(([k, v]) => v && LBL[k]);
     $("#activeF").innerHTML = act.length ? `${act.map(([k, v]) => `<button type="button" class="fchip" data-clear="${k}">${esc(LBL[k](v))} <span aria-hidden="true">×</span><span class="sr-only">Remove filter</span></button>`).join("")}${act.length > 1 ? `<button type="button" class="btn link small" data-clear="all">Clear all</button>` : ""}` : "";
     $("#activeF").querySelectorAll("[data-clear]").forEach((b) => b.onclick = () => {
@@ -2074,10 +2253,10 @@ async function viewFinder() {
       if (k === "all") { $("#resetF").click(); return; }
       if (k === "degree") app.querySelector("input[name=fdegree][value='']").checked = true;
       else if (k === "savedOnly") $("#fsaved").checked = false;
-      else { const el = { q: "#fq", field: "#ffield", subject: "#fsubj", lang: "#flang", nc: "#fnc", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el) $(el).value = ""; }
+      else { const el = { q: "#fq", field: "#ffield", subject: "#fsubj", lang: "#flang", nc: "#fnc", tuition: "#ftuition", duration: "#fduration", intake: "#fintake", deadline: "#fdeadline", state: "#fstate", type: "#ftype" }[k]; if (el && $(el)) $(el).value = ""; }
       history.replaceState(null, "", "#/finder"); render();
     });
-    $("#bachelorNote").innerHTML = c.degree === "Bachelor" ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>` : "";
+    $("#bachelorNote").innerHTML = c.degree !== "Bachelor" ? "" : uk ? `<div class="callout"><strong>Bachelor's from Pakistan:</strong> many UK universities accept a strong Intermediate (HSSC) or A levels for direct entry; others ask for a one year International Foundation Year first. You apply through UCAS (main deadline for 2027 entry: 13 January 2027).</div>` : `<div class="callout"><strong>Bachelor's from Pakistan:</strong> with an Intermediate (HSSC) certificate you usually need a Studienkolleg (foundation year) or one to two years of university study in Pakistan before direct entry. Check your exact case with uni-assist or the university.</div>`;
     const PAGE = 30;
     let shown = 0;
     const more = () => {
@@ -2120,11 +2299,22 @@ async function viewProgram() {
   app.innerHTML = `<div class="empty">Loading program...</div>`;
   const [progs, p] = await Promise.all([db.programs(), db.program(id)]);
   if (!p) { app.innerHTML = `<div class="empty">Program not found. <a href="#/finder">Back to the finder</a></div>`; return; }
+  if (progCountry(p) !== CTRY) { setCountry(progCountry(p), { silent: true }); return viewProgram(); }
+  const uk = progCountry(p) === "UK";
   const saved = new Set(await db.listSaved().catch(() => []));
   const nd = nextDeadline(p);
   const similar = progs.filter((x) => x.id !== p.id && x.field === p.field && x.degree === p.degree && x.university !== p.university).sort((a, b) => (b.curated === true) - (a.curated === true) || (nextDeadline(a)?.days ?? 1e9) - (nextDeadline(b)?.days ?? 1e9)).slice(0, 3);
   const row = (k, v) => v ? `<div class="fact"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>` : "";
-  const needs = [
+  const needs = uk ? [
+    p.degree === "Master" ? "Bachelor's degree and transcripts (HEC attestation often requested)" : "Matric and Intermediate (HSSC) or O and A level certificates",
+    p.english_req ? `English: ${p.english_req}` : "Proof of English (usually IELTS Academic, check the minimum on the course page)",
+    p.other_req,
+    p.degree === "Master" ? "Personal statement for this course" : "UCAS personal statement",
+    "CV",
+    p.degree === "Master" ? "Usually one or two references" : "One reference (from your school or college)",
+    "Passport copy",
+    p.degree === "Master" ? "Apply on the university website" : "Apply through UCAS (main deadline for 2027 entry: 13 January 2027)"
+  ].filter(Boolean) : [
     p.degree === "Master" ? "Bachelor's degree and transcripts (HEC attested for the visa)" : "School certificates (Matric and Intermediate or O/A levels), plus Studienkolleg or university study if required",
     p.english_req ? `English: ${p.english_req}` : "Proof of English (IELTS or TOEFL, check the minimum score on the official page)",
     p.other_req,
@@ -2159,20 +2349,20 @@ async function viewProgram() {
           ${row("Field", p.field)}
           ${row("Teaching language", p.language)}
           ${row("English requirement", p.english_req)}
-          ${row("Duration", p.duration ? `${p.duration} semesters` : "See official page")}
+          ${row("Duration", durText(p) || "See official page")}
           ${row("Intake", (p.intakes || []).join(" and "))}
-          ${row("Tuition (non EU)", tuitionText(p))}
+          ${row(uk ? "Tuition per year (international)" : "Tuition (non EU)", tuitionText(p))}
           ${row("Tuition note", p.tuition_note)}
-          ${row("Semester fee", p.semester_fee)}
+          ${uk ? "" : row("Semester fee", p.semester_fee)}
           ${row("Apply via", p.apply_via)}
         </div>
       </section>
       <section class="card">
-        <h2>Deadlines (non EU)</h2>
-        ${nd ? `<div class="deadline-big ${nd.days <= 30 ? "soon" : ""}"><span>Next deadline</span><strong>${fmtDate(nd.date)}</strong><em>${nd.intake} intake · ${nd.days} days left</em></div>` : `<div class="callout">No fixed deadline in our data. Check the official page.</div>`}
+        <h2>${uk ? "Deadlines and intakes" : "Deadlines (non EU)"}</h2>
+        ${nd ? `<div class="deadline-big ${nd.days <= 30 ? "soon" : ""}"><span>Next deadline</span><strong>${fmtDate(nd.date)}</strong><em>${nd.intake} intake · ${nd.days} days left</em></div>` : uk ? `<div class="callout">Most UK Master's admit on a rolling basis, with no fixed deadline. Apply early: popular courses close when full, and the deposit, CAS and visa together take about 2 to 3 months.</div>` : `<div class="callout">No fixed deadline in our data. Check the official page.</div>`}
         <div class="facts">
-          ${p.deadline_winter ? row("Winter intake", mmddText(p.deadline_winter)) : ""}
-          ${p.deadline_summer ? row("Summer intake", mmddText(p.deadline_summer)) : ""}
+          ${p.deadline_winter ? row(`${intakeName(p, "Winter")} intake`, mmddText(p.deadline_winter)) : ""}
+          ${p.deadline_summer ? row(`${intakeName(p, "Summer")} intake`, mmddText(p.deadline_summer)) : ""}
         </div>
         ${p.deadline_note ? `<p class="notice">${esc(p.deadline_note)}</p>` : ""}
       </section>
@@ -2180,16 +2370,23 @@ async function viewProgram() {
 
     <section class="card" style="margin-top:16px">
       <h2>Admission</h2>
-      <div class="adm-grid">
+      ${uk ? `<div class="adm-grid">
+        <div class="adm"><span>Entry level</span><strong>${p.degree === "Master" ? "A relevant Bachelor's degree" : "Intermediate (HSSC) or A levels"}</strong><em>${p.degree === "Master" ? "Many UK universities publish Pakistan equivalents, often a CGPA around 2.5 to 3.0 out of 4 depending on the course." : "Some courses need a one year International Foundation Year first with a Pakistani HSSC."}</em></div>
+        <div class="adm"><span>English</span><strong>${esc(langLevel(p))}</strong><em>Some universities accept other tests or an English medium of instruction letter.</em></div>
+        <div class="adm"><span>Foundation year needed?</span><strong>${p.degree === "Bachelor" ? "Sometimes" : "No"}</strong><em>${p.degree === "Bachelor" ? "Depends on your grades and the university." : "A recognised Bachelor's degree gives direct entry."}</em></div>
+        <div class="adm"><span>Application route</span><strong>${p.degree === "Bachelor" ? "UCAS" : "University website"}</strong><em>${p.degree === "Bachelor" ? "One UCAS application for up to 5 courses." : "Apply directly; most universities charge no application fee."}</em></div>
+        <div class="adm"><span>Intakes</span><strong>${esc((p.intakes || []).join(" and ") || "See page")}</strong><em>${(p.intakes || []).includes("January") ? "January starts usually close for applications around October or November." : "Most courses start in September."}</em></div>
+        <div class="adm"><span>Credibility check</span><strong>Likely</strong><em>Many universities interview Pakistani applicants before issuing the CAS. Practise with Raasta.</em></div>
+      </div>` : `<div class="adm-grid">
         <div class="adm"><span>NC status</span><strong>${esc(p.nc_status || "Not stated")}</strong>${p.nc_value ? `<em>Last NC ${esc(p.nc_value)}${p.nc_semester ? ` (${esc(p.nc_semester)})` : ""}${p.nc_source ? `, <a href="${safeUrl(p.nc_source)}" target="_blank" rel="noopener">source</a>` : ""}</em>` : `<em>${p.nc_status ? "From the program listing." : "Most international programs select by documents, not a fixed grade cutoff. Check the university page."}</em>`}</div>
         <div class="adm"><span>Language level</span><strong>${esc(langLevel(p))}</strong><em>${esc(p.language || "English")} taught</em></div>
         <div class="adm"><span>Entrance exam</span><strong>${esc(p.entrance_exam || "None mentioned")}</strong><em>${p.entrance_exam ? "Mentioned in the admission requirements." : "Always confirm on the university page."}</em></div>
         <div class="adm"><span>Studienkolleg needed?</span><strong>${p.degree === "Bachelor" ? "Usually yes, with Intermediate (HSSC)" : "No"}</strong><em>${p.degree === "Bachelor" ? "With a Pakistani HSSC you normally need a Studienkolleg, or 1 to 2 years of university study in Pakistan first. Check the DAAD admission database for your case." : "A recognised Bachelor's degree gives direct access."}</em></div>
         <div class="adm"><span>Application route</span><strong>${esc(appRoute(p))}</strong><em>${appRoute(p) === "uni-assist" ? "Send documents to uni-assist first; they forward them to the university." : "Apply on the university's own portal."}</em></div>
         <div class="adm"><span>Intakes</span><strong>${esc((p.intakes || []).join(" and ") || "See page")}</strong><em>${p.deadline_winter ? `Winter deadline ${mmddText(p.deadline_winter)}. ` : ""}${p.deadline_summer ? `Summer deadline ${mmddText(p.deadline_summer)}.` : ""}</em></div>
-      </div>
-      ${p.admission_req ? `<div class="adm-req"><strong>Academic requirements</strong><p>${esc(p.admission_req)}</p><span class="notice">From the program's DAAD listing.</span></div>` : ""}
-      <div class="prog-cta"><a class="btn gold small" href="#/doccheck?program=${p.id}">Check my documents for this program</a><a class="btn ghost small" href="#/grades">Convert my grade</a></div>
+      </div>`}
+      ${p.admission_req ? `<div class="adm-req"><strong>Academic requirements</strong><p>${esc(p.admission_req)}</p><span class="notice">${uk ? "From the university's course page." : "From the program's DAAD listing."}</span></div>` : ""}
+      <div class="prog-cta"><a class="btn gold small" href="#/doccheck?program=${p.id}">Check my documents for this program</a><a class="btn ghost small" href="#/grades">${uk ? "Check my UK grade equivalent" : "Convert my grade"}</a></div>
     </section>
 
     ${programScholarshipBlock(p)}
@@ -2203,11 +2400,11 @@ async function viewProgram() {
         ${p.apply_url ? `<a class="apply-step" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener"><span>2</span><div><strong>Open the application page</strong><em>${/uni-assist/i.test(p.apply_url) ? "uni-assist portal" : "University application portal"}</em></div></a>` : `<div class="apply-step"><span>2</span><div><strong>Find "Apply" on the program page</strong><em>The university explains its portal there</em></div></div>`}
         <a class="apply-step" href="#/letter?program=${p.id}"><span>3</span><div><strong>Write your motivation letter</strong><em>For this program, in Raasta</em></div></a>
       </div>
-      <p class="notice">Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from ${p.curated ? "the university and " : ""}the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.</p>
+      <p class="notice">${uk ? `Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">university's website</a>. Fees and requirements change each year; the course page always has the final word.` : `Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from ${p.curated ? "the university and " : ""}the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.`}</p>
     </section>
 
     <section class="grid cols-3" style="margin-top:16px">
-      <a class="card" href="#/letter?program=${p.id}"><div class="icon">✍️</div><h3>Write your motivation letter</h3><p>Start a personal draft for this exact program.</p></a>
+      <a class="card" href="#/letter?program=${p.id}"><div class="icon">✍️</div><h3>Write your ${uk ? "personal statement" : "motivation letter"}</h3><p>Start a personal draft for this exact program.</p></a>
       <a class="card" href="#/visa?q=${encodeURIComponent(`I want to apply for ${p.program} at ${p.university}. What should I prepare and in which order?`)}"><div class="icon">💬</div><h3>Ask the AI</h3><p>Get a step by step plan for this program in English or Urdu.</p></a>
       <a class="card" href="#/interview?program=${p.id}"><div class="icon">🎤</div><h3>Practise the interview</h3><p>Mock university or visa interview for this program.</p></a>
     </section>
@@ -2219,7 +2416,7 @@ async function viewProgram() {
     if (LIVE && !session) { openLogin("Sign in free to track your applications."); return; }
     const d = nd ? nd.date : null;
     const deadline = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : null;
-    const portal = /uni-assist/i.test(p.apply_via || "") ? "uni-assist" : "University portal";
+    const portal = uk ? (p.degree === "Bachelor" ? "UCAS" : "University website") : /uni-assist/i.test(p.apply_via || "") ? "uni-assist" : "University portal";
     try {
       await db.addApp({ university: p.university, program: `${p.title ? p.title + " " : ""}${p.program}`, portal, deadline, status: "planning", program_id: p.id, url: p.apply_url || p.program_url || p.url });
       toast("Added to your tracker"); $("#trackBtn").textContent = "✓ In tracker"; $("#trackBtn").disabled = true;

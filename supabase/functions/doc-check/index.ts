@@ -9,8 +9,8 @@ const MAX_FILES = 6, MAX_BYTES = 7 * 1024 * 1024;
 const cors = { "Access-Control-Allow-Origin": ORIGIN, "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
-const SYSTEM = `You are Raasta's document checker for Pakistani students applying to German universities. You review scans of their academic and personal documents for one target program.
-You are NOT uni-assist and you do NOT certify anything. You flag problems so the student can fix them before applying.
+const SYSTEM_BASE = `You are Raasta's document checker for Pakistani students applying to __WHERE__. You review scans of their academic and personal documents for one target program.
+You are NOT __OFFICIAL__ and you do NOT certify anything. You flag problems so the student can fix them before applying.
 
 Return ONLY valid JSON (no markdown, no comments) with exactly this shape:
 {
@@ -24,7 +24,7 @@ Return ONLY valid JSON (no markdown, no comments) with exactly this shape:
 }
 
 Rules:
-- Checklist: compare against what this program needs (from the program facts) plus the usual German application set: degree certificate, transcripts, HEC attestation stamp visible, English proof meeting the stated level, passport, CV, motivation letter. For Bachelor applicants also Matric and Intermediate certificates.
+- Checklist: compare against what this program needs (from the program facts) plus the usual __SET__
 - Consistency: compare the name spelling, date of birth and dates across documents; check that transcript totals and the degree certificate agree; flag unreadable, cropped or low quality scans, missing pages, missing stamps or signatures, expired language tests (older than 2 years).
 - grade_min_pass: the minimum passing CGPA or percentage only if printed on the transcript, else null.
 - Eligibility score 0 to 100 = how complete and how well the documents match this program's stated requirements. Be honest and specific.
@@ -32,6 +32,10 @@ Rules:
 - Never invent facts that are not visible in the documents. If something cannot be read, say so.
 - Never help forge, edit or alter documents. If a document looks manipulated, flag it neutrally as "needs verification".
 - No em dashes or en dashes in any text.`;
+const SYSTEM = (uk: boolean) => SYSTEM_BASE
+  .replace("__WHERE__", uk ? "UK universities" : "German universities")
+  .replace("__OFFICIAL__", uk ? "the university or UKVI" : "uni-assist")
+  .replace("__SET__", uk ? "UK application set: degree certificate, transcripts, English proof meeting the stated level (usually IELTS Academic), passport, CV, personal statement, references. For Bachelor applicants also Matric and Intermediate or O and A level certificates. HEC attestation is helpful but not always required." : "German application set: degree certificate, transcripts, HEC attestation stamp visible, English proof meeting the stated level, passport, CV, motivation letter. For Bachelor applicants also Matric and Intermediate certificates.");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -43,7 +47,7 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return json({ error: "Please sign in again." }, 401);
 
-  let body: { program_id?: number; profile?: string; files?: { name: string; type: string; data: string }[] };
+  let body: { country?: string; program_id?: number; profile?: string; files?: { name: string; type: string; data: string }[] };
   try { body = await req.json(); } catch { return json({ error: "Upload too large or invalid. Try fewer or smaller files." }, 400); }
   const files = Array.isArray(body.files) ? body.files : [];
   if (!files.length) return json({ error: "Please add at least one document." }, 400);
@@ -55,7 +59,8 @@ Deno.serve(async (req) => {
   }
   if (total > MAX_BYTES) return json({ error: "Files are too large together (max 7 MB). Use clearer but smaller scans." }, 400);
 
-  let facts = "No specific program chosen. Check against a typical German Master's application.";
+  const uk = body.country === "UK";
+  let facts = `No specific program chosen. Check against a typical ${uk ? "UK" : "German"} Master's application.`;
   if (body.program_id) {
     const { data: p } = await supabase.from("programs").select("title,degree,program,university,language,english_req,other_req,deadline_note,apply_via,type").eq("id", body.program_id).maybeSingle();
     if (p) facts = `Target program: ${p.title || p.degree} ${p.program} at ${p.university} (${p.type}). Degree level: ${p.degree}. Teaching language: ${p.language}. English requirement: ${p.english_req || "not stated"}. Other requirements: ${p.other_req || "not stated"}. Application route: ${p.apply_via || "not stated"}.`;
@@ -74,7 +79,7 @@ Deno.serve(async (req) => {
   }
   content.push({ type: "text", text: `${facts}\nStudent profile (self reported): ${String(body.profile || "not given").slice(0, 800)}\nCheck these documents now and return the JSON.` });
 
-  const payload: Record<string, unknown> = { model: MODEL, max_tokens: 6000, thinking: { type: "between_tools" }, system: SYSTEM, messages: [{ role: "user", content }] };
+  const payload: Record<string, unknown> = { model: MODEL, max_tokens: 6000, thinking: { type: "between_tools" }, system: SYSTEM(uk), messages: [{ role: "user", content }] };
   const call = (b: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify(b) });
   let res = await call(payload);
   if (res.status === 400) { const t = await res.text(); if (/thinking/i.test(t)) { delete payload.thinking; payload.max_tokens = 8000; res = await call(payload); } else { console.error("doc-check 400", t.slice(0, 300)); return json({ error: "The AI could not read these files. Try clearer PDFs or photos." }, 502); } }
