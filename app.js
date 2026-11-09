@@ -1524,7 +1524,7 @@ function openFeedback() {
 function viewPrivacy() {
   const mail = CFG.CONTACT_EMAIL || "raheelgul063@gmail.com";
   app.innerHTML = `
-    <div class="page-head"><h1>Privacy policy</h1><p>Plain language. Last updated 3 November 2026.</p></div>
+    <div class="page-head"><h1>Privacy policy</h1><p>Plain language. Last updated 9 November 2026.</p></div>
     <div class="card" style="max-width:760px">
       <h3>Who is responsible</h3>
       <p><strong>Raheel Gul</strong>, Berlin, Germany (full address in the <a href="#/impressum">Impressum</a>)<br/>Email: <a href="mailto:${esc(mail)}">${esc(mail)}</a><br/>For questions or help you can also use the <a href="#/support">support page</a>.</p>
@@ -1532,6 +1532,8 @@ function viewPrivacy() {
       <p>Your email and name (from Google or your email login); the profile you fill in (phone number, city, province, study plans, academic background, profile photo); the universities in your tracker, your saved programs and ticked checklist items; how many AI requests you made per day; feedback and support messages you send.</p>
       <h3>What we do not store</h3>
       <p>We do not save your AI chat messages, interview answers or motivation letter text. Documents you upload to the AI document checker are analysed once and then discarded; they are never saved on our servers. Do not type passport numbers, CNIC numbers or bank details into chats.</p>
+      <h3>AI rules</h3>
+      <p>The AI only helps with studying and living in Germany. Sexual, hateful or illegal requests are refused. When a message breaks these rules we record only the type of problem and the time, never the message itself, and delete these records after 90 days. Repeated rule breaking pauses the AI for that account for 24 hours.</p>
       <h3>Who processes your data</h3>
       <p>Supabase (database, login and photo storage), Anthropic (Claude AI, to answer your questions and check documents), Google (only if you choose Google login), GitHub Pages (website hosting) and Wikipedia (city photos and population, loaded in your browser).</p>
       <h3>Why</h3>
@@ -1576,8 +1578,8 @@ async function viewAdmin() {
   let st, health;
   try {
     if (LIVE) {
-      const [r, h] = await Promise.all([sb.rpc("admin_stats"), sb.functions.invoke("ai", { body: { mode: "ping" } })]);
-      if (r.error) throw r.error; st = r.data; health = h.error ? null : h.data;
+      const [r, h, f] = await Promise.all([sb.rpc("admin_stats"), sb.functions.invoke("ai", { body: { mode: "ping" } }), sb.rpc("admin_ai_flags")]);
+      if (r.error) throw r.error; st = r.data; health = h.error ? null : h.data; st.flags = f.error ? null : f.data;
     } else { st = demoStats(); health = { ai: false, demo: true }; }
   } catch (err) {
     const notAdmin = /not_admin/.test(err.message || "");
@@ -1633,6 +1635,11 @@ async function viewAdmin() {
       <div class="card"><h3>Top universities tracked</h3>${bars(st.top_universities)}</div>
     </div>
     <div class="card" style="margin-top:16px"><h3>Most saved programs (finder)</h3>${bars(st.top_saved)}</div>
+    <div class="card" style="margin-top:16px">
+      <h3>AI safety, last 7 days</h3>
+      <p class="hint" style="margin-bottom:10px">Only the category and time are stored, never the message. ${st.flags ? `${esc(st.flags.paused_now)} student${st.flags.paused_now === 1 ? "" : "s"} paused right now.` : ""}</p>
+      ${st.flags ? bars((st.flags.by_category || []).map((c) => ({ label: ({ off_topic: "Off topic", sexual: "Sexual (blocked before AI)", sexual_minor: "Sexual + minor (instant pause)", unsafe_model: "Unsafe (caught by AI)" })[c.label] || c.label, n: c.n }))) : `<div class="empty">Not available</div>`}
+    </div>
 
     <div class="card" style="margin-top:16px">
       <h3>Latest feedback</h3>

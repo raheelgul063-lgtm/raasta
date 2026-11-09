@@ -233,3 +233,53 @@ create table if not exists public.saved_programs (
 alter table public.saved_programs enable row level security;
 drop policy if exists "own saved" on public.saved_programs;
 create policy "own saved" on public.saved_programs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ---------------- AI safety flags ----------------
+-- Only the category and time are stored, never the message text (privacy policy: chats are not saved).
+create table if not exists public.ai_flags (
+  id bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category text not null,
+  weight int not null default 1,
+  created_at timestamptz not null default now()
+);
+create index if not exists ai_flags_user_time on public.ai_flags (user_id, created_at desc);
+alter table public.ai_flags enable row level security;  -- no policies: only the functions below touch it
+
+-- Records a flag for the signed in student and returns their weighted total for the last 24 hours
+create or replace function public.flag_ai(p_category text, p_weight int default 1)
+returns int language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); total int;
+begin
+  if uid is null then return 0; end if;
+  insert into ai_flags (user_id, category, weight) values (uid, left(p_category, 40), greatest(0, least(p_weight, 10)));
+  delete from ai_flags where created_at < now() - interval '90 days';
+  select coalesce(sum(weight), 0) into total from ai_flags where user_id = uid and created_at > now() - interval '24 hours';
+  return total;
+end $$;
+
+-- Weighted total for the signed in student, last 24 hours
+create or replace function public.ai_flag_score()
+returns int language sql stable security definer set search_path = public as $$
+  select coalesce(sum(weight), 0)::int from ai_flags where user_id = auth.uid() and created_at > now() - interval '24 hours';
+$$;
+
+revoke all on function public.flag_ai(text, int) from public, anon;
+revoke all on function public.ai_flag_score() from public, anon;
+grant execute on function public.flag_ai(text, int) to authenticated;
+grant execute on function public.ai_flag_score() to authenticated;
+
+-- Admin view: counts per category, last 7 days, and students currently paused
+create or replace function public.admin_ai_flags()
+returns json language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'not_admin'; end if;
+  return json_build_object(
+    'by_category', (select coalesce(json_agg(t), '[]'::json) from (
+      select category as label, count(*) as n from ai_flags where created_at > now() - interval '7 days' group by 1 order by n desc) t),
+    'paused_now', (select count(*) from (
+      select user_id from ai_flags where created_at > now() - interval '24 hours' group by user_id having sum(weight) >= 5) p)
+  );
+end $$;
+revoke all on function public.admin_ai_flags() from public, anon;
+grant execute on function public.admin_ai_flags() to authenticated;
