@@ -308,7 +308,7 @@ async function openLogin(reason, mode = "signup") {
   $("#closeLogin", bg).onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
   if ($("#googleBtn", bg)) $("#googleBtn", bg).onclick = async () => {
-    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: "select_account" } } });
     if (error) toast(error.message);
   };
   const friendly = (m) => /rate limit|too many|security purposes/i.test(m) ? "Too many attempts. Please wait a minute and try again."
