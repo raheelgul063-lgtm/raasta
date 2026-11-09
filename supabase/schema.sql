@@ -291,3 +291,8 @@ grant execute on function public.admin_ai_flags() to authenticated;
 create table if not exists public.app_settings (key text primary key, value text not null);
 alter table public.app_settings enable row level security;
 insert into public.app_settings (key, value) values ('ai_global_daily_credits', '1500'), ('ai_new_account_credits', '10') on conflict (key) do nothing;
+
+-- ---------------- Code-only login and throwaway email block (applied 9 Nov 2026) ----------------
+-- Trigger raasta_no_passwords on auth.users keeps encrypted_password empty: every sign in needs an email code or Google.
+-- Trigger raasta_block_disposable rejects sign ups from domains in public.blocked_email_domains.
+-- Add a domain: insert into public.blocked_email_domains values ('example.com');

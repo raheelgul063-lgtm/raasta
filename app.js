@@ -296,7 +296,6 @@ async function openLogin(reason, mode = "signup") {
       <form id="loginForm">
         ${isUp ? `<div class="field"><label for="fullName">Full name</label><input id="fullName" required maxlength="120" placeholder="Ali Raza" autocomplete="name" /></div>` : ""}
         <div class="field"><label for="email">Email</label><input id="email" type="email" required placeholder="you@gmail.com" autocomplete="email" maxlength="200" /></div>
-        ${!isUp ? `<div class="field"><label for="pwIn">Password <span class="hint">(only if you set one, otherwise leave empty)</span></label><input id="pwIn" type="password" autocomplete="current-password" maxlength="72" /></div>` : ""}
         ${isUp ? `<label class="check" style="font-weight:400;font-size:.85rem;margin-bottom:12px"><input type="checkbox" id="agree" required /> I agree to the <a href="#/privacy" target="_blank">privacy policy</a></label>` : ""}
         <button class="btn" style="width:100%" id="loginSubmit">${isUp ? "Create account" : "Send me a code"}</button>
       </form>
@@ -304,7 +303,6 @@ async function openLogin(reason, mode = "signup") {
     </div>`;
   document.body.appendChild(bg);
   ($("#fullName", bg) || $("#email", bg)).focus();
-  if ($("#pwIn", bg)) $("#pwIn", bg).addEventListener("input", (e) => { $("#loginSubmit", bg).textContent = e.target.value ? "Sign in" : "Send me a code"; });
   const close = () => bg.remove();
   bg.querySelectorAll("[data-mode]").forEach((t) => t.onclick = () => { if (t.dataset.mode !== mode) { close(); openLogin(reason, t.dataset.mode); } });
   $("#closeLogin", bg).onclick = close;
@@ -313,7 +311,9 @@ async function openLogin(reason, mode = "signup") {
     const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
     if (error) toast(error.message);
   };
-  const friendly = (m) => /rate limit|too many|security purposes/i.test(m) ? "Too many attempts. Please wait a minute and try again." : m;
+  const friendly = (m) => /rate limit|too many|security purposes/i.test(m) ? "Too many attempts. Please wait a minute and try again."
+    : /database error saving new user|disposable_email/i.test(m) ? "Please use your real email (Gmail, Outlook, Yahoo or your university email). Temporary email addresses are not allowed."
+    : m;
 
   const sendCode = async (email, fullName) => sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: isUp, ...(isUp && fullName ? { data: { full_name: fullName } } : {}) } });
 
@@ -351,12 +351,6 @@ async function openLogin(reason, mode = "signup") {
     const btn = e.submitter; btn.disabled = true; btn.textContent = "Sending...";
     const email = $("#email", bg).value.trim().toLowerCase();
     const fullName = $("#fullName", bg)?.value.trim();
-    const pw = $("#pwIn", bg)?.value;
-    if (!isUp && pw) {
-      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
-      if (error) { btn.disabled = false; btn.textContent = "Sign in"; toast(/invalid/i.test(error.message) ? "Email or password is wrong. Leave the password empty to get a code instead." : friendly(error.message)); return; }
-      close(); toast("You're signed in"); return;
-    }
     const { error } = await sendCode(email, fullName);
     if (error) {
       btn.disabled = false; btn.textContent = isUp ? "Create account" : "Send me a code";
@@ -907,7 +901,6 @@ async function viewProfile(isWelcome) {
   const phone = p.phone || "";
   const cc = COUNTRY_CODES.map((c) => c[0]).sort((x, y) => y.length - x.length).find((c) => phone.startsWith(c)) || "+92";
   const local = phone ? phone.slice(cc.length) : "";
-  const hasPassword = Boolean(session?.user?.user_metadata?.has_password);
   const filled = ["full_name", "phone", "city", "province", "field", "intake", "bachelor_degree", "cgpa", "english_test", "avatar_url"].filter((k) => p[k]).length;
   const pct = Math.round((filled / 10) * 100);
 
@@ -988,17 +981,8 @@ async function viewProfile(isWelcome) {
       <section class="card">
         <h3>Sign in and security</h3>
         <div class="fact"><span>Email</span><strong>${esc(session?.user.email || "")}</strong></div>
-        <div class="fact"><span>Sign in method</span><strong>${(session?.user.app_metadata?.providers || ["email"]).includes("google") ? "Google or email code" : "Email code"}${hasPassword ? " or password" : ""}</strong></div>
-        <form id="pwForm" class="pw-form">
-          <p class="notice">${hasPassword ? "Change your password." : "Optional: set a password so you can sign in without waiting for an email code."}</p>
-          <div class="form-row">
-            <div class="field"><label for="pw1">New password</label><input id="pw1" type="password" minlength="8" maxlength="72" autocomplete="new-password" required /></div>
-            <div class="field"><label for="pw2">Repeat password</label><input id="pw2" type="password" minlength="8" maxlength="72" autocomplete="new-password" required /></div>
-          </div>
-          <div class="pw-meter"><span id="pwBar"></span></div><p class="notice" id="pwHint">At least 8 characters. Mix letters, numbers and symbols.</p>
-          <div id="pwNonce" hidden class="field"><label for="pwCode">Security code from your email</label><input id="pwCode" class="otp" inputmode="numeric" maxlength="8" placeholder="000000" /></div>
-          <button class="btn" id="pwBtn">${hasPassword ? "Change password" : "Set password"}</button>
-        </form>
+        <div class="fact"><span>Sign in method</span><strong>${(session?.user.app_metadata?.providers || ["email"]).includes("google") ? "Google or email code" : "Email code"}</strong></div>
+        <p class="notice">For your security Raasta has no passwords. Every sign in needs a fresh 6 digit code sent to your email (or your Google account), so nobody can get in without access to your inbox.</p>
         <button class="btn ghost small" id="signOutAll" type="button" style="margin-top:12px">Sign out on all devices</button>
       </section>
 
@@ -1066,30 +1050,6 @@ async function viewProfile(isWelcome) {
 
   if (isWelcome) return;
 
-  // Password
-  const score = (v) => [v.length >= 8, v.length >= 12, /[a-z]/.test(v) && /[A-Z]/.test(v), /\d/.test(v), /[^\w\s]/.test(v)].filter(Boolean).length;
-  $("#pw1").addEventListener("input", () => { const sc = score($("#pw1").value); $("#pwBar").style.width = `${sc * 20}%`; $("#pwBar").className = sc >= 4 ? "ok" : sc >= 3 ? "mid" : ""; });
-  $("#pwForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const a = $("#pw1").value, b2 = $("#pw2").value;
-    if (a !== b2) { toast("The two passwords do not match."); return; }
-    if (score(a) < 3) { toast("Please choose a stronger password (mix letters, numbers and symbols)."); return; }
-    if (!LIVE) { toast("Passwords work once Raasta is connected."); return; }
-    const btn = $("#pwBtn"); btn.disabled = true;
-    const nonce = $("#pwCode").value.trim();
-    const { error } = await sb.auth.updateUser({ password: a, ...(nonce ? { nonce } : {}), data: { has_password: true } });
-    btn.disabled = false;
-    if (error) {
-      if (/reauthenticat|nonce/i.test(error.message)) {
-        await sb.auth.reauthenticate(); $("#pwNonce").hidden = false; $("#pwCode").focus();
-        toast("For your security we emailed you a code. Enter it and press the button again."); return;
-      }
-      toast(/same|different from the old/i.test(error.message) ? "Choose a different password from your current one." : /weak|pwned|leaked/i.test(error.message) ? "This password is too weak or was found in a data leak. Choose another." : error.message);
-      return;
-    }
-    $("#pwForm").reset(); $("#pwNonce").hidden = true; $("#pwBar").style.width = "0";
-    toast("Password saved. You can now sign in with email and password too.");
-  };
   $("#signOutAll").onclick = async () => { if (!confirm("Sign out on all devices, including this one?")) return; await sb.auth.signOut({ scope: "global" }); toast("Signed out everywhere"); location.hash = "#/"; };
 
   // Data export and deletion
