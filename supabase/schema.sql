@@ -283,3 +283,11 @@ begin
 end $$;
 revoke all on function public.admin_ai_flags() from public, anon;
 grant execute on function public.admin_ai_flags() to authenticated;
+
+-- ---------------- AI budget guards (applied 9 Nov 2026) ----------------
+-- app_settings: ai_global_daily_credits (site-wide ceiling, default 1500), ai_new_account_credits (first 24 hours, default 10)
+-- use_ai_credit() now checks both before charging a credit. Change limits with:
+-- update app_settings set value = '3000' where key = 'ai_global_daily_credits';
+create table if not exists public.app_settings (key text primary key, value text not null);
+alter table public.app_settings enable row level security;
+insert into public.app_settings (key, value) values ('ai_global_daily_credits', '1500'), ('ai_new_account_credits', '10') on conflict (key) do nothing;
