@@ -1601,6 +1601,13 @@ async function viewAdmin() {
       ${st.flags ? bars((st.flags.by_category || []).map((c) => ({ label: ({ off_topic: "Off topic", sexual: "Sexual (blocked before AI)", sexual_minor: "Sexual + minor (instant pause)", unsafe_model: "Unsafe (caught by AI)" })[c.label] || c.label, n: c.n }))) : `<div class="empty">Not available</div>`}
     </div>
 
+    <div class="card" style="margin-top:16px" id="secTest">
+      <h3>AI security test</h3>
+      <p class="hint" style="margin-bottom:12px">Sends 16 known attacks (jailbreaks, prompt leaks, sexual tricks, fake documents, poisoned text) plus normal questions to the live AI and checks every answer. Takes about 30 seconds. Nothing is saved and no credits are used.</p>
+      <button class="btn" id="runSecTest" type="button">Run security test</button>
+      <div id="secOut" style="margin-top:14px"></div>
+    </div>
+
     <div class="card" style="margin-top:16px">
       <h3>Latest feedback</h3>
       ${st.recent_feedback?.length ? `<div class="table-wrap"><table><thead><tr><th>Rating</th><th>Message</th><th>Page</th><th>From</th><th>Date</th></tr></thead><tbody>
@@ -1616,6 +1623,19 @@ async function viewAdmin() {
     </div>
     <div class="card" style="margin-top:16px" id="supportBox"><h3>Support requests</h3><p class="notice">Loading...</p></div>`;
   $("#refresh").onclick = viewAdmin;
+  $("#runSecTest").onclick = async () => {
+    const b = $("#runSecTest"), out = $("#secOut");
+    if (!LIVE) { out.innerHTML = `<p class="notice">Connect Supabase to run the test.</p>`; return; }
+    b.disabled = true; b.textContent = "Testing..."; out.innerHTML = `<p class="notice">Running 16 attacks against the live AI...</p>`;
+    const { data, error } = await sb.functions.invoke("ai", { body: { mode: "selftest" } });
+    b.disabled = false; b.textContent = "Run again";
+    if (error || !data?.results) { let m = "Test failed to run."; try { const j = await error.context.json(); if (j?.error) m = j.error; } catch {} out.innerHTML = `<p class="notice">${esc(m)}</p>`; return; }
+    const ok = data.passed === data.total;
+    out.innerHTML = `<p style="margin-bottom:10px"><span class="status ${ok ? "admitted" : "rejected"}">${data.passed} / ${data.total} passed</span></p>
+      <div class="table-wrap"><table><thead><tr><th>Result</th><th>Attack</th><th>Stopped by</th><th>What the AI replied</th></tr></thead><tbody>
+      ${data.results.map((r) => `<tr><td>${r.issues.length ? `<span class="status rejected">Fail</span><br/><small>${esc(r.issues.join(", "))}</small>` : `<span class="status admitted">Pass</span>`}</td><td><strong>${esc(r.name)}</strong><br/><small>${esc(r.prompt.slice(0, 110))}${r.prompt.length > 110 ? "..." : ""}</small></td><td>${esc(r.layer)}</td><td><small>${esc(r.reply)}</small></td></tr>`).join("")}
+      </tbody></table></div>`;
+  };
   if (LIVE) {
     const { data: reqs, error } = await sb.from("support_requests").select("*").order("created_at", { ascending: false }).limit(50);
     const box = $("#supportBox"); if (!box) return;
