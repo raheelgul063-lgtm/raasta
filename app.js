@@ -1930,6 +1930,7 @@ async function viewUniversity() {
       <div><strong>${u.bachelor}</strong><span>Bachelor's</span></div>
       <div><strong>${u.free}</strong><span>Tuition free</span></div>
     </div>
+    ${u.type === "Private university" ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} international program${u.n === 1 ? "" : "s"}.</strong> ${esc(u.name)} offers more degrees, including German-taught programs, that are not in our list yet. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
     <section class="card uni-city" id="uniCity"></section>
     ${uniScholarshipBlock(u)}
     ${u.type === "Private university" ? `<div class="callout"><strong>Private university:</strong> tuition is usually higher, but admission can be faster and more flexible. Check that the degree is state recognised before you pay any fee.</div>` : ""}

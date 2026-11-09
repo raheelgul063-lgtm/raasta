@@ -697,3 +697,4 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
 .sch-home em { font-style: normal; color: var(--muted); font-size: .9rem; }
 @media (max-width: 900px) { .sch-grid, .sch-soon-row { grid-template-columns: 1fr 1fr; } .sch-filters { grid-template-columns: 1fr 1fr; } .sch-filters .field:first-child { grid-column: 1 / -1; } }
 @media (max-width: 600px) { .sch-grid, .sch-soon-row, .sch-mini { grid-template-columns: 1fr; } .sch-home { grid-template-columns: 1fr; } }
+.uni-coverage { margin-bottom: 16px; }
