@@ -1917,7 +1917,7 @@ function appRoute(p) {
 }
 function progCard(p, saved) {
   const nd = nextDeadline(p);
-  const dl = nd ? `<span class="${nd.days <= 30 ? "due-soon" : ""}">${nd.intake}: ${mmddText(`${String(nd.date.getMonth() + 1).padStart(2, "0")}-${String(nd.date.getDate()).padStart(2, "0")}`)} (${nd.days} days)</span>` : `<span>Deadline: see page</span>`;
+  const dl = nd ? `<span class="${nd.days <= 30 ? "due-soon" : ""}">${nd.intake}: ${mmddText(`${String(nd.date.getMonth() + 1).padStart(2, "0")}-${String(nd.date.getDate()).padStart(2, "0")}`)} (${nd.days} days)</span>` : progCountry(p) === "UK" ? `<span>${(p.intakes || []).join(" and ") || "September"} start</span>` : `<span>Deadline: see page</span>`;
   const inCmp = compareList().includes(p.id);
   return `
     <article class="prog-card">
@@ -2089,6 +2089,7 @@ async function viewUniversity() {
       <div><strong>${u.bachelor}</strong><span>Bachelor's</span></div>
       ${isUK() ? `<div><strong>${u.minFee ? "£" + u.minFee.toLocaleString("en-US") : "See page"}</strong><span>Fees from, per year</span></div>` : `<div><strong>${u.free}</strong><span>Tuition free</span></div>`}
     </div>
+    ${isUK() ? `<div class="callout uni-coverage"><strong>Showing ${u.n} program${u.n === 1 ? "" : "s"} we could read from the university's website.</strong> ${esc(u.name)} may offer more courses than this list. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all courses on the university website ↗</a>` : ""}</div>` : ""}
     ${u.type === "Private university" || isUK() ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} international program${u.n === 1 ? "" : "s"}.</strong> ${esc(u.name)} offers more degrees, including German-taught programs, that are not in our list yet. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
     <section class="card uni-city" id="uniCity"></section>
     ${uniScholarshipBlock(u)}
