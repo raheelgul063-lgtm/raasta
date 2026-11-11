@@ -296,3 +296,9 @@ insert into public.app_settings (key, value) values ('ai_global_daily_credits', 
 -- Trigger raasta_no_passwords on auth.users keeps encrypted_password empty: every sign in needs an email code or Google.
 -- Trigger raasta_block_disposable rejects sign ups from domains in public.blocked_email_domains.
 -- Add a domain: insert into public.blocked_email_domains values ('example.com');
+
+-- ---------------- Countries and UK import (applied 9 to 11 Nov 2026) ----------------
+-- programs: country ('DE'|'UK'), currency, fee_period, duration_months. applications.country. profiles.country, profiles.uk_intake.
+-- match_programs(q, lim, ctry) returns intakes, currency and fee_period too.
+-- UK import: tables uk_unis, uk_queue; functions uk_claim(n), uk_call(body); edge function uk-import (probe, enqueue, work).
+-- Start or stop the crawler: update app_settings set value = 'on' | 'off' where key = 'uk_import_run';

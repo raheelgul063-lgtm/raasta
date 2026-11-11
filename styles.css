@@ -711,3 +711,11 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
 @media (max-width: 1180px) { .ctry-switch { margin-left: 8px; } }
 @media (max-width: 860px) { .ctry-switch { margin-left: auto; } .ctry { padding: 3px 6px 2px; } }
 @media (max-width: 860px) { .auth-area { margin-left: 8px; } }
+@media (max-width: 480px) {
+  .topbar { gap: 8px; padding: 10px 12px; }
+  .brand-name { display: none; }
+  .ctry { padding: 3px 5px 2px; }
+  .ctry-flag svg { width: 22px; height: 14px; }
+  .ctry-name { font-size: .62rem; }
+  .auth-area .btn { padding: 8px 12px; font-size: .85rem; white-space: nowrap; }
+}
