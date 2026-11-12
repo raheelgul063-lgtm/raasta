@@ -185,13 +185,19 @@ function parseDE(html: string, url: string, degree: string, uni: Uni) {
     .replace(/\s+/g, " ").replace(/^[\s,:\-\/|()]+|[\s,:\-\/|()]+$/g, "").trim();
   if (program.length < 3) program = h1;
 
-  // Teaching language
-  const lm = text.match(/(?:Unterrichtssprache|Lehrsprache|Sprache des Studiengangs|Studiensprache)n?\s*:?\s*([^|]{0,160})/i)
-    || text.match(/\b(?:Language|Teaching language)\s*:?\s+(German|English|Deutsch|Englisch)[^|]{0,40}/i);
-  const ls = (lm?.[1] || "").toLowerCase();
-  const hasEn = /englisch|english/.test(ls), hasDe = /deutsch|german/.test(ls);
+  // Teaching language. Only an explicit statement counts. These pages mention English
+  // for entry requirements and in module names, and reading that as the teaching language
+  // tells a student with no German the opposite of the truth. No statement means unknown.
+  const lm = text.match(/(?:Unterrichtssprache|Lehrsprache|Sprache des Studiengangs|Studiensprache|Sprache im Studiengang)n?\s*:?\s*([^.;|]{0,60})/i)
+    || text.match(/\b(?:Language of instruction|Teaching language|Course language|Language)\s*:\s*([^.;|]{0,60})/i)
+    || text.match(/\bSprachen?\s*:?\s*((?:Deutsch|Englisch|English|German)\b[^.;|]{0,60})/i);
+  let ls = (lm?.[1] || "").toLowerCase();
+  // "Englischkenntnisse erforderlich" is an admission requirement, not the teaching language.
+  ls = ls.split(/kenntnis|nachweis|voraussetzung|erforderlich|niveau|requirement|proficien/i)[0];
+  const hasEn = /\benglisch\b|\benglish\b/.test(ls), hasDe = /\bdeutsch\b|\bgerman\b/.test(ls);
   const language = hasEn && hasDe ? "German and English" : hasEn ? "English" : hasDe ? "German"
-    : /\benglish[- ]taught\b|\btaught (?:entirely )?in english\b/i.test(text) ? "English" : "German";
+    : /\benglish[- ]taught\b|\btaught (?:entirely |wholly )?in english\b|\bconducted in english\b/i.test(text) ? "English"
+    : null;
 
   // Tuition. Several states now charge non EU students, so trust the page before the default.
   const priv = /private|privat/i.test(uni.type);
