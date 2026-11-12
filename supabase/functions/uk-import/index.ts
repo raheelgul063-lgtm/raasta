@@ -60,7 +60,7 @@ function fieldOf(n: string): string {
   return "Other";
 }
 
-type Uni = { name: string; city: string; region: string; type: string; site: string };
+type Uni = { name: string; city: string; region: string; type: string; site: string; country?: string };
 
 function parse(html: string, url: string, degree: string, uni: Uni) {
   const h1m = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i), tm = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
@@ -285,12 +285,16 @@ Deno.serve(async (req) => {
 
   if (b.action === "enqueue") {
     const uni = b.uni as Uni; const site = uni.site.replace(/\/$/, "");
-    await sb.from("uk_unis").upsert({ name: uni.name, city: uni.city, region: uni.region, type: uni.type, site });
+    const ctry = (uni.country || (/\.de$/i.test(new URL(site).hostname) ? "DE" : "UK")).toUpperCase();
+    await sb.from("uk_unis").upsert({ name: uni.name, city: uni.city, region: uni.region, type: uni.type, site, country: ctry });
     const pgRe = b.pg ? new RegExp(b.pg, "i") : null, ugRe = b.ug ? new RegExp(b.ug, "i") : null, ex = b.exclude ? new RegExp(b.exclude, "i") : null;
+    const lists = (b.listPages || []) as string[];
     let urls: string[] = Array.isArray(b.urls) ? b.urls : [];
-    if (!urls.length) urls = (await sitemapUrls(site, b.sitemaps)).urls;
+    // List pages are an explicit, authoritative source: never mix the sitemap in,
+    // or every course on the site matches the pattern and the degree label is lost.
+    if (!urls.length && !lists.length) urls = (await sitemapUrls(site, b.sitemaps)).urls;
     // optional HTML list pages: collect links from them
-    for (const lp of (b.listPages || []) as string[]) {
+    for (const lp of lists) {
       const r = await get(lp, 20000);
       if (r.status === 200) for (const m of r.text.matchAll(/href\s*=\s*["']([^"'#]+)["']/g)) { try { urls.push(new URL(ent(m[1]), lp).href); } catch { /* ignore */ } }
     }
@@ -314,7 +318,7 @@ Deno.serve(async (req) => {
     const res = await pool(jobs, 5, async (j: any) => {
       const r = await get(j.url, 14000);
       if (r.status !== 200) return { id: j.id, status: "error", note: `http ${r.status}` };
-      try { const u = U.get(j.uni)!; const de = /\.de$/i.test(new URL(j.url).hostname); const p = de ? parseDE(r.text, j.url, j.degree, u) : parse(r.text, j.url, j.degree, u); return p.row ? { id: j.id, status: "done", note: null, row: p.row } : { id: j.id, status: "skipped", note: p.skip }; }
+      try { const u = U.get(j.uni)!; const de = u.country ? u.country.toUpperCase() === "DE" : /\.de$/i.test(new URL(j.url).hostname); const p = de ? parseDE(r.text, j.url, j.degree, u) : parse(r.text, j.url, j.degree, u); return p.row ? { id: j.id, status: "done", note: null, row: p.row } : { id: j.id, status: "skipped", note: p.skip }; }
       catch (e) { return { id: j.id, status: "error", note: String(e).slice(0, 80) }; }
     });
     const rows = res.filter((r: any) => r.row).map((r: any) => r.row);
