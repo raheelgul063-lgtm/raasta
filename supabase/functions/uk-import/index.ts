@@ -150,6 +150,13 @@ function parseDE(html: string, url: string, degree: string, uni: Uni) {
   if (!h1 || h1.length < 3) h1 = titleTag.split(/\s[|\-·:]\s/)[0] || "";
   h1 = h1.replace(/\s+/g, " ").trim().slice(0, 160);
   if (!h1 || /seite nicht gefunden|nicht gefunden|page not found|404|fehler|zugriff verweigert/i.test(h1)) return { skip: "no title" };
+  // Some pages put the university name in the heading; the page title holds the course name
+  const uniWords = uni.name.toLowerCase().replace(/[^a-zäöüß ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+  const h1Low = h1.toLowerCase();
+  if (uniWords.length && uniWords.every((w) => h1Low.includes(w))) {
+    const alt = titleTag.split(/\s[|\u00b7:]\s|\s-\s/)[0].trim();
+    if (alt && alt.length > 2 && !uniWords.every((w) => alt.toLowerCase().includes(w))) h1 = alt.slice(0, 160);
+  }
   if (DE_SKIP.test(`${h1} ${titleTag}`)) return { skip: "not a degree program" };
   const pg = degree === "Master";
   const text = strip(html).slice(0, 400000);

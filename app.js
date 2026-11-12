@@ -2002,6 +2002,7 @@ function uniAggregate(progs) {
     if (!u) { u = { name: k, city: p.city, state: p.state, type: p.type, n: 0, master: 0, bachelor: 0, free: 0, fields: new Map(), hosts: new Map() }; m.set(k, u); }
     u.n++; p.degree === "Master" ? u.master++ : u.bachelor++; if (p.tuition === 0) u.free++;
     if (p.currency === "GBP" && p.tuition) u.minFee = Math.min(u.minFee || Infinity, p.tuition);
+    if (p.language === "German") u.deTaught = (u.deTaught || 0) + 1;
     u.fields.set(p.field, (u.fields.get(p.field) || 0) + 1);
     try { if (p.program_url) { const h = new URL(p.program_url).origin; u.hosts.set(h, (u.hosts.get(h) || 0) + 1); } } catch {}
   }
@@ -2090,7 +2091,7 @@ async function viewUniversity() {
       ${isUK() ? `<div><strong>${u.minFee ? "£" + u.minFee.toLocaleString("en-US") : "See page"}</strong><span>Fees from, per year</span></div>` : `<div><strong>${u.free}</strong><span>Tuition free</span></div>`}
     </div>
     ${isUK() ? `<div class="callout uni-coverage"><strong>Showing ${u.n} program${u.n === 1 ? "" : "s"} we could read from the university's website.</strong> ${esc(u.name)} may offer more courses than this list. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all courses on the university website ↗</a>` : ""}</div>` : ""}
-    ${u.type === "Private university" || isUK() ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} international program${u.n === 1 ? "" : "s"}.</strong> ${esc(u.name)} offers more degrees, including German-taught programs, that are not in our list yet. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
+    ${u.type === "Private university" || isUK() ? "" : `<div class="callout uni-coverage"><strong>Showing ${u.n} program${u.n === 1 ? "" : "s"}${u.deTaught ? `, ${u.deTaught} taught in German` : ""}.</strong> ${esc(u.name)} may offer more degrees than we could read. ${u.site ? `<a href="${safeUrl(u.site)}" target="_blank" rel="noopener">See all programs on the university website ↗</a>` : ""} German-taught programs usually need German at C1 (B1 to B2 for Studienkolleg routes).</div>`}
     <section class="card uni-city" id="uniCity"></section>
     ${uniScholarshipBlock(u)}
     ${isUK() ? `<div class="callout"><strong>Fees and offers:</strong> UK fees are per year and set by each university. Fees shown are the university's published international fee for each course where we found it. Always check the course page, and ask about scholarships for Pakistani students before you pay a deposit.</div>` : ""}
