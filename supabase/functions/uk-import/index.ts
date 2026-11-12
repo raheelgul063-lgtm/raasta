@@ -49,14 +49,14 @@ const SKIP = /\b(PhD|DPhil|MPhil|PGCE|PGDE|PgCert|PGCert|PgDip|PGDip|Postgraduat
 
 function fieldOf(n: string): string {
   const s = n.toLowerCase();
-  if (/comput|software|data|artificial intelligence|\bai\b|cyber|machine learning|informatics|information (technology|systems)|\bit\b|robotic|games? (dev|prog|tech)|cloud|network|web dev|blockchain|human.computer/.test(s)) return "Computer Science / Data Science / AI";
-  if (/electr|telecom|embedded|communications engineering|power systems|microelectron|photonic/.test(s)) return "Electrical / Electronics Engineering";
-  if (/mechanic|mechatronic|automotive|aerospace|aeronaut|manufactur|materials|motorsport|engineering management|industrial eng|product engineering|marine eng|naval/.test(s)) return "Mechanical / Mechatronics Engineering";
-  if (/civil|energy|environment|sustainab|renewable|climate|construction|structural|water|urban|planning|quantity survey|building|real estate|petroleum|geotech|transport|surveying|oil and gas/.test(s)) return "Energy / Environment / Civil Engineering";
-  if (/business|management|financ|account|marketing|econom|\bmba\b|banking|logistic|supply chain|entrepreneur|human resource|\bhr\b|commerce|tourism|hospitality|project|investment|fintech|event|leadership|international trade|actuar|insurance|analytics/.test(s)) return "Business / Management / Economics";
-  if (/bio|medic|health|pharm|nurs|neuro|genetic|clinical|nutrition|psycholog|dent|physio|sport|midwif|paramedic|veterin|public health|food|agri|zoolog|anatom|radiograph|optom|cancer|immun|epidemi|social care|occupational therapy|speech|audiolog/.test(s)) return "Life Sciences / Biotech / Health";
-  if (/physics|chemi|mathemat|statistic|geolog|earth|astro|geograph|ocean|natural science|forensic|meteorolog/.test(s)) return "Natural Sciences";
-  if (/design|media|\barts?\b|film|music|architect|fashion|animation|photograph|journalis|creative|games? (art|design)|illustration|theatre|drama|dance|performance|interior|textile|broadcast|publishing|advertising|visual|curat/.test(s)) return "Design / Media / Arts";
+  if (/informatik|wirtschaftsinformatik|medieninformatik|datenwissenschaft|k[üu]nstliche intelligenz|comput|software|data|artificial intelligence|\bai\b|cyber|machine learning|informatics|information (technology|systems)|\bit\b|robotic|games? (dev|prog|tech)|cloud|network|web dev|blockchain|human.computer/.test(s)) return "Computer Science / Data Science / AI";
+  if (/elektrotechnik|nachrichtentechnik|energietechnik|mikroelektronik|electr|telecom|embedded|communications engineering|power systems|microelectron|photonic/.test(s)) return "Electrical / Electronics Engineering";
+  if (/maschinenbau|mechatronik|fahrzeugtechnik|luft[- ]?und[- ]?raumfahrt|produktionstechnik|werkstoff|verfahrenstechnik|mechanic|mechatronic|automotive|aerospace|aeronaut|manufactur|materials|motorsport|engineering management|industrial eng|product engineering|marine eng|naval/.test(s)) return "Mechanical / Mechatronics Engineering";
+  if (/bauingenieur|umwelt|nachhaltig|architektur und stadt|stadtplanung|raumplanung|geod[äa]sie|wasserwirtschaft|civil|energy|environment|sustainab|renewable|climate|construction|structural|water|urban|planning|quantity survey|building|real estate|petroleum|geotech|transport|surveying|oil and gas/.test(s)) return "Energy / Environment / Civil Engineering";
+  if (/betriebswirtschaft|volkswirtschaft|wirtschaftswissenschaft|betriebswirt|\bbwl\b|\bvwl\b|管理|handel|logistik|marketing|rechnungswesen|business|management|financ|account|marketing|econom|\bmba\b|banking|logistic|supply chain|entrepreneur|human resource|\bhr\b|commerce|tourism|hospitality|project|investment|fintech|event|leadership|international trade|actuar|insurance|analytics/.test(s)) return "Business / Management / Economics";
+  if (/biologie|medizin|pharmaz|psychologie|gesundheit|ern[äa]hrung|pflege|zahnmedizin|biotechnolog|lebensmittel|bio|medic|health|pharm|nurs|neuro|genetic|clinical|nutrition|psycholog|dent|physio|sport|midwif|paramedic|veterin|public health|food|agri|zoolog|anatom|radiograph|optom|cancer|immun|epidemi|social care|occupational therapy|speech|audiolog/.test(s)) return "Life Sciences / Biotech / Health";
+  if (/physik|chemie|mathematik|statistik|geowissenschaft|geographie|geologie|physics|chemi|mathemat|statistic|geolog|earth|astro|geograph|ocean|natural science|forensic|meteorolog/.test(s)) return "Natural Sciences";
+  if (/design|medien|kunst|musik|architektur|film|gestaltung|kommunikationsdesign|journalis|theater|mode|media|\barts?\b|music|architect|fashion|animation|photograph|journalis|creative|games? (art|design)|illustration|theatre|drama|dance|performance|interior|textile|broadcast|publishing|advertising|visual|curat/.test(s)) return "Design / Media / Arts";
   return "Other";
 }
 
@@ -123,6 +123,132 @@ function parse(html: string, url: string, degree: string, uni: Uni) {
   };
 }
 
+
+// ---------------- German course pages ----------------
+const DE_SKIP = /\b(Promotion|Promovieren|Doktor|Weiterbildung|weiterbildend|Zertifikat(skurs)?|Zertifikatsstudium|Kontaktstudium|Gasth[öo]rer|Seminar|Vorlesung|Modulhandbuch|Pr[üu]fungsordnung|Studienordnung|berufsbegleitend(es)? Zertifikat|Fernstudium|Brückenkurs|Vorkurs|Sprachkurs|Propädeutikum|Studienkolleg)\b/i;
+const DE_AWARD = /\b(M\.\s?Sc\.|M\.\s?A\.|M\.\s?Eng\.|M\.\s?Ed\.|LL\.\s?M\.|MBA|B\.\s?Sc\.|B\.\s?A\.|B\.\s?Eng\.|LL\.\s?B\.|Master of (?:Science|Arts|Engineering|Education|Laws|Business Administration)|Bachelor of (?:Science|Arts|Engineering|Laws)|Staatsexamen|Magister)\b/i;
+const DE_MONTHS: Record<string, string> = { januar: "01", februar: "02", "märz": "03", maerz: "03", april: "04", mai: "05", juni: "06", juli: "07", august: "08", september: "09", oktober: "10", november: "11", dezember: "12" };
+// Baden-Wuerttemberg charges non-EU students tuition; every other public state does not
+const BW = /Baden/i;
+
+function awardDE(text: string, pg: boolean): string {
+  const m = text.match(DE_AWARD);
+  if (m) {
+    const a = m[1].replace(/\s+/g, "");
+    if (/^Masterof/i.test(a)) return { science: "M.Sc.", arts: "M.A.", engineering: "M.Eng.", education: "M.Ed.", laws: "LL.M.", businessadministration: "MBA" }[a.slice(8).toLowerCase()] || "Master";
+    if (/^Bachelorof/i.test(a)) return { science: "B.Sc.", arts: "B.A.", engineering: "B.Eng.", laws: "LL.B." }[a.slice(10).toLowerCase()] || "Bachelor";
+    if (/^(Staatsexamen|Magister)$/i.test(a)) return a;
+    return a.replace(/\./g, ". ").replace(/\s+$/, "").replace(/\.\s/g, ".") .replace(/^(M|B)(Sc|A|Eng|Ed)\.?$/i, (_, x, y) => `${x.toUpperCase()}.${y}.`);
+  }
+  return pg ? "Master" : "Bachelor";
+}
+
+function parseDE(html: string, url: string, degree: string, uni: Uni) {
+  const h1m = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i), tm = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
+  const titleTag = tm ? strip(tm[1]) : "";
+  let h1 = h1m ? strip(h1m[1]) : "";
+  if (!h1 || h1.length < 3) h1 = titleTag.split(/\s[|\-·:]\s/)[0] || "";
+  h1 = h1.replace(/\s+/g, " ").trim().slice(0, 160);
+  if (!h1 || /seite nicht gefunden|nicht gefunden|page not found|404|fehler|zugriff verweigert/i.test(h1)) return { skip: "no title" };
+  if (DE_SKIP.test(`${h1} ${titleTag}`)) return { skip: "not a degree program" };
+  const pg = degree === "Master";
+  const text = strip(html).slice(0, 400000);
+  // a landing or overview page, not one course
+  if (/^(studium|studienangebot|studieng[äa]nge|bachelor|master|studienf[äa]cher|[üu]bersicht|alle studieng[äa]nge)$/i.test(h1)) return { skip: "overview page" };
+
+  const title = awardDE(`${h1} ${titleTag} ${text.slice(0, 4000)}`, pg);
+  // course name: drop the award and the words Bachelor/Master from the heading
+  let program = h1
+    .replace(DE_AWARD, "")
+    .replace(/\b(Bachelor|Master)(studiengang|programm)?\b/gi, "")
+    .replace(/\((?:\s*(?:1|Ein)-?Fach\s*)?\)/gi, "")
+    .replace(/\s*[\/|,\-]\s*$/,"")
+    .replace(/\s+/g, " ").replace(/^[\s,:\-\/|()]+|[\s,:\-\/|()]+$/g, "").trim();
+  if (program.length < 3) program = h1;
+
+  // Teaching language
+  const lm = text.match(/(?:Unterrichtssprache|Lehrsprache|Sprache des Studiengangs|Studiensprache)n?\s*:?\s*([^|]{0,160})/i)
+    || text.match(/\b(?:Language|Teaching language)\s*:?\s+(German|English|Deutsch|Englisch)[^|]{0,40}/i);
+  const ls = (lm?.[1] || "").toLowerCase();
+  const hasEn = /englisch|english/.test(ls), hasDe = /deutsch|german/.test(ls);
+  const language = hasEn && hasDe ? "German and English" : hasEn ? "English" : hasDe ? "German"
+    : /\benglish[- ]taught\b|\btaught (?:entirely )?in english\b/i.test(text) ? "English" : "German";
+
+  // Tuition. Several states now charge non EU students, so trust the page before the default.
+  const priv = /private|privat/i.test(uni.type);
+  let tuition: number | null = null;
+  const intlFee = text.match(/Studiengeb(?:ü|ue|u)hren[^.]{0,160}?(?:internationale|Drittstaat|Nicht[- ]?EU)[^.]{0,120}?(\d{1,2}[.,]?\d{3})\s*(?:Euro|€|EUR)\s*(?:je|pro|\/)\s*(Semester|Jahr)/i)
+    || text.match(/(?:internationale Studierende|Drittstaaten|Nicht[- ]?EU)[^.]{0,160}?Studiengeb(?:ü|ue|u)hren[^.]{0,80}?(\d{1,2}[.,]?\d{3})\s*(?:Euro|€|EUR)\s*(?:je|pro|\/)\s*(Semester|Jahr)/i);
+  if (intlFee) {
+    const v = Number(intlFee[1].replace(/[.,]/g, ""));
+    if (v >= 300 && v <= 30000) tuition = /jahr/i.test(intlFee[2]) ? Math.round(v / 2) : v;
+  }
+  if (tuition === null && priv) {
+    const fm = text.match(/(\d{3,5})\s*(?:€|EUR|Euro)\s*(?:pro|je|\/)\s*(?:Monat|Semester)/i);
+    if (fm) tuition = Number(fm[1]);
+  }
+  if (tuition === null && !priv) {
+    const free = /keine Studiengeb(?:ü|ue|u)hren|studiengeb(?:ü|ue|u)hrenfrei|do not pay any tuition|no tuition fees/i.test(text);
+    tuition = free ? 0 : BW.test(uni.region) ? 1500 : 0;
+  }
+  // Semester contribution
+  const sm = text.match(/Semesterbeitrag[^.]{0,90}?(\d{2,3}(?:[.,]\d{2})?)\s*(?:€|EUR|Euro)/i) || text.match(/(\d{2,3}(?:[.,]\d{2})?)\s*(?:€|EUR|Euro)[^.]{0,40}Semesterbeitrag/i);
+  const semester_fee = sm ? `about ${sm[1].replace(",", ".")} EUR per semester` : null;
+
+  // Standard period of study
+  let duration: number | null = null;
+  const dm = text.match(/(?:Regelstudienzeit|Dauer|Duration)\s*:?\s*(\d{1,2})\s*(?:Semester|semesters)/i)
+    || text.match(/(\d{1,2})\s*Semester\s*\((?:Vollzeit|full)/i)
+    || text.match(/(\d{1,2})\s*(?:Semester|semesters)\b/i);
+  if (dm) duration = Number(dm[1]);
+  if (!duration || duration < 2 || duration > 14) duration = pg ? 4 : 6;
+
+  // Intakes
+  const both = /winter (?:and|&|und) summer|Winter[- ]? und Sommersemester/i.test(text);
+  const winter = both || /Wintersemester|winter semester|zum Winter\b/i.test(text);
+  const summer = both || /Sommersemester|summer semester|zum Sommer\b/i.test(text);
+  const intakes = [winter || !summer ? "Winter" : null, summer ? "Summer" : null].filter(Boolean) as string[];
+
+  // Application deadlines written as "15. Juli"
+  const dl = (re: RegExp) => {
+    const m = text.match(re);
+    if (!m) return null;
+    const d = String(Number(m[1])).padStart(2, "0"), mo = DE_MONTHS[m[2].toLowerCase()];
+    return mo ? `${mo}-${d}` : null;
+  };
+  const deadline_winter = dl(/Winter\w*[^.]{0,120}?(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)/i);
+  const deadline_summer = dl(/Sommer\w*[^.]{0,120}?(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)/i);
+
+  // German level or English test mentioned on the page
+  const gm = text.match(/\b(DSH[- ]?[123]|DSH|TestDaF|C1|B2|Goethe[- ]?Zertifikat)\b/i);
+  const em = text.match(/\bIELTS[^.€]{0,60}?\b([5-8](?:[.,][05])?)\b/i) || text.match(/\bTOEFL[^.€]{0,60}?\b(\d{2,3})\b/i);
+  const reqs = [gm ? `German: ${gm[1]} mentioned on the course page` : null, em ? `${/ielts/i.test(em[0]) ? "IELTS" : "TOEFL"} ${em[1]} mentioned on the course page` : null].filter(Boolean).join("; ") || null;
+
+  // NC (restricted admission)
+  const ncFree = /zulassungsfrei|keine Zulassungsbeschr|ohne NC\b/i.test(text);
+  const ncRestricted = /zulassungsbeschr[äa]nkt|[öo]rtlicher NC|bundesweiter NC/i.test(text);
+  const nc_status = ncFree && !ncRestricted ? "NC-frei" : ncRestricted && !ncFree ? "Zulassungsbeschränkt" : null;
+
+  return {
+    row: {
+      ext_id: "de:" + url.replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/$/, "").slice(0, 110),
+      country: "DE", currency: "EUR", fee_period: "semester",
+      university: uni.name, program: program.slice(0, 200), degree, title,
+      field: fieldOf(`${program} ${h1}`), city: uni.city, state: uni.region, type: uni.type, language,
+      duration, duration_months: duration * 6, tuition,
+      tuition_note: tuition === 0 ? "Public university: no tuition fee, only the semester contribution." : tuition === 1500 ? "Baden-Wuerttemberg charges non EU students 1,500 EUR per semester." : "See the course page for the current fee.",
+      semester_fee, intakes,
+      deadline_winter, deadline_summer,
+      deadline_note: "Deadlines read automatically from the course page. Always confirm on the university page or uni-assist.",
+      english_req: reqs, other_req: null,
+      apply_via: /uni-assist/i.test(text) ? "uni-assist" : "University portal",
+      summary: null, nc_status,
+      url, program_url: url, apply_url: null, source: "University website",
+      verified_on: new Date().toISOString().slice(0, 10), active: true, curated: false,
+    },
+  };
+}
+
 async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
   const out: R[] = []; let i = 0;
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k]); } }));
@@ -181,7 +307,7 @@ Deno.serve(async (req) => {
     const res = await pool(jobs, 5, async (j: any) => {
       const r = await get(j.url, 14000);
       if (r.status !== 200) return { id: j.id, status: "error", note: `http ${r.status}` };
-      try { const p = parse(r.text, j.url, j.degree, U.get(j.uni)!); return p.row ? { id: j.id, status: "done", note: null, row: p.row } : { id: j.id, status: "skipped", note: p.skip }; }
+      try { const u = U.get(j.uni)!; const de = /\.de$/i.test(new URL(j.url).hostname); const p = de ? parseDE(r.text, j.url, j.degree, u) : parse(r.text, j.url, j.degree, u); return p.row ? { id: j.id, status: "done", note: null, row: p.row } : { id: j.id, status: "skipped", note: p.skip }; }
       catch (e) { return { id: j.id, status: "error", note: String(e).slice(0, 80) }; }
     });
     const rows = res.filter((r: any) => r.row).map((r: any) => r.row);
