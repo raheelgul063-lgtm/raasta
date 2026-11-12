@@ -60,15 +60,31 @@ function fieldOf(n: string): string {
   return "Other";
 }
 
+const TITLE_SEP = /\s*[|•·–—]\s*|\s[-:]\s/;
+const NOT_A_COURSE = /^(?:studieng(?:a|ä)nge?|studium|studieren|studienangebot|home|startseite|aufbau|kontakt|contact|overview|courses|programmes?|index|men(?:u|ü)|navigation|suche|search|degree programs?|teaching)$/i;
+// Many pages put the university's own name, or a section label, in the first heading and
+// the course name in a later heading or in the page title. Some (KIT) have no h1 at all.
+function courseName(html: string, titleTag: string, uniName: string): string {
+  const uniWords = uniName.toLowerCase().replace(/[^a-zäöüß ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+  const isUni = (t: string) => { const low = t.toLowerCase(); return uniWords.length > 0 && uniWords.every((w) => low.includes(w)); };
+  const ok = (t: string) => t.length > 3 && t.length < 160 && !isUni(t) && !NOT_A_COURSE.test(t);
+  const clean = (t: string) => t.replace(/\s+/g, " ").trim();
+  for (const m of html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)) { const t = clean(strip(m[1])); if (ok(t)) return t; }
+  let best = "";
+  for (const seg of titleTag.split(TITLE_SEP)) { const t = clean(seg); if (ok(t) && t.length > best.length) best = t; }
+  return best;
+}
+
 type Uni = { name: string; city: string; region: string; type: string; site: string; country?: string };
 
 function parse(html: string, url: string, degree: string, uni: Uni) {
   const h1m = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i), tm = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
   const titleTag = tm ? strip(tm[1]) : "";
   let h1 = h1m ? strip(h1m[1]) : "";
-  if (!h1 || h1.length < 3) h1 = titleTag.split(/\s[|\-–·:]\s/)[0] || "";
+  if (!h1 || h1.length < 3) h1 = titleTag.split(TITLE_SEP)[0] || "";
   h1 = h1.replace(/\s+/g, " ").trim().slice(0, 160);
   if (!h1 || /page not found|404|not found|access denied|just a moment|error/i.test(h1)) return { skip: "no title" };
+  { const better = courseName(html, titleTag, uni.name); if (better) h1 = better.slice(0, 160); }
   const slug = decodeURIComponent(url.split("?")[0].replace(/\/$/, "").split("/").slice(-2).join(" ")).replace(/[-_]/g, " ");
   const hay = `${h1} ${titleTag} ${slug}`;
   if (SKIP.test(`${h1} ${titleTag}`)) return { skip: "not a full degree" };
@@ -147,16 +163,12 @@ function parseDE(html: string, url: string, degree: string, uni: Uni) {
   const h1m = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i), tm = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
   const titleTag = tm ? strip(tm[1]) : "";
   let h1 = h1m ? strip(h1m[1]) : "";
-  if (!h1 || h1.length < 3) h1 = titleTag.split(/\s[|\-·:]\s/)[0] || "";
+  if (!h1 || h1.length < 3) h1 = titleTag.split(TITLE_SEP)[0] || "";
   h1 = h1.replace(/\s+/g, " ").trim().slice(0, 160);
   if (!h1 || /seite nicht gefunden|nicht gefunden|page not found|404|fehler|zugriff verweigert/i.test(h1)) return { skip: "no title" };
-  // Some pages put the university name in the heading; the page title holds the course name
-  const uniWords = uni.name.toLowerCase().replace(/[^a-zäöüß ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
-  const h1Low = h1.toLowerCase();
-  if (uniWords.length && uniWords.every((w) => h1Low.includes(w))) {
-    const alt = titleTag.split(/\s[|\u00b7:]\s|\s-\s/)[0].trim();
-    if (alt && alt.length > 2 && !uniWords.every((w) => alt.toLowerCase().includes(w))) h1 = alt.slice(0, 160);
-  }
+  // Many pages put the university's own name in the first heading and the course
+  // name in a later heading or in the page title. Take the first non-university one.
+  { const better = courseName(html, titleTag, uni.name); if (better) h1 = better.slice(0, 160); }
   if (DE_SKIP.test(`${h1} ${titleTag}`)) return { skip: "not a degree program" };
   const pg = degree === "Master";
   const text = strip(html).slice(0, 400000);
