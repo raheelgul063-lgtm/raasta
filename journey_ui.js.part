@@ -1,0 +1,354 @@
+
+/* ---------------- Hamrah: the student's guided journey ---------------- */
+// Hamrah (ہمراہ) means the companion who walks the road with you. Raasta is the path.
+const HAMRAH = "Hamrah";
+const JOURNEY_TERMS_VERSION = "1";
+// Plain language, because a student is agreeing to it at 2am on a phone.
+const JOURNEY_TERMS = [
+  ["What Hamrah does", "It keeps your whole journey in one list, from documents to landing. It prepares every answer for your application forms, checks your documents, practises your interview, explains each visa step, and reminds you before a deadline passes."],
+  ["What Hamrah never does", "It never fills in or submits an application for you, never signs in to any portal as you, and never handles money. It cannot pay your fees, open your blocked account or move your funds. Every form you submit and every payment you make, you do yourself."],
+  ["Why it works that way", "Universities and visa offices require the declaration at the end of a form to be yours. An answer submitted on your behalf, if it is wrong, can void your application. And nobody should hold your money but you."],
+  ["Raasta is not your agent or your lawyer", "Raasta is free and is not a consultancy, a legal adviser or an immigration adviser. Hamrah can be wrong, and rules change. The university's own page and the official mission or Home Office page always have the final word, and you are responsible for what you submit."],
+  ["Your information", "Your steps, notes and dates are stored in your own account and only you can see them. Your chat messages with Hamrah are not saved. You can delete your journey, or your whole account, whenever you want."],
+  ["Reminders by email", "If you leave reminders on, Hamrah emails you when you finish a step and when something is overdue. You can turn this off at any time, on this page."],
+];
+
+const jPlan   = (c) => (window.JOURNEY_PLAN?.steps?.[c] || []);
+const jStages = (c) => (window.JOURNEY_PLAN?.stages?.[c] || []);
+const jStepDef = (c, key) => jPlan(c).find((s) => s.key === key);
+const jStepsFor = (c, degree) => jPlan(c).filter((s) => !s.only || s.only === degree);
+
+Object.assign(db, {
+  async journeys() {
+    const { data, error } = await sb.from("journeys").select("*").order("created_at", { ascending: false });
+    if (error) throw error; return data || [];
+  },
+  async journeySteps(id) {
+    const { data, error } = await sb.from("journey_steps").select("*").eq("journey_id", id).order("ord");
+    if (error) throw error; return data || [];
+  },
+  async journeyEvents(id) {
+    const { data, error } = await sb.from("journey_events").select("*").eq("journey_id", id).order("created_at", { ascending: false }).limit(12);
+    if (error) throw error; return data || [];
+  },
+  async journeyCreate(p, intake) {
+    const country = p.country || CTRY;
+    const { data, error } = await sb.from("journeys").insert({
+      program_id: p.id, university: p.university, program: p.program, degree: p.degree,
+      country, intake: intake || null,
+      consent_at: new Date().toISOString(), consent_version: JOURNEY_TERMS_VERSION
+    }).select().single();
+    if (error) throw error;
+    const rows = jStepsFor(country, p.degree).map((s, i) => ({
+      journey_id: data.id, step_key: s.key, stage: s.stage, title: s.title,
+      detail: s.detail || null, ord: i, optional: Boolean(s.optional)
+    }));
+    const { error: e2 } = await sb.from("journey_steps").insert(rows);
+    if (e2) throw e2;
+    return data;
+  },
+  async journeyPatch(id, patch) {
+    const { error } = await sb.from("journeys").update(patch).eq("id", id); if (error) throw error;
+  },
+  async stepPatch(id, patch) {
+    const { error } = await sb.from("journey_steps").update(patch).eq("id", id); if (error) throw error;
+  },
+  async journeyDelete(id) {
+    const { error } = await sb.from("journeys").delete().eq("id", id); if (error) throw error;
+  }
+});
+
+// Tell the student what just happened and what is next. Never blocks the UI.
+function journeyNotify(journeyId, stepKey, kind) {
+  if (!LIVE) return;
+  sb.functions.invoke("journey-mail", { body: { journey_id: journeyId, step_key: stepKey || null, kind: kind || "step_done" } })
+    .catch(() => {});
+}
+
+const jProgress = (steps) => {
+  const req = steps.filter((s) => !s.optional);
+  const done = req.filter((s) => s.status === "done").length;
+  return { done, total: req.length, pct: req.length ? Math.round((done / req.length) * 100) : 0 };
+};
+const jNextStep = (steps) => steps.find((s) => s.status !== "done" && s.status !== "skipped" && !s.optional)
+  || steps.find((s) => s.status !== "done" && s.status !== "skipped") || null;
+
+/* ---------------- Start a journey ---------------- */
+async function viewJourneyStart() {
+  const id = Number(route.params?.get("program"));
+  if (!LIVE) { app.innerHTML = journeyPreviewNotice(); return; }
+  if (needsLogin(`Start your journey with ${HAMRAH}`, `Sign in free. ${HAMRAH} keeps your steps, notes and reminders in your own account.`)) return;
+  const p = id ? await db.program(id).catch(() => null) : null;
+  if (!p) {
+    app.innerHTML = `<div class="page-head"><h1>Pick your university first</h1><p>${HAMRAH} walks one application with you at a time, so choose the program you have decided on.</p></div>
+      <div class="card" style="max-width:560px"><p>Open the program you want to apply to, then press <strong>Finalize your dream university</strong> on that page.</p>
+      <a class="btn gold" href="#/finder">Find your program</a></div>`;
+    return;
+  }
+  const existing = (await db.journeys().catch(() => [])).find((j) => j.program_id === p.id && j.status === "active");
+  if (existing) { location.hash = `#/journey?id=${existing.id}`; return; }
+
+  const flag = FLAG[p.country || CTRY] || "";
+  app.innerHTML = `
+    <a href="#/program?id=${p.id}" class="back">← Back to the program</a>
+    <div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)} · ہمراہ</span>
+      <h1>Finalize your dream university?</h1>
+      <p>Then let's start your process. ${esc(HAMRAH)} stays with you from this page to the day you land.</p></div>
+    <div class="card jn-pick">
+      <span class="jn-flag">${flag}</span>
+      <div><strong>${esc(p.program)}</strong><em>${esc(p.university)} · ${esc([p.city, p.state].filter(Boolean).join(", "))}</em></div>
+      <span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>
+    </div>
+    <div class="card">
+      <h3>Which intake are you aiming for?</h3>
+      <div class="field" style="max-width:280px"><label for="jnIntake">Intake</label>
+        <select id="jnIntake">${((p.intakes || []).length ? p.intakes : ["Winter", "Summer", "September", "January"]).map((i) => `<option>${esc(i)}</option>`).join("")}<option value="">Not sure yet</option></select></div>
+    </div>
+    <section class="section"><div class="section-head"><div><h2>Before we start</h2><p>Read this once. It is short and it matters.</p></div></div>
+      <div class="jn-terms">${JOURNEY_TERMS.map(([t, d]) => `<div class="jn-term"><strong>${esc(t)}</strong><p>${esc(d)}</p></div>`).join("")}</div>
+      <label class="check jn-agree"><input type="checkbox" id="jnOk" /> <span>I have read the above. I understand ${esc(HAMRAH)} guides me but that I submit my own applications and make my own payments, and that I am responsible for what I submit.</span></label>
+      <div class="jn-go"><button class="btn gold" id="jnStart" disabled>I agree, start my journey</button>
+      <a class="btn ghost" href="#/program?id=${p.id}">Not yet</a></div>
+    </section>`;
+  $("#jnOk").onchange = () => { $("#jnStart").disabled = !$("#jnOk").checked; };
+  $("#jnStart").onclick = async () => {
+    const btn = $("#jnStart"); btn.disabled = true; btn.textContent = "Setting up your journey...";
+    try {
+      const j = await db.journeyCreate(p, $("#jnIntake").value);
+      journeyNotify(j.id, null, "journey_start");
+      toast(`${HAMRAH} is with you now`);
+      location.hash = `#/journey?id=${j.id}`;
+    } catch (e) {
+      btn.disabled = false; btn.textContent = "I agree, start my journey";
+      toast(e.message || "Could not start your journey. Please try again.");
+    }
+  };
+}
+
+function journeyPreviewNotice() {
+  return `<div class="page-head"><h1>Your journey with ${esc(HAMRAH)}</h1></div>
+    <div class="card" style="max-width:560px"><p>Journeys are saved in your Raasta account, so this works on the live site once Supabase is connected.</p>
+    <a class="btn gold" href="#/finder">Browse programs</a></div>`;
+}
+
+/* ---------------- The journey page ---------------- */
+async function viewJourney() {
+  if (!LIVE) { app.innerHTML = journeyPreviewNotice(); return; }
+  if (needsLogin(`Your journey with ${HAMRAH}`, `Sign in free. ${HAMRAH} keeps your steps, notes and reminders in your own account.`)) return;
+  app.innerHTML = `<div class="page-head"><h1>Your journey</h1><p>Loading...</p></div>`;
+  let list = [];
+  try { list = await db.journeys(); } catch (e) { app.innerHTML = `<div class="page-head"><h1>Your journey</h1><p>${esc(e.message)}</p></div>`; return; }
+  const wanted = Number(route.params?.get("id"));
+  const j = (wanted && list.find((x) => x.id === wanted)) || list.find((x) => x.status === "active") || list[0];
+  if (!j) { app.innerHTML = journeyEmpty(); return; }
+  const [steps, events] = await Promise.all([db.journeySteps(j.id), db.journeyEvents(j.id).catch(() => [])]);
+  renderJourney(j, steps, events, list);
+}
+
+function journeyEmpty() {
+  return `<div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)} · ہمراہ</span>
+      <h1>Finalize your dream university?</h1>
+      <p>Then let's start your process. Pick the program you have decided on and ${esc(HAMRAH)} takes you from the application form to the day you land.</p></div>
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card"><h3>What ${esc(HAMRAH)} does with you</h3>
+        <ol class="jn-what">
+          <li>Gets your documents attested, translated and checked</li>
+          <li>Prepares every answer on the application form</li>
+          <li>Practises the interview until you are ready</li>
+          <li>Reads your offer letter and explains every condition</li>
+          <li>Walks you through the blocked account or your CAS and funds</li>
+          <li>Builds your visa file in the exact order the mission wants it</li>
+          <li>Reminds you before a deadline passes, by email</li>
+        </ol></section>
+      <section class="card"><h3>What it will not do</h3>
+        <p>It will not submit your application or touch your money. You submit, you pay. ${esc(HAMRAH)} makes sure that when you do, everything is right.</p>
+        <a class="btn gold" href="#/finder">Find your program</a></section>
+    </div>`;
+}
+
+function renderJourney(j, steps, events, list) {
+  const c = j.country, prog = jProgress(steps), next = jNextStep(steps);
+  const stages = jStages(c);
+  const byStage = (k) => steps.filter((s) => s.stage === k);
+  const overdue = steps.filter((s) => s.status !== "done" && s.status !== "skipped" && s.due_on && s.due_on < new Date().toISOString().slice(0, 10));
+  const flag = FLAG[c] || "";
+
+  app.innerHTML = `
+    <div class="jn-head card">
+      <div class="jn-head-main">
+        <span class="jn-flag">${flag}</span>
+        <div>
+          <span class="eyebrow">${esc(HAMRAH)} is walking this with you</span>
+          <h1>${esc(j.program || "Your application")}</h1>
+          <p class="prog-uni big">${esc(j.university)}${j.intake ? ` · ${esc(j.intake)} intake` : ""}</p>
+        </div>
+      </div>
+      <div class="jn-prog">
+        <div class="jn-bar"><span style="width:${prog.pct}%"></span></div>
+        <strong>${prog.done} of ${prog.total} steps done</strong>
+        ${overdue.length ? `<em class="jn-late">${overdue.length} overdue</em>` : ""}
+      </div>
+    </div>
+
+    ${next ? `<section class="card jn-next">
+      <span class="eyebrow">Next up</span>
+      <h2>${esc(next.title)}</h2>
+      ${next.detail ? `<p>${esc(next.detail)}</p>` : ""}
+      <div class="jn-next-go">
+        <button class="btn gold" data-done="${next.id}">Mark this done</button>
+        <a class="btn" href="#/hamrah?j=${j.id}&step=${encodeURIComponent(next.step_key)}">Ask ${esc(HAMRAH)} about this</a>
+        ${jStepDef(c, next.step_key)?.tool ? `<a class="btn ghost" href="${esc(jStepDef(c, next.step_key).tool)}">Open the tool</a>` : ""}
+      </div>
+    </section>` : `<section class="card jn-next"><h2>Every step is done.</h2><p>Your journey is complete. Go well.</p></section>`}
+
+    ${stages.map((st) => {
+      const rows = byStage(st.key);
+      if (!rows.length) return "";
+      const d = rows.filter((r) => r.status === "done").length;
+      const allDone = d === rows.length;
+      return `<section class="jn-stage ${allDone ? "is-done" : ""}">
+        <div class="jn-stage-head"><div><h2>${esc(st.name)} <span class="jn-count">${d}/${rows.length}</span></h2><p>${esc(st.blurb)}</p></div></div>
+        <ul class="jn-steps">${rows.map((s) => jStepRow(j, s, c)).join("")}</ul>
+      </section>`;
+    }).join("")}
+
+    <section class="section"><div class="section-head"><div><h2>Settings</h2></div></div>
+      <div class="card">
+        <label class="check"><input type="checkbox" id="jnMail" ${j.email_opt_in ? "checked" : ""} /> Email me when I finish a step and when something is overdue</label>
+        <p class="notice">Reminders go to the email you signed in with. Your chat with ${esc(HAMRAH)} is never saved.</p>
+        ${list.length > 1 ? `<div class="field" style="max-width:360px;margin-top:12px"><label for="jnSwitch">Your journeys</label>
+          <select id="jnSwitch">${list.map((x) => `<option value="${x.id}" ${x.id === j.id ? "selected" : ""}>${esc(x.university)} · ${esc(x.program || "")}</option>`).join("")}</select></div>` : ""}
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn ghost small" href="#/finder">Start another journey</a>
+          <button class="btn ghost small" id="jnDel">Delete this journey</button>
+        </div>
+      </div></section>
+
+    ${events.length ? `<section class="section"><div class="section-head"><div><h2>Recent activity</h2></div></div>
+      <ul class="jn-log">${events.map((e) => `<li><span>${esc(dateText(e.created_at))}</span> ${esc(e.title || e.kind)}${e.email_sent_at ? ` <em>emailed</em>` : ""}</li>`).join("")}</ul></section>` : ""}`;
+
+  wireJourney(j, steps);
+}
+
+function jStepRow(j, s, c) {
+  const def = jStepDef(c, s.step_key) || {};
+  const done = s.status === "done";
+  const late = !done && s.due_on && s.due_on < new Date().toISOString().slice(0, 10);
+  return `<li class="jn-step ${done ? "done" : ""} ${late ? "late" : ""}">
+    <button class="jn-tick" data-toggle="${s.id}" aria-pressed="${done}" aria-label="${done ? "Mark as not done" : "Mark as done"}">${done ? "✓" : ""}</button>
+    <div class="jn-step-body">
+      <div class="jn-step-top">
+        <strong>${esc(s.title)}</strong>
+        ${s.optional ? `<span class="pill">optional</span>` : ""}
+        ${late ? `<span class="pill pill-nc">overdue</span>` : ""}
+      </div>
+      ${s.detail ? `<p>${esc(s.detail)}</p>` : ""}
+      <div class="jn-step-go">
+        <a href="#/hamrah?j=${j.id}&step=${encodeURIComponent(s.step_key)}">Ask ${esc(HAMRAH)}</a>
+        ${def.tool ? `<a href="${esc(def.tool)}">Open the tool</a>` : ""}
+        <label>Target date <input type="date" data-due="${s.id}" value="${esc(s.due_on || "")}" /></label>
+      </div>
+      <input class="jn-note" type="text" data-note="${s.id}" placeholder="Your note: reference number, who you spoke to, what is pending" value="${esc(s.note || "")}" />
+    </div>
+  </li>`;
+}
+
+const dateText = (iso) => { try { return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" }); } catch { return ""; } };
+
+function wireJourney(j, steps) {
+  const find = (id) => steps.find((s) => s.id === Number(id));
+  const reload = () => viewJourney();
+
+  const setDone = async (id, done) => {
+    const s = find(id); if (!s) return;
+    try {
+      await db.stepPatch(s.id, { status: done ? "done" : "todo", done_at: done ? new Date().toISOString() : null });
+      s.status = done ? "done" : "todo";
+      if (done) { journeyNotify(j.id, s.step_key, "step_done"); toast(`Done: ${s.title}`); }
+      reload();
+    } catch (e) { toast(e.message || "Could not save that"); }
+  };
+
+  app.querySelectorAll("[data-toggle]").forEach((b) => {
+    b.onclick = () => setDone(b.dataset.toggle, b.getAttribute("aria-pressed") !== "true");
+  });
+  app.querySelectorAll("[data-done]").forEach((b) => { b.onclick = () => setDone(b.dataset.done, true); });
+
+  app.querySelectorAll("[data-due]").forEach((i) => {
+    i.onchange = async () => {
+      try { await db.stepPatch(Number(i.dataset.due), { due_on: i.value || null }); toast("Date saved"); const s = find(i.dataset.due); if (s) s.due_on = i.value || null; }
+      catch (e) { toast(e.message || "Could not save the date"); }
+    };
+  });
+
+  app.querySelectorAll("[data-note]").forEach((i) => {
+    let t;
+    i.oninput = () => {
+      clearTimeout(t);
+      t = setTimeout(async () => {
+        try { await db.stepPatch(Number(i.dataset.note), { note: i.value.trim() || null }); } catch {}
+      }, 700);
+    };
+  });
+
+  const mail = $("#jnMail");
+  if (mail) mail.onchange = async () => {
+    try { await db.journeyPatch(j.id, { email_opt_in: mail.checked }); toast(mail.checked ? "Reminders on" : "Reminders off"); }
+    catch (e) { toast(e.message || "Could not save that"); }
+  };
+
+  const sw = $("#jnSwitch");
+  if (sw) sw.onchange = () => { location.hash = `#/journey?id=${sw.value}`; };
+
+  const del = $("#jnDel");
+  if (del) del.onclick = async () => {
+    if (!confirm("Delete this journey, with all your steps, dates and notes? This cannot be undone.")) return;
+    try { await db.journeyDelete(j.id); toast("Journey deleted"); location.hash = "#/journey"; reload(); }
+    catch (e) { toast(e.message || "Could not delete it"); }
+  };
+}
+
+/* ---------------- Talking to Hamrah ---------------- */
+async function viewHamrah() {
+  if (!LIVE) { app.innerHTML = journeyPreviewNotice(); return; }
+  const jid = Number(route.params?.get("j"));
+  const key = route.params?.get("step") || "";
+  let j = null, steps = [];
+  if (jid) {
+    try { j = (await db.journeys()).find((x) => x.id === jid) || null; if (j) steps = await db.journeySteps(j.id); } catch {}
+  }
+  const c = j?.country || CTRY;
+  const def = key ? jStepDef(c, key) : null;
+  const step = steps.find((s) => s.step_key === key) || null;
+  const prog = steps.length ? jProgress(steps) : null;
+  const next = steps.length ? jNextStep(steps) : null;
+  let prof = "";
+  if (session) db.getProfile().then((p) => { prof = profileSummary(p); }).catch(() => {});
+
+  chatView({
+    title: `${HAMRAH} · your study companion`,
+    intro: j
+      ? `Walking your ${esc(j.program || "application")} at ${esc(j.university)} with you.${step ? ` Right now: <strong>${esc(step.title)}</strong>.` : ""} English, Urdu and Roman Urdu all work.`
+      : `Your companion for the whole process. Start a journey from your program page and ${HAMRAH} will know exactly where you are. English, Urdu and Roman Urdu all work.`,
+    mode: "journey",
+    extraTop: j ? `<div class="callout jn-chat-ctx"><strong>${esc(j.university)}</strong> · ${esc(j.program || "")}${j.intake ? ` · ${esc(j.intake)} intake` : ""}${prog ? ` · ${prog.done} of ${prog.total} steps done` : ""} <a href="#/journey?id=${j.id}">Open my journey</a></div>` : "",
+    chips: def?.ask ? [def.ask] : (C().chips || []),
+    opener: { show: j
+      ? (step
+        ? `We are on this step: ${step.title}. ${def?.detail || ""} Ask me anything about it, or tell me where you are stuck.`
+        : `You are ${prog ? `${prog.done} of ${prog.total} steps` : ""} into your application to ${j.university}.${next ? ` Next up is: ${next.title}.` : ""} What do you want to work on?`)
+      : `Hello. I am ${HAMRAH}. Tell me where you are in your process and I will take it from there.` },
+    getContext: () => ({
+      profile: prof,
+      journey: j ? `${j.degree || ""} ${j.program || ""} at ${j.university}${j.intake ? `, ${j.intake} intake` : ""}` : "",
+      stepTitle: step?.title || "",
+      stepDetail: def?.detail || "",
+      progress: prog ? `${prog.done} of ${prog.total} required steps done` : "",
+      nextStep: next?.title || "",
+      doneSteps: steps.filter((s) => s.status === "done").map((s) => s.title).slice(-8).join("; "),
+      openSteps: steps.filter((s) => s.status !== "done" && !s.optional).map((s) => s.title).slice(0, 8).join("; ")
+    })
+  });
+  const q = route.params?.get("q");
+  if (q && $("#chatInput")) { $("#chatInput").value = q; $("#chatInput").focus(); }
+}
