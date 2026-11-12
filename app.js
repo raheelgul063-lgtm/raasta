@@ -1896,7 +1896,8 @@ function durText(p) {
 const durMonths = (p) => p.duration_months || (p.duration ? p.duration * 6 : null);
 const mono = (name) => (String(name || "?").replace(/\b(University|of|the|Applied|Sciences|and|for|Hochschule|Technische|Universität|in)\b/gi, " ").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("") || String(name || "?")[0]).toUpperCase();
 const langPill = (p) => {
-  const l = p.language || "English";
+  const l = p.language || "";
+  if (!l) return `<span class="pill pill-lang">Language not stated</span>`;
   if (/german/i.test(l) && /english/i.test(l)) return `<span class="pill pill-lang">English and German</span>`;
   if (/german/i.test(l)) return `<span class="pill pill-lang">German taught</span>`;
   return "";
@@ -1908,6 +1909,7 @@ function langLevel(p) {
   const lv = (t.match(/\b(A1|A2|B1|B2|C1|C2)\b/) || [])[1];
   const ielts = (t.match(/IELTS[^0-9]{0,20}(\d(?:[.,]\d)?)/i) || [])[1];
   if (/german/i.test(p.language || "") && !/english/i.test(p.language || "")) return "German, usually C1 (DSH 2 or TestDaF 4x4)";
+  if (!p.language) return "Not stated, check the program page";
   return [lv && `English ${lv}`, ielts && `IELTS ${ielts}`].filter(Boolean).join(", ") || "See the university page";
 }
 function appRoute(p) {
@@ -1975,7 +1977,7 @@ async function viewCompare() {
   const R = [
     ["University", (p) => `<a href="#/university?name=${encodeURIComponent(p.university)}">${esc(p.university)}</a>`],
     ["Degree", (p) => esc(p.title || p.degree)], ["City", (p) => esc([p.city, p.state].filter(Boolean).join(", "))],
-    ["University type", (p) => esc(p.type || "")], ["Teaching language", (p) => esc(p.language || "English")],
+    ["University type", (p) => esc(p.type || "")], ["Teaching language", (p) => esc(p.language || "Not stated")],
     ["Duration", (p) => esc(durText(p) || "See page")], [isUK() ? "Tuition (international)" : "Tuition (non EU)", (p) => esc(tuitionText(p))],
     ...(isUK() ? [] : [["Semester fee", (p) => esc(p.semester_fee || "See page")]]), ["Intakes", (p) => esc((p.intakes || []).join(", ") || "See page")],
     ["Next deadline", (p) => nd(p)], ["English requirement", (p) => esc(p.english_req || "See page")],
@@ -2217,7 +2219,7 @@ async function viewFinder() {
       if (c.subject) { const sj = SUBJECTS.find((x) => x[0] === c.subject); if (sj && !sj[1].test(p.program)) return false; }
       if (c.nc === "open" && !/^Open/.test(p.nc_status || "")) return false;
       if (c.nc === "restricted" && !/^Restricted/.test(p.nc_status || "")) return false;
-      if (c.lang) { const l = p.language || "English", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
+      if (c.lang) { const l = p.language || "", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
       if (c.tuition === "free" && p.tuition !== 0) return false;
       if (["1500", "15000", "18000", "22000"].includes(c.tuition) && !(p.tuition != null && p.tuition <= Number(c.tuition))) return false;
       if (c.duration === "3" && !(p.duration && p.duration <= 3)) return false;
@@ -2381,7 +2383,7 @@ async function viewProgram() {
         <div class="adm"><span>Credibility check</span><strong>Likely</strong><em>Many universities interview Pakistani applicants before issuing the CAS. Practise with Raasta.</em></div>
       </div>` : `<div class="adm-grid">
         <div class="adm"><span>NC status</span><strong>${esc(p.nc_status || "Not stated")}</strong>${p.nc_value ? `<em>Last NC ${esc(p.nc_value)}${p.nc_semester ? ` (${esc(p.nc_semester)})` : ""}${p.nc_source ? `, <a href="${safeUrl(p.nc_source)}" target="_blank" rel="noopener">source</a>` : ""}</em>` : `<em>${p.nc_status ? "From the program listing." : "Most international programs select by documents, not a fixed grade cutoff. Check the university page."}</em>`}</div>
-        <div class="adm"><span>Language level</span><strong>${esc(langLevel(p))}</strong><em>${esc(p.language || "English")} taught</em></div>
+        <div class="adm"><span>Language level</span><strong>${esc(langLevel(p))}</strong><em>${p.language ? `${esc(p.language)} taught` : "The program page does not state the teaching language. Confirm it before you apply."}</em></div>
         <div class="adm"><span>Entrance exam</span><strong>${esc(p.entrance_exam || "None mentioned")}</strong><em>${p.entrance_exam ? "Mentioned in the admission requirements." : "Always confirm on the university page."}</em></div>
         <div class="adm"><span>Studienkolleg needed?</span><strong>${p.degree === "Bachelor" ? "Usually yes, with Intermediate (HSSC)" : "No"}</strong><em>${p.degree === "Bachelor" ? "With a Pakistani HSSC you normally need a Studienkolleg, or 1 to 2 years of university study in Pakistan first. Check the DAAD admission database for your case." : "A recognised Bachelor's degree gives direct access."}</em></div>
         <div class="adm"><span>Application route</span><strong>${esc(appRoute(p))}</strong><em>${appRoute(p) === "uni-assist" ? "Send documents to uni-assist first; they forward them to the university." : "Apply on the university's own portal."}</em></div>
