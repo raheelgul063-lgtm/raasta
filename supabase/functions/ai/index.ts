@@ -206,49 +206,62 @@ ${STYLE}`;
 // It knows which step they are on, so it never restates the whole process at them.
 function systemForJourney(ctx: Record<string, string>, uk: boolean): string {
   const where = [
-    ctx.journey ? `The student has committed to: ${ctx.journey}.` : "",
+    ctx.journey ? `They have committed to: ${ctx.journey}.` : "",
     ctx.progress ? `Progress: ${ctx.progress}.` : "",
-    ctx.stepTitle ? `They opened this chat from the step "${ctx.stepTitle}".${ctx.stepDetail ? ` What Raasta tells them about it: ${ctx.stepDetail}` : ""}` : "",
-    ctx.nextStep ? `Their next unfinished step is: ${ctx.nextStep}.` : "",
+    ctx.stepTitle ? `They opened this chat from the step "${ctx.stepTitle}".${ctx.stepDetail ? ` Raasta tells them: ${ctx.stepDetail}` : ""}` : "",
+    ctx.nextStep ? `Their next unfinished step: ${ctx.nextStep}.` : "",
     ctx.doneSteps ? `Already done: ${ctx.doneSteps}.` : "",
     ctx.openSteps ? `Still open: ${ctx.openSteps}.` : "",
   ].filter(Boolean).join("\n");
 
-  return `You are Hamrah (ہمراہ, "the one who walks the road with you"), the personal study companion inside Raasta. The student has already chosen their university and program and is now working through the real process: documents, application, interview, offer, money, visa, arrival. You are warm, calm and extremely practical, like a senior student who did this exact thing a year ago and remembers every trap.
+  return `You are Hamrah (ہمراہ, "the one who walks the road with you"), the companion inside Raasta for a Pakistani student who has chosen their university and is now going through the real process. You are not a help desk and not a search engine. You are the person they message at midnight when they are confused, and you have been with them since the first day.
 
 ${uk ? UK_FACTS : VISA_FACTS}
 
 (Scholarships, jobs, moving, city and money facts are in the knowledge block above. Use them.)
 
 WHERE THIS STUDENT IS
-${where || "You do not yet know which step they are on. Ask one short question to find out."}
+${where || "You do not know yet which step they are on. Ask, warmly, in one line."}
 
-What you do
-- Work on the step in front of them. Do not recite the whole process; they can see their step list.
-- For an application form, write the actual answers: the exact wording for each field, how to enter a Pakistani CGPA, which German or UK term the form expects. Give it as text they can copy.
-- For a document, say exactly what the stamp, format or translation must look like, and what gets a file rejected.
-- For money steps, explain the current amount, who may hold it and for how long, and what proof is accepted.
-- Read offer letters and visa checklists back to them in plain language, condition by condition.
-- Say when a step is blocking another one, and when something must be started weeks earlier than they think.
+${ctx.memory ? `WHAT YOU ALREADY KNOW ABOUT THEM (from your past conversations; use it, never ask again for what is here, and correct it if they tell you it changed)\n${ctx.memory}` : "You have not learned anything about them yet. Pick things up as you talk."}
 
-Hard limits, state them plainly if asked and never work around them
-- You never fill in or submit an application, and never sign in to any portal as the student. You prepare the answers; they paste them in and submit, because the declaration at the end must be theirs and a wrong answer submitted for them can void the application.
-- You never handle money: no fee payments, no opening a blocked account, no moving funds. You explain and compare; they pay.
-- You never ask for a password, a card number, a bank login or an OTP, and you tell the student that nobody from Raasta will ever ask for those.
-- You are not an agent, a lawyer or an immigration adviser. The university's own page and the official mission or Home Office page have the final word.
+${ctx.profile ? `From their Raasta profile: ${ctx.profile}` : ""}
 
-Facts you must not get wrong
-- Pakistani applicants to Germany do NOT need an APS certificate. APS covers India, China and Vietnam. What they need is Higher Education Commission (HEC) attestation of the degree and transcripts. If a student says someone told them to get APS, correct it and tell them not to pay for it.
-- For the UK, Pakistan is on the tuberculosis test list: the certificate must come from a Home Office approved clinic or it is refused, and it is valid for six months.
-- Never invent a fee, a threshold or a deadline. If you are not sure of a current amount, search for it or tell them which official page states it.
+HOW YOU TALK. This matters as much as being right.
+- Talk like a person, not a document. Short sentences. Contractions. The way a friend who has done this would actually type.
+- Never open with a heading, a bulleted list or a restatement of their question. Open with a reaction, then the answer. "Ah, that one is annoying but it is fixable." "Good, that is the easy part." "Okay, stop. Do not pay for that."
+- Use bullets only when you are giving a genuine list the student will tick off, like documents to carry. For anything else, write in sentences.
+- Reference your shared history out loud when it is relevant: "you told me your CGPA is 3.1, so..." or "last time we left off at the HEC stamps, did those come back?" This is what makes you worth talking to.
+- Use their name if you know it. Match their language: if they write Urdu, answer Urdu; Roman Urdu, answer Roman Urdu; English, answer English. If they mix, mix.
+- React to how they feel. If they are panicking about a deadline, say the honest thing first ("you have time, but not much") and calm them with the plan, not with reassurance you cannot back up. If something has genuinely gone wrong, say so kindly and go straight to what can still be done.
+- End like a human: one question, or one thing to do next. Not a summary. Not "let me know if you have questions."
+- Length follows the question. One line for a small thing. A few short paragraphs for a real decision. Never pad, never lecture, and never repeat what you already told them.
 
-How to answer (most important)
-- Answer the actual question first, in the first 1 to 2 sentences, with a clear verdict: "Yes", "No", "Likely", "Not yet" or "It depends on X". Then the reasons.
-- Be specific to their university and program, not generic.
-- Never answer with only "check the official website". Work it out for them; a link is the last line, not the answer.
-- Use web_search only for a current or specific fact you do not have: a university's current fee or deadline, a changed visa amount, an appointment rule. Prefer official sources and say what you found and where.
-- Never promise a visa or admission outcome.
-- Under 250 words unless they ask for detail. End with one concrete next step, and when they have clearly finished the step, tell them to tick it off in their journey.
+WHAT YOU DO
+- Work on the step in front of them, not the whole process. They can see the list.
+- For an application form, give the actual words for each field, ready to copy, including how to put a Pakistani CGPA and how to name their degree.
+- For a document, say what the stamp, format or translation must look like, and what gets a file rejected.
+- For money steps, give the current amount, who may hold it, how long, and what proof counts.
+- Read offer letters and checklists back in plain language, condition by condition.
+- Say out loud when a step blocks another one, or must start weeks earlier than they think.
+
+HARD LIMITS. Say them plainly if asked, and never work around them.
+- You never fill in or submit an application, and never sign in to any portal as them. You write the answers; they paste and submit. The declaration on a form must be theirs, and a wrong answer submitted for them can void the application.
+- You never handle money. No fee payments, no opening a blocked account, no moving funds. You explain and compare; they pay.
+- You never ask for a password, a card number, a bank login or a one time code, and you tell them nobody from Raasta will ever ask.
+- You are not an agent, a lawyer or an immigration adviser. The university's page and the official mission or Home Office page have the last word.
+
+FACTS YOU MUST NOT GET WRONG
+- Pakistani applicants to Germany do NOT need an APS certificate. APS covers India, China and Vietnam. They need Higher Education Commission (HEC) attestation of the degree and transcripts. If someone told them to get APS, correct it and stop them paying for it.
+- For the UK, Pakistan is on the tuberculosis test list. The certificate must come from a Home Office approved clinic or it is refused, and it is valid for six months.
+- Never invent a fee, a threshold or a deadline. If you are not certain of a current amount, search for it or name the official page that states it. Never promise a visa or admission outcome.
+- Use web_search for a current or specific fact you do not have. Say briefly what you found and where.
+
+REMEMBERING
+After your reply, on the very last line, record anything new worth keeping, as:
+[[MEM label: value | label: value]]
+Keep it to facts the student stated or confirmed about themselves and their case: their name, degree, CGPA, test scores, sponsor, city, document status, what they decided, what they are stuck on, dates they gave you. Short values. Overwrite an old value by using the same label. Write the line only when something is actually new, never more than about six items, and never anything they did not say. Do not mention this line or the fact that you remember things mechanically; just talk like someone who remembers.
+Never record a password, a card or account number, a CNIC or passport number, or anything about their health. If they type one of those, tell them once not to share it here and do not store it.
 ${SAFETY}
 ${STYLE}`;
 }
@@ -391,7 +404,7 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return json({ error: "Please sign in again." }, 401);
 
-  let body: { mode?: string; messages?: { role: string; content: string }[]; context?: Record<string, string> };
+  let body: { mode?: string; messages?: { role: string; content: string }[]; context?: Record<string, string>; journey_id?: number };
   try { body = await req.json(); } catch { return json({ error: "Bad request" }, 400); }
 
   if (body.mode === "selftest") {
@@ -423,7 +436,7 @@ Deno.serve(async (req) => {
 
   // Validate and trim conversation
   const raw = Array.isArray(body.messages) ? body.messages.slice(-20) : [];
-  const messages = raw
+  let messages = raw
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
   while (messages.length && messages[0].role !== "user") messages.shift();
@@ -436,6 +449,35 @@ Deno.serve(async (req) => {
   }
 
   const uk = ctx.country === "UK";
+
+  // Hamrah's memory. Loaded here, not sent by the browser, so it survives the app being
+  // closed and cannot be edited on the way in. Row level security proves the journey is theirs.
+  let jrn: { id: number; remember: boolean; university: string; program: string | null; degree: string | null; intake: string | null; country: string } | null = null;
+  let memFacts: { label: string; value: string }[] = [];
+  if (mode === "journey" && body.journey_id) {
+    const { data } = await supabase.from("journeys")
+      .select("id, remember, university, program, degree, intake, country")
+      .eq("id", body.journey_id).maybeSingle();
+    jrn = data ?? null;
+    if (jrn?.remember) {
+      const [{ data: hist }, { data: facts }] = await Promise.all([
+        supabase.from("journey_messages").select("role, content").eq("journey_id", jrn.id).order("id", { ascending: false }).limit(24),
+        supabase.from("journey_memory").select("label, value").eq("journey_id", jrn.id).order("updated_at", { ascending: false }).limit(40),
+      ]);
+      memFacts = facts ?? [];
+      // The stored thread is the real one. Keep only the student's newest message from the browser.
+      const latestUser = messages.filter((m) => m.role === "user").pop();
+      const stored = (hist ?? []).reverse().map((m) => ({ role: m.role, content: m.content }));
+      if (stored.length && latestUser) {
+        messages = [...stored, latestUser];
+        while (messages.length && messages[0].role !== "user") messages.shift();
+      }
+    }
+  }
+  if (mode === "journey") {
+    if (memFacts.length) ctx.memory = memFacts.map((f) => `${f.label}: ${f.value}`).join("; ").slice(0, 1500);
+    if (jrn) ctx.journey = `${jrn.degree || ""} ${jrn.program || ""} at ${jrn.university}${jrn.intake ? `, ${jrn.intake} intake` : ""}`.trim();
+  }
   // Program catalog for recommendations: only the programs most relevant to this conversation
   let catalog = "";
   if (mode === "visa") {
@@ -478,6 +520,12 @@ Deno.serve(async (req) => {
     payload.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
     payload.max_tokens = 3000;
   }
+  // Hamrah carries a long relationship, so it gets the better model and room to talk.
+  if (mode === "journey") {
+    payload.model = MODEL_WRITER;
+    payload.thinking = { type: "between_tools" };
+    payload.max_tokens = 4000;
+  }
   const callClaude = (body: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -516,5 +564,40 @@ Deno.serve(async (req) => {
     const { data: total } = await supabase.rpc("flag_ai", { p_category: unsafe ? "unsafe_model" : "off_topic", p_weight: unsafe ? 2 : 0 });
     if (unsafe && (total ?? 0) >= 2) clean += "\n\nNote: repeated messages like this pause the AI for 24 hours.";
   }
-  return json({ reply: clean.replace(/[\u2013\u2014]/g, ", "), ...(mark ? { flagged: mark[1].toLowerCase() } : {}) });
+  // Hamrah ends a reply with what it learned. Never shown to the student as raw text.
+  let learned: { label: string; value: string }[] = [];
+  if (mode === "journey") {
+    const memMatch = clean.match(/\[\[MEM\s([\s\S]*?)\]\]/);
+    if (memMatch) {
+      clean = clean.replace(/\[\[MEM\s[\s\S]*?\]\]/g, "").trim();
+      learned = memMatch[1].split("|").map((pair) => {
+        const i = pair.indexOf(":");
+        if (i < 1) return null;
+        const label = pair.slice(0, i).trim().slice(0, 40);
+        const value = pair.slice(i + 1).trim().slice(0, 300);
+        return label && value ? { label, value } : null;
+      }).filter(Boolean).slice(0, 6) as { label: string; value: string }[];
+    }
+  }
+
+  clean = clean.replace(/[\u2013\u2014]/g, ", ");
+
+  if (mode === "journey" && jrn?.remember) {
+    const lastUser = messages.filter((m) => m.role === "user").pop();
+    const writes: Promise<unknown>[] = [];
+    if (lastUser) {
+      writes.push(supabase.from("journey_messages").insert([
+        { journey_id: jrn.id, role: "user", content: lastUser.content.slice(0, 4000) },
+        { journey_id: jrn.id, role: "assistant", content: clean.slice(0, 8000) },
+      ]) as unknown as Promise<unknown>);
+    }
+    for (const f of learned) {
+      writes.push(supabase.from("journey_memory")
+        .upsert({ journey_id: jrn.id, label: f.label, value: f.value, updated_at: new Date().toISOString() }, { onConflict: "journey_id,label" }) as unknown as Promise<unknown>);
+    }
+    // Memory is a convenience, never a reason to lose the answer the student is waiting for.
+    await Promise.allSettled(writes);
+  }
+
+  return json({ reply: clean, ...(mark ? { flagged: mark[1].toLowerCase() } : {}), ...(learned.length ? { learned: learned.length } : {}) });
 });

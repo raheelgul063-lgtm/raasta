@@ -778,3 +778,24 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
   .jn-head { flex-direction: column; align-items: stretch; }
   .jn-prog { min-width: 0; }
 }
+
+.hamrah-band { display: flex; align-items: center; gap: 20px; border-color: var(--green); background: linear-gradient(100deg, var(--green-soft), var(--card) 65%); }
+.hamrah-band:hover { border-color: var(--gold); }
+.hb-mark { flex: 0 0 auto; font-size: 2rem; color: var(--green); opacity: .5; }
+.hb-text { flex: 1 1 auto; min-width: 0; }
+.hb-text h2 { margin: 4px 0 6px; font-size: 1.3rem; }
+.hb-text p { margin: 0; color: var(--muted); }
+.hamrah-band .btn { flex: 0 0 auto; }
+.ai-strip-go { display: flex; gap: 10px; flex-wrap: wrap; }
+.jn-mem { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+.jn-mem li { display: flex; align-items: center; gap: 10px; }
+.jn-mem span { flex: 0 0 34%; color: var(--muted); font-size: .88rem; }
+.jn-mem input { flex: 1 1 auto; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: .9rem; }
+.jn-mem-x { flex: 0 0 auto; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); cursor: pointer; }
+.jn-mem-x:hover { color: var(--red); border-color: #EBC4BB; }
+.jn-mem-go { display: flex; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 860px) {
+  .hamrah-band { flex-direction: column; align-items: flex-start; }
+  .jn-mem li { flex-wrap: wrap; }
+  .jn-mem span { flex-basis: 100%; }
+}

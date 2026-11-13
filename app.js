@@ -493,6 +493,18 @@ function viewHome() {
     </section>
 
     <section class="section">
+      <a class="hamrah-band card" href="#/journey">
+        <span class="hb-mark">ہمراہ</span>
+        <div class="hb-text">
+          <span class="eyebrow">${esc(HAMRAH)} · your personal agent</span>
+          <h2>Chosen your university? Then stop doing this alone.</h2>
+          <p>${esc(HAMRAH)} takes one application and walks the whole road with you: documents, the form, the interview, your offer, the money, the visa, the landing. It remembers your case and reminds you before a deadline passes.</p>
+        </div>
+        <span class="btn gold">Start my journey</span>
+      </a>
+    </section>
+
+    <section class="section">
       <div class="section-head"><div><h2>Browse by field of study</h2><p>Pick a field to see every matching program.</p></div><a href="#/finder" class="btn ghost small">All programs</a></div>
       <div class="subj-chips">${["Graphic and Communication Design", "Digital Marketing, Branding and Social Media", "3D Animation, Games and VFX", "UX, UI and Interaction Design", "Data Science and AI", "Business Administration and Management"].map((n) => `<a class="chip" href="#/finder?subject=${encodeURIComponent(n)}">${esc(n)}</a>`).join("")}</div>
       <div class="field-grid" id="fieldGrid">${FIELDS.map((f) => `<a class="field-card" href="#/finder?field=${encodeURIComponent(f)}"><span class="fc-ic">${FIELD_META[f].ic}</span><strong>${esc(FIELD_META[f].name)}</strong><em>${esc(FIELD_META[f].d)}</em><span class="fc-n" data-fcount="${esc(f)}"></span></a>`).join("")}</div>
@@ -732,7 +744,7 @@ function speakText(text, lang) {
   speechSynthesis.speak(u);
 }
 
-function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}), voice = false }) {
+function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}), voice = false, journeyId = null }) {
   if (needsLogin(title, "Sign in free to use the AI. It keeps the service free by limiting daily use per student.")) return;
   const history = []; // {role, content}
   app.innerHTML = `
@@ -769,7 +781,7 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
     const typing = add("ai", "Thinking...", "typing");
     $("#sendBtn").disabled = true;
     try {
-      const reply = await askAI({ mode, messages: history.slice(-20), context: getContext() });
+      const reply = await askAI({ mode, messages: history.slice(-20), context: getContext(), ...(journeyId ? { journey_id: journeyId } : {}) });
       typing.remove(); add("ai", reply);
       history.push({ role: "assistant", content: reply });
       if (voice && $("#speakToggle")?.checked) speakText(reply, $("#voiceLang").value);
@@ -1255,7 +1267,7 @@ function viewVisaGuide() {
       <section class="card"><h3>${isUK() ? "Where to give biometrics" : "Where to apply"}</h3>${v.missions.map((m) => `<div class="fact"><span>${esc(m.name)}</span><strong>${esc(m.covers)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Apply online on <a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">GOV.UK</a>, then book biometrics with <a href="${UK_OFFICIAL.vfs}" target="_blank" rel="noopener">VFS Global</a>.` : `Apply online at the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.`}</p></section>
       <section class="card"><h3>Fees and money</h3>${v.money.map(([k, x]) => `<div class="fact"><span>${esc(k)}</span><strong>${esc(x)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Processing usually takes about 3 weeks; priority services cost extra. Official amounts: <a href="${UK_OFFICIAL.money}" target="_blank" rel="noopener">GOV.UK money rules</a>.` : "Processing times change with demand. Apply as soon as you have your admission letter."}</p></section>
     </div>
-    <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers in English or Urdu.</p></div><a class="btn gold" href="#/visa">Ask the AI advisor</a></div>`;
+    <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers in English or Urdu. If you have already chosen your university, ${esc(HAMRAH)} walks every step with you instead and remembers your case.</p></div><div class="ai-strip-go"><a class="btn gold" href="#/visa">Ask the AI advisor</a><a class="btn" href="#/journey">Start a journey with ${esc(HAMRAH)}</a></div></div>`;
 }
 
 function viewMoving() {
@@ -1345,6 +1357,7 @@ function viewJobs() {
 
 function viewHub(kind) {
   const items = kind === "tools" ? [
+    ["#/journey", "🧭", `${HAMRAH}, your personal agent`, "Picks one university and walks every step with you, from the form to the airport. Remembers your case."],
     ["#/visa", "✦", "AI advisor", "Program matches and visa answers in English or Urdu."],
     ["#/doccheck", "📄", "AI document checker", "Upload your documents and get a completeness and eligibility check."],
     ["#/grades", "🧮", "Grade converter", isUK() ? "Your CGPA or percentage as a UK degree class." : "Your CGPA or percentage on the German scale."],
@@ -1654,7 +1667,9 @@ function viewPrivacy() {
       <h3>What we store</h3>
       <p>Your email and name (from Google or your email login); the profile you fill in (phone number, city, province, study plans, academic background, profile photo); the universities in your tracker, your saved programs and ticked checklist items; how many AI requests you made per day; feedback and support messages you send.</p>
       <h3>What we do not store</h3>
-      <p>We do not save your AI chat messages, interview answers or motivation letter text. Documents you upload to the AI document checker are analysed once and then discarded; they are never saved on our servers. Do not type passport numbers, CNIC numbers or bank details into chats.</p>
+      <p>We do not save your messages in the AI advisor, your interview answers or your motivation letter text. Documents you upload to the AI document checker are analysed once and then discarded; they are never saved on our servers.</p>
+      <p><strong>Hamrah is the one exception, and only if you start a journey.</strong> So that it can pick up where you left off, a journey keeps your conversation with Hamrah (the most recent turns only) and a short list of facts it has learned about your case, such as your degree, your test score or which documents are done. You can see that list, edit it, and delete it on your journey page, and you can switch remembering off there at any time. Deleting the journey deletes all of it. Nothing from a journey is used anywhere else and nobody else can see it.</p>
+      <p>Hamrah is told never to record a password, a card or account number, a CNIC or passport number, or anything about your health. Please still do not type those into any chat.</p>
       <h3>AI rules</h3>
       <p>The AI only helps with studying and living in Germany. Sexual, hateful or illegal requests are refused. When a message breaks these rules we record only the type of problem and the time, never the message itself, and delete these records after 90 days. Repeated rule breaking pauses the AI for that account for 24 hours.</p>
       <h3>Who processes your data</h3>
@@ -2441,7 +2456,8 @@ const JOURNEY_TERMS = [
   ["What Hamrah never does", "It never fills in or submits an application for you, never signs in to any portal as you, and never handles money. It cannot pay your fees, open your blocked account or move your funds. Every form you submit and every payment you make, you do yourself."],
   ["Why it works that way", "Universities and visa offices require the declaration at the end of a form to be yours. An answer submitted on your behalf, if it is wrong, can void your application. And nobody should hold your money but you."],
   ["Raasta is not your agent or your lawyer", "Raasta is free and is not a consultancy, a legal adviser or an immigration adviser. Hamrah can be wrong, and rules change. The university's own page and the official mission or Home Office page always have the final word, and you are responsible for what you submit."],
-  ["Your information", "Your steps, notes and dates are stored in your own account and only you can see them. Your chat messages with Hamrah are not saved. You can delete your journey, or your whole account, whenever you want."],
+  ["Hamrah remembers you", "So that it does not ask you the same thing twice, Hamrah keeps your recent conversation and a short list of facts about your case, like your degree, your scores and which documents are done. You can read that list, change it, or delete it on your journey page, and you can switch remembering off there. It never records a password, a card number, a CNIC or passport number, or anything about your health."],
+  ["Your information", "Your steps, notes, dates and memory are stored in your own account and only you can see them. Nothing from your journey is used anywhere else. Delete your journey, or your whole account, whenever you want, and it all goes with it."],
   ["Reminders by email", "If you leave reminders on, Hamrah emails you when you finish a step and when something is overdue. You can turn this off at any time, on this page."],
 ];
 
@@ -2484,6 +2500,21 @@ Object.assign(db, {
   },
   async stepPatch(id, patch) {
     const { error } = await sb.from("journey_steps").update(patch).eq("id", id); if (error) throw error;
+  },
+  async journeyMemory(id) {
+    const { data, error } = await sb.from("journey_memory").select("*").eq("journey_id", id).order("updated_at", { ascending: false });
+    if (error) throw error; return data || [];
+  },
+  async memoryDelete(rowId) {
+    const { error } = await sb.from("journey_memory").delete().eq("id", rowId); if (error) throw error;
+  },
+  async memoryPatch(rowId, patch) {
+    const { error } = await sb.from("journey_memory").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", rowId); if (error) throw error;
+  },
+  async journeyForget(id) {
+    const a = await sb.from("journey_messages").delete().eq("journey_id", id);
+    const b = await sb.from("journey_memory").delete().eq("journey_id", id);
+    if (a.error) throw a.error; if (b.error) throw b.error;
   },
   async journeyDelete(id) {
     const { error } = await sb.from("journeys").delete().eq("id", id); if (error) throw error;
@@ -2573,8 +2604,8 @@ async function viewJourney() {
   const wanted = Number(route.params?.get("id"));
   const j = (wanted && list.find((x) => x.id === wanted)) || list.find((x) => x.status === "active") || list[0];
   if (!j) { app.innerHTML = journeyEmpty(); return; }
-  const [steps, events] = await Promise.all([db.journeySteps(j.id), db.journeyEvents(j.id).catch(() => [])]);
-  renderJourney(j, steps, events, list);
+  const [steps, events, mem] = await Promise.all([db.journeySteps(j.id), db.journeyEvents(j.id).catch(() => []), db.journeyMemory(j.id).catch(() => [])]);
+  renderJourney(j, steps, events, list, mem);
 }
 
 function journeyEmpty() {
@@ -2598,7 +2629,7 @@ function journeyEmpty() {
     </div>`;
 }
 
-function renderJourney(j, steps, events, list) {
+function renderJourney(j, steps, events, list, mem = []) {
   const c = j.country, prog = jProgress(steps), next = jNextStep(steps);
   const stages = jStages(c);
   const byStage = (k) => steps.filter((s) => s.stage === k);
@@ -2644,9 +2675,20 @@ function renderJourney(j, steps, events, list) {
       </section>`;
     }).join("")}
 
+    <section class="section"><div class="section-head"><div><h2>What ${esc(HAMRAH)} remembers</h2><p>So it never asks you the same thing twice. Correct anything that is wrong: it believes this list.</p></div></div>
+      <div class="card">
+        ${mem.length ? `<ul class="jn-mem">${mem.map((m) => `<li><span>${esc(m.label)}</span><input type="text" data-mem="${m.id}" value="${esc(m.value)}" /><button class="jn-mem-x" data-memdel="${m.id}" aria-label="Forget this">✕</button></li>`).join("")}</ul>`
+          : `<p class="notice">Nothing yet. As you talk to ${esc(HAMRAH)} it picks up your degree, your scores, your sponsor and where you are stuck, and keeps them here.</p>`}
+        <div class="jn-mem-go">
+          <a class="btn gold" href="#/hamrah?j=${j.id}">Talk to ${esc(HAMRAH)}</a>
+          ${mem.length ? `<button class="btn ghost small" id="jnForget">Forget everything</button>` : ""}
+        </div>
+      </div></section>
+
     <section class="section"><div class="section-head"><div><h2>Settings</h2></div></div>
       <div class="card">
         <label class="check"><input type="checkbox" id="jnMail" ${j.email_opt_in ? "checked" : ""} /> Email me when I finish a step and when something is overdue</label>
+        <label class="check"><input type="checkbox" id="jnRemember" ${j.remember ? "checked" : ""} /> Let ${esc(HAMRAH)} remember our conversation, so it picks up where we left off</label>
         <p class="notice">Reminders go to the email you signed in with. Your chat with ${esc(HAMRAH)} is never saved.</p>
         ${list.length > 1 ? `<div class="field" style="max-width:360px;margin-top:12px"><label for="jnSwitch">Your journeys</label>
           <select id="jnSwitch">${list.map((x) => `<option value="${x.id}" ${x.id === j.id ? "selected" : ""}>${esc(x.university)} · ${esc(x.program || "")}</option>`).join("")}</select></div>` : ""}
@@ -2729,6 +2771,31 @@ function wireJourney(j, steps) {
     catch (e) { toast(e.message || "Could not save that"); }
   };
 
+  const rem = $("#jnRemember");
+  if (rem) rem.onchange = async () => {
+    try { await db.journeyPatch(j.id, { remember: rem.checked }); toast(rem.checked ? `${HAMRAH} will remember` : `${HAMRAH} will not remember new messages`); }
+    catch (e) { toast(e.message || "Could not save that"); }
+  };
+
+  app.querySelectorAll("[data-mem]").forEach((i) => {
+    let t;
+    i.oninput = () => { clearTimeout(t); t = setTimeout(async () => {
+      try { await db.memoryPatch(Number(i.dataset.mem), { value: i.value.trim() }); } catch {}
+    }, 700); };
+  });
+  app.querySelectorAll("[data-memdel]").forEach((b) => {
+    b.onclick = async () => {
+      try { await db.memoryDelete(Number(b.dataset.memdel)); toast("Forgotten"); viewJourney(); }
+      catch (e) { toast(e.message || "Could not forget that"); }
+    };
+  });
+  const forget = $("#jnForget");
+  if (forget) forget.onclick = async () => {
+    if (!confirm(`Make ${HAMRAH} forget your whole conversation and everything it has learned? Your steps, dates and notes stay.`)) return;
+    try { await db.journeyForget(j.id); toast(`${HAMRAH} has forgotten everything`); viewJourney(); }
+    catch (e) { toast(e.message || "Could not clear it"); }
+  };
+
   const sw = $("#jnSwitch");
   if (sw) sw.onchange = () => { location.hash = `#/journey?id=${sw.value}`; };
 
@@ -2763,6 +2830,7 @@ async function viewHamrah() {
       ? `Walking your ${esc(j.program || "application")} at ${esc(j.university)} with you.${step ? ` Right now: <strong>${esc(step.title)}</strong>.` : ""} English, Urdu and Roman Urdu all work.`
       : `Your companion for the whole process. Start a journey from your program page and ${HAMRAH} will know exactly where you are. English, Urdu and Roman Urdu all work.`,
     mode: "journey",
+    journeyId: j?.id || null,
     extraTop: j ? `<div class="callout jn-chat-ctx"><strong>${esc(j.university)}</strong> · ${esc(j.program || "")}${j.intake ? ` · ${esc(j.intake)} intake` : ""}${prog ? ` · ${prog.done} of ${prog.total} steps done` : ""} <a href="#/journey?id=${j.id}">Open my journey</a></div>` : "",
     chips: def?.ask ? [def.ask] : (C().chips || []),
     opener: { show: j
