@@ -223,8 +223,6 @@ ${uk ? UK_FACTS : VISA_FACTS}
 WHERE THIS STUDENT IS
 ${where || "You do not know yet which step they are on. Ask, warmly, in one line."}
 
-${ctx.memory ? `WHAT YOU ALREADY KNOW ABOUT THEM (from your past conversations; use it, never ask again for what is here, and correct it if they tell you it changed)\n${ctx.memory}` : "You have not learned anything about them yet. Pick things up as you talk."}
-
 ${ctx.profile ? `From their Raasta profile: ${ctx.profile}` : ""}
 
 HOW YOU TALK. This matters as much as being right.
@@ -258,10 +256,7 @@ FACTS YOU MUST NOT GET WRONG
 - Use web_search for a current or specific fact you do not have. Say briefly what you found and where.
 
 REMEMBERING
-After your reply, on the very last line, record anything new worth keeping, as:
-[[MEM label: value | label: value]]
-Keep it to facts the student stated or confirmed about themselves and their case: their name, degree, CGPA, test scores, sponsor, city, document status, what they decided, what they are stuck on, dates they gave you. Short values. Overwrite an old value by using the same label. Write the line only when something is actually new, never more than about six items, and never anything they did not say. Do not mention this line or the fact that you remember things mechanically; just talk like someone who remembers.
-Never record a password, a card or account number, a CNIC or passport number, or anything about their health. If they type one of those, tell them once not to share it here and do not store it.
+You can see your earlier conversation with this student, so talk like someone who was there: pick up threads, refer back to what they told you, never ask twice for something they already said. You keep the conversation itself and nothing else. You do not keep a file on them, and you must never ask for or repeat back a password, a card or account number, a CNIC or passport number, or anything about their health. If they type one of those, tell them once, kindly, not to share it here, and carry on without repeating it.
 ${SAFETY}
 ${STYLE}`;
 }
@@ -453,18 +448,14 @@ Deno.serve(async (req) => {
   // Hamrah's memory. Loaded here, not sent by the browser, so it survives the app being
   // closed and cannot be edited on the way in. Row level security proves the journey is theirs.
   let jrn: { id: number; remember: boolean; university: string; program: string | null; degree: string | null; intake: string | null; country: string } | null = null;
-  let memFacts: { label: string; value: string }[] = [];
   if (mode === "journey" && body.journey_id) {
     const { data } = await supabase.from("journeys")
       .select("id, remember, university, program, degree, intake, country")
       .eq("id", body.journey_id).maybeSingle();
     jrn = data ?? null;
     if (jrn?.remember) {
-      const [{ data: hist }, { data: facts }] = await Promise.all([
-        supabase.from("journey_messages").select("role, content").eq("journey_id", jrn.id).order("id", { ascending: false }).limit(24),
-        supabase.from("journey_memory").select("label, value").eq("journey_id", jrn.id).order("updated_at", { ascending: false }).limit(40),
-      ]);
-      memFacts = facts ?? [];
+      const { data: hist } = await supabase.from("journey_messages")
+        .select("role, content").eq("journey_id", jrn.id).order("id", { ascending: false }).limit(30);
       // The stored thread is the real one. Keep only the student's newest message from the browser.
       const latestUser = messages.filter((m) => m.role === "user").pop();
       const stored = (hist ?? []).reverse().map((m) => ({ role: m.role, content: m.content }));
@@ -475,7 +466,6 @@ Deno.serve(async (req) => {
     }
   }
   if (mode === "journey") {
-    if (memFacts.length) ctx.memory = memFacts.map((f) => `${f.label}: ${f.value}`).join("; ").slice(0, 1500);
     if (jrn) ctx.journey = `${jrn.degree || ""} ${jrn.program || ""} at ${jrn.university}${jrn.intake ? `, ${jrn.intake} intake` : ""}`.trim();
   }
   // Program catalog for recommendations: only the programs most relevant to this conversation
@@ -564,40 +554,27 @@ Deno.serve(async (req) => {
     const { data: total } = await supabase.rpc("flag_ai", { p_category: unsafe ? "unsafe_model" : "off_topic", p_weight: unsafe ? 2 : 0 });
     if (unsafe && (total ?? 0) >= 2) clean += "\n\nNote: repeated messages like this pause the AI for 24 hours.";
   }
-  // Hamrah ends a reply with what it learned. Never shown to the student as raw text.
-  let learned: { label: string; value: string }[] = [];
-  if (mode === "journey") {
-    const memMatch = clean.match(/\[\[MEM\s([\s\S]*?)\]\]/);
-    if (memMatch) {
-      clean = clean.replace(/\[\[MEM\s[\s\S]*?\]\]/g, "").trim();
-      learned = memMatch[1].split("|").map((pair) => {
-        const i = pair.indexOf(":");
-        if (i < 1) return null;
-        const label = pair.slice(0, i).trim().slice(0, 40);
-        const value = pair.slice(i + 1).trim().slice(0, 300);
-        return label && value ? { label, value } : null;
-      }).filter(Boolean).slice(0, 6) as { label: string; value: string }[];
-    }
-  }
-
   clean = clean.replace(/[\u2013\u2014]/g, ", ");
 
   if (mode === "journey" && jrn?.remember) {
     const lastUser = messages.filter((m) => m.role === "user").pop();
-    const writes: Promise<unknown>[] = [];
     if (lastUser) {
-      writes.push(supabase.from("journey_messages").insert([
-        { journey_id: jrn.id, role: "user", content: lastUser.content.slice(0, 4000) },
-        { journey_id: jrn.id, role: "assistant", content: clean.slice(0, 8000) },
-      ]) as unknown as Promise<unknown>);
+      // The conversation is kept, but never an identifier inside it. A student will paste a
+      // CNIC or a card number sooner or later, and it must not end up in a stored transcript.
+      const redact = (t: string) => t
+        .replace(/\b\d{5}[- ]?\d{7}[- ]?\d\b/g, "[removed]")                 // CNIC
+        .replace(/\b(?:\d[ -]?){13,19}\b/g, "[removed]")                      // card or long account number
+        .replace(/\b[A-Z]{2}\d{2}[ ]?(?:[A-Z0-9]{4}[ ]?){3,7}[A-Z0-9]{1,4}\b/g, "[removed]") // IBAN
+        .replace(/\b[A-Z]{1,2}\d{7}\b/g, "[removed]")                         // passport
+        .replace(/\b\d{6,}\b/g, "[removed]");                                 // any other long number run
+      await Promise.allSettled([
+        supabase.from("journey_messages").insert([
+          { journey_id: jrn.id, role: "user", content: redact(lastUser.content).slice(0, 4000) },
+          { journey_id: jrn.id, role: "assistant", content: redact(clean).slice(0, 8000) },
+        ]),
+      ]);
     }
-    for (const f of learned) {
-      writes.push(supabase.from("journey_memory")
-        .upsert({ journey_id: jrn.id, label: f.label, value: f.value, updated_at: new Date().toISOString() }, { onConflict: "journey_id,label" }) as unknown as Promise<unknown>);
-    }
-    // Memory is a convenience, never a reason to lose the answer the student is waiting for.
-    await Promise.allSettled(writes);
   }
 
-  return json({ reply: clean, ...(mark ? { flagged: mark[1].toLowerCase() } : {}), ...(learned.length ? { learned: learned.length } : {}) });
+  return json({ reply: clean, ...(mark ? { flagged: mark[1].toLowerCase() } : {}) });
 });
