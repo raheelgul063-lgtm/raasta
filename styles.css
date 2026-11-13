@@ -799,3 +799,6 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
   .jn-mem li { flex-wrap: wrap; }
   .jn-mem span { flex-basis: 100%; }
 }
+.chat-resume { text-align: center; color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; margin: 14px 0 10px; position: relative; }
+.chat-resume::before, .chat-resume::after { content: ""; position: absolute; top: 50%; width: 22%; height: 1px; background: var(--line); }
+.chat-resume::before { left: 0; } .chat-resume::after { right: 0; }

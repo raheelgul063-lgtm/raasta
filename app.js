@@ -744,7 +744,7 @@ function speakText(text, lang) {
   speechSynthesis.speak(u);
 }
 
-function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}), voice = false, journeyId = null }) {
+function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getContext = () => ({}), voice = false, journeyId = null, preload = [] }) {
   if (needsLogin(title, "Sign in free to use the AI. It keeps the service free by limiting daily use per student.")) return;
   const history = []; // {role, content}
   app.innerHTML = `
@@ -790,7 +790,21 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
     } finally { $("#sendBtn").disabled = false; }
   };
 
-  if (opener?.show) add("ai", opener.show);
+  // A saved conversation is put back on screen before anything else, so refreshing the page
+  // does not look like the agent forgot everything it was told.
+  if (preload.length) {
+    const back = document.createElement("div");
+    back.className = "chat-resume";
+    back.textContent = "Earlier in this conversation";
+    log.appendChild(back);
+    for (const m of preload) { add(m.role, m.content); history.push({ role: m.role, content: m.content }); }
+    const now = document.createElement("div");
+    now.className = "chat-resume";
+    now.textContent = "Carry on where you left off";
+    log.appendChild(now);
+    log.scrollTop = log.scrollHeight;
+    app.querySelector(".chips")?.remove();
+  } else if (opener?.show) add("ai", opener.show);
   if (opener?.auto) send(opener.auto, { hidden: true });
 
   let rec = null;
@@ -2501,6 +2515,11 @@ Object.assign(db, {
   async stepPatch(id, patch) {
     const { error } = await sb.from("journey_steps").update(patch).eq("id", id); if (error) throw error;
   },
+  async journeyChat(id, limit = 30) {
+    const { data, error } = await sb.from("journey_messages")
+      .select("role, content").eq("journey_id", id).order("id", { ascending: false }).limit(limit);
+    if (error) throw error; return (data || []).reverse();
+  },
   async journeyChatCount(id) {
     const { count, error } = await sb.from("journey_messages").select("id", { count: "exact", head: true }).eq("journey_id", id);
     if (error) throw error; return count || 0;
@@ -2796,6 +2815,7 @@ async function viewHamrah() {
   if (jid) {
     try { j = (await db.journeys()).find((x) => x.id === jid) || null; if (j) steps = await db.journeySteps(j.id); } catch {}
   }
+  const past = j && j.remember ? await db.journeyChat(j.id).catch(() => []) : [];
   const c = j?.country || CTRY;
   const def = key ? jStepDef(c, key) : null;
   const step = steps.find((s) => s.step_key === key) || null;
@@ -2811,6 +2831,7 @@ async function viewHamrah() {
       : `Your companion for the whole process. Start a journey from your program page and ${HAMRAH} will know exactly where you are. English, Urdu and Roman Urdu all work.`,
     mode: "journey",
     journeyId: j?.id || null,
+    preload: past,
     extraTop: j ? `<div class="callout jn-chat-ctx"><strong>${esc(j.university)}</strong> · ${esc(j.program || "")}${j.intake ? ` · ${esc(j.intake)} intake` : ""}${prog ? ` · ${prog.done} of ${prog.total} steps done` : ""} <a href="#/journey?id=${j.id}">Open my journey</a></div>` : "",
     chips: def?.ask ? [def.ask] : (C().chips || []),
     opener: { show: j

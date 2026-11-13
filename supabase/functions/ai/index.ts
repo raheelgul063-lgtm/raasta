@@ -256,7 +256,9 @@ FACTS YOU MUST NOT GET WRONG
 - Use web_search for a current or specific fact you do not have. Say briefly what you found and where.
 
 REMEMBERING
-You can see your earlier conversation with this student, so talk like someone who was there: pick up threads, refer back to what they told you, never ask twice for something they already said. You keep the conversation itself and nothing else. You do not keep a file on them, and you must never ask for or repeat back a password, a card or account number, a CNIC or passport number, or anything about their health. If they type one of those, tell them once, kindly, not to share it here, and carry on without repeating it.
+The messages above are your saved conversation with this student, not just today's chat. ${ctx.historyFrom ? `It goes back to ${ctx.historyFrom} Pakistan time, across more than one sitting.` : "This is the start of it."} Treat all of it as yours: pick up threads, refer back to what they told you, and never ask twice for something they already said.
+Never tell this student that an earlier conversation is lost, missing or not visible to you. If they ask where a previous chat went, or whether you remember, the answer is that you have it: say so briefly, name something specific from it so they can see you do, and carry on. If a detail genuinely is not in the messages above, ask for just that detail rather than suggesting the whole conversation is gone.
+You keep the conversation itself and nothing else. You do not keep a file on them, and you must never ask for or repeat back a password, a card or account number, a CNIC or passport number, or anything about their health. If they type one of those, tell them once, kindly, not to share it here, and carry on without repeating it.
 ${SAFETY}
 ${STYLE}`;
 }
@@ -455,13 +457,20 @@ Deno.serve(async (req) => {
     jrn = data ?? null;
     if (jrn?.remember) {
       const { data: hist } = await supabase.from("journey_messages")
-        .select("role, content").eq("journey_id", jrn.id).order("id", { ascending: false }).limit(30);
+        .select("role, content, created_at").eq("journey_id", jrn.id).order("id", { ascending: false }).limit(30);
       // The stored thread is the real one. Keep only the student's newest message from the browser.
       const latestUser = messages.filter((m) => m.role === "user").pop();
       const stored = (hist ?? []).reverse().map((m) => ({ role: m.role, content: m.content }));
       if (stored.length && latestUser) {
         messages = [...stored, latestUser];
         while (messages.length && messages[0].role !== "user") messages.shift();
+        // Without this the model sees an undated thread, assumes it is all from right now, and
+        // tells the student their earlier conversation is lost while quoting from it.
+        const first = (hist ?? [])[hist!.length - 1]?.created_at;
+        if (first) {
+          const d = new Date(first);
+          ctx.historyFrom = d.toLocaleString("en-GB", { timeZone: "Asia/Karachi", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+        }
       }
     }
   }
