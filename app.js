@@ -235,7 +235,7 @@ function setCountry(c, { silent = false } = {}) {
   // Filters in the address bar belong to the country you just left. "Tuition free" means
   // nothing in the UK, and a stale sort silently showed the wrong list.
   const bare = (location.hash || "#/").split("?")[0];
-  const FILTERED = ["#/finder", "#/universities", "#/compare", "#/scholarships"];
+  const FILTERED = ["#/finder", "#/universities", "#/compare", "#/scholarships", "#/journey", "#/hamrah"];
   if (FILTERED.includes(bare) && bare !== location.hash) { location.hash = bare; return; }
   route();
 }
@@ -2740,7 +2740,9 @@ async function viewJourney() {
     || list.find((x) => x.status === "active" && x.country === CTRY)
     || null;
   if (!j) { app.innerHTML = journeyEmpty(list); return; }
-  if (j.country !== CTRY) { setCountry(j.country, { silent: true }); }
+  // Opening a journey by id is an explicit choice, so the site follows it. A country switch is
+  // also explicit, and it drops the id above, so the two can never fight each other.
+  if (wanted && j.country !== CTRY) setCountry(j.country, { silent: true });
   const [steps, events, chatCount] = await Promise.all([db.journeySteps(j.id), db.journeyEvents(j.id).catch(() => []), db.journeyChatCount(j.id).catch(() => 0)]);
   renderJourney(j, steps, events, list, chatCount);
 }
@@ -2934,20 +2936,35 @@ function wireJourney(j, steps) {
   };
 }
 
+function hamrahNoJourney(list = []) {
+  const other = list.filter((x) => x.status === "active" && x.country !== CTRY);
+  return `<div class="page-head"><h1>${esc(HAMRAH)} · your study companion</h1>
+      <p>${esc(HAMRAH)} walks one application with you at a time, so it needs to know which one.</p></div>
+    ${other.length ? `<div class="callout jn-other">Your journey is for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and Raasta switches back to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
+    <div class="card" style="max-width:580px">
+      <h3>No ${esc(C().name)} journey yet</h3>
+      <p>Pick the ${esc(C().name)} program you have decided on and press <strong>Finalize this university</strong> on its page. ${esc(HAMRAH)} takes it from there.</p>
+      <div class="jn-mem-go"><a class="btn gold" href="#/finder">Find a ${esc(C().name)} program</a><a class="btn ghost" href="#/visa">Ask the AI advisor instead</a></div>
+    </div>`;
+}
+
 /* ---------------- Talking to Hamrah ---------------- */
 async function viewHamrah() {
   if (!LIVE) { app.innerHTML = journeyPreviewNotice(); return; }
   const jid = Number(route.params?.get("j"));
   const key = route.params?.get("step") || "";
   let j = null, steps = [];
+  let all = [];
   try {
-    const list = await db.journeys();
-    j = (jid && list.find((x) => x.id === jid))
-      || list.find((x) => x.status === "active" && x.country === CTRY)
-      || list.find((x) => x.status === "active") || null;
+    all = await db.journeys();
+    j = (jid && all.find((x) => x.id === jid))
+      || all.find((x) => x.status === "active" && x.country === CTRY)
+      || null;
     if (j) steps = await db.journeySteps(j.id);
   } catch {}
-  if (j && j.country !== CTRY) setCountry(j.country, { silent: true });
+  if (j && jid && j.country !== CTRY) setCountry(j.country, { silent: true });
+  // No journey for the country you are looking at: say so, rather than opening an empty chat.
+  if (!j) { app.innerHTML = hamrahNoJourney(all); return; }
   const past = j && j.remember ? await db.journeyChat(j.id).catch(() => []) : [];
   const c = j?.country || CTRY;
   const def = key ? jStepDef(c, key) : null;
