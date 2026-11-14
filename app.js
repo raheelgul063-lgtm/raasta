@@ -211,6 +211,12 @@ function renderCountrySwitch() {
   }
   document.body.dataset.country = CTRY;
   document.title = `Raasta · Study in ${C().name}, with a free AI advisor`;
+  const fe = document.getElementById("footExplore");
+  // This column was static HTML, so "Tuition free programs" sat in the footer of every UK page
+  // and linked to a filter that means nothing there.
+  if (fe) fe.innerHTML = `<h4>Explore</h4><a href="#/finder">All programs</a><a href="#/finder?degree=Master">Master's programs</a><a href="#/finder?degree=Bachelor">Bachelor's programs</a>` +
+    (isUK() ? `<a href="#/finder?tuition=18000">Programs under £18,000</a>` : `<a href="#/finder?tuition=free">Tuition free programs</a>`) +
+    `<a href="#/universities">Universities</a>`;
   const fg = document.getElementById("footGuides"), fl = document.getElementById("footLegal");
   if (fg) fg.innerHTML = `<h4>Guides</h4><a href="#/scholarships">Scholarships</a><a href="#/support">Help and support</a><a href="#/visa-guide">Student visa from Pakistan</a><a href="#/moving">Moving to ${C().the}</a><a href="#/cities">City guides</a><a href="#/jobs">Student jobs</a><a href="#/roadmap">Step by step roadmap</a><a href="#/tracker">Application tracker</a>` +
     (isUK() ? `<a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">GOV.UK Student visa ↗</a><a href="${UK_OFFICIAL.ucas}" target="_blank" rel="noopener">UCAS ↗</a>` : `<a href="${OFFICIAL.visaPage}" target="_blank" rel="noopener">German Missions in Pakistan ↗</a><a href="${OFFICIAL.portal}" target="_blank" rel="noopener">Consular Services Portal ↗</a>`);
@@ -229,7 +235,8 @@ function setCountry(c, { silent = false } = {}) {
   // Filters in the address bar belong to the country you just left. "Tuition free" means
   // nothing in the UK, and a stale sort silently showed the wrong list.
   const bare = (location.hash || "#/").split("?")[0];
-  if (bare !== location.hash) { location.hash = bare; return; }
+  const FILTERED = ["#/finder", "#/universities", "#/compare", "#/scholarships"];
+  if (FILTERED.includes(bare) && bare !== location.hash) { location.hash = bare; return; }
   route();
 }
 function daysUntil(dateStr) {
@@ -2027,7 +2034,7 @@ function nextDeadline(p) {
 const fmtDate = (d) => `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 const mmddText = (mmdd) => { const [m, d] = mmdd.split("-").map(Number); return `${d} ${MONTHS[m - 1]}`; };
 function tuitionText(p) {
-  if (p.tuition === 0) return "No tuition";
+  if (p.tuition === 0) return progCountry(p) === "UK" ? "See page" : "No tuition";
   if (p.tuition == null) return "Check page";
   if (p.currency === "GBP") return `£${Number(p.tuition).toLocaleString("en-US")} / year`;
   return `€${Number(p.tuition).toLocaleString("en-US")} / semester`;
@@ -2302,6 +2309,7 @@ async function viewFinder() {
   const f0 = Object.assign({ q: "", degree: "", field: "", subject: "", lang: "", nc: "", tuition: "", duration: "", intake: "", deadline: "", state: "", type: "", sort: "deadline", savedOnly: "" },
     hasParams ? {} : local.get("finderFilters", {}), Object.fromEntries(route.params || []));
   delete f0.country;
+  if (isUK() && f0.tuition === "free") f0.tuition = "";
   const f = f0;
   if (!hasParams && !local.get("finderFilters", null) && prof) { if (prof.field && FIELDS.includes(prof.field)) f.field = prof.field; if (prof.degree_level?.startsWith("Bachelor")) f.degree = "Bachelor"; else if (prof.degree_level?.startsWith("Master")) f.degree = "Master"; }
   const states = [...new Set(progs.map((p) => p.state).filter(Boolean))].sort();
@@ -2324,7 +2332,7 @@ async function viewFinder() {
         <div class="field"><label for="ffield">Field</label><select id="ffield">${opt("", "All fields", f.field)}${FIELDS.filter((x) => fields.includes(x)).map((x) => opt(x, x, f.field)).join("")}</select></div>
         <div class="field"><label for="fsubj">Subject</label><select id="fsubj">${opt("", "All subjects", f.subject)}${SUBJECTS.map(([n, re]) => [n, progs.filter((p) => re.test(p.program)).length]).filter(([, c]) => c).map(([n, c]) => opt(n, `${n} (${c})`, f.subject)).join("")}</select></div>
         ${uk ? "" : `<div class="field"><label for="flang">Teaching language</label><select id="flang">${opt("", "Any language", f.lang)}${opt("en", "English", f.lang)}${opt("de", "German", f.lang)}${opt("both", "English and German", f.lang)}</select></div>
-        <div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>`}
+        ${uk ? "" : `<div class="field"><label for="fnc">Admission (NC)</label><select id="fnc">${opt("", "Any", f.nc)}${opt("open", "NC-frei (open admission)", f.nc)}${opt("restricted", "NC or selection", f.nc)}</select></div>`}`}
         <div class="field"><label for="ftuition">${uk ? "Tuition per year (international)" : "Tuition (non EU)"}</label><select id="ftuition">${opt("", "Any", f.tuition)}${uk ? opt("15000", "Up to £15,000", f.tuition) + opt("18000", "Up to £18,000", f.tuition) + opt("22000", "Up to £22,000", f.tuition) : opt("free", "Tuition free only", f.tuition) + opt("1500", "Up to €1,500 / semester", f.tuition)}</select></div>
         <div class="field"><label for="fduration">Duration</label><select id="fduration">${opt("", "Any", f.duration)}${uk ? opt("12", "1 year or less", f.duration) + opt("24", "2 years", f.duration) + opt("36", "3 years or more", f.duration) : opt("3", "3 semesters or less", f.duration) + opt("4", "4 semesters", f.duration) + opt("6", "6 semesters or more", f.duration)}</select></div>
         <div class="field"><label for="fintake">Intake</label><select id="fintake">${opt("", "Any", f.intake)}${uk ? opt("September", "September", f.intake) + opt("January", "January", f.intake) : opt("Winter", "Winter (starts Oct)", f.intake) + opt("Summer", "Summer (starts Apr)", f.intake)}</select></div>
@@ -2932,9 +2940,13 @@ async function viewHamrah() {
   const jid = Number(route.params?.get("j"));
   const key = route.params?.get("step") || "";
   let j = null, steps = [];
-  if (jid) {
-    try { j = (await db.journeys()).find((x) => x.id === jid) || null; if (j) steps = await db.journeySteps(j.id); } catch {}
-  }
+  try {
+    const list = await db.journeys();
+    j = (jid && list.find((x) => x.id === jid))
+      || list.find((x) => x.status === "active" && x.country === CTRY)
+      || list.find((x) => x.status === "active") || null;
+    if (j) steps = await db.journeySteps(j.id);
+  } catch {}
   if (j && j.country !== CTRY) setCountry(j.country, { silent: true });
   const past = j && j.remember ? await db.journeyChat(j.id).catch(() => []) : [];
   const c = j?.country || CTRY;
