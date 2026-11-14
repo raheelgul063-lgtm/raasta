@@ -1,0 +1,12 @@
+# Everything here is source or server-side, and must never be served as a public asset.
+.git
+.github
+node_modules
+supabase
+data
+scripts_gen_knowledge.cjs
+scripts_gen_knowledge_uk.cjs
+journey_ui.js.part
+README.md
+wrangler.jsonc
+.assetsignore

@@ -1,0 +1,13 @@
+{
+  "name": "wizzpath",
+  // Set to the date this was configured.
+  "compatibility_date": "2026-11-14",
+  "assets": {
+    // The site lives at the repo root, so the whole root is the asset directory and
+    // .assetsignore keeps the non-site files (edge functions, scripts, data) out.
+    "directory": ".",
+    // WizPath routes on the hash, but any direct hit on an unknown path should still
+    // land on the app rather than a 404.
+    "not_found_handling": "single-page-application"
+  }
+}
