@@ -337,6 +337,65 @@ async function askAI(payload) {
   return data.reply;
 }
 
+// Streamed answer. Falls back to the plain request if streaming is unavailable, so a student
+// on a stubborn network still gets their reply.
+async function streamAI(payload, { onStatus, onDelta }) {
+  if (!LIVE) {
+    const text = await askAI(payload);
+    onStatus?.(null);
+    for (const w of text.split(/(\s+)/)) { onDelta?.(w); await new Promise((r) => setTimeout(r, 12)); }
+    return text;
+  }
+  const { data: { session: live } } = await sb.auth.getSession();
+  const token = live?.access_token;
+  if (!token) throw new Error("Please sign in again.");
+
+  const res = await fetch(`${CFG.SUPABASE_URL}/functions/v1/ai`, {
+    method: "POST",
+    headers: { "content-type": "application/json", apikey: CFG.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ ...payload, stream: true, context: { ...(payload.context || {}), country: CTRY } }),
+  });
+
+  if (!res.ok || !res.body || !(res.headers.get("content-type") || "").includes("text/event-stream")) {
+    let msg = "";
+    try { const b = await res.json(); msg = b?.error || ""; } catch {}
+    if (msg) throw new Error(msg);
+    const text = await askAI(payload); // streaming unavailable: take the whole answer instead
+    onStatus?.(null); onDelta?.(text);
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "", full = "", failed = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const parts = buf.split("\n\n");
+    buf = parts.pop() || "";
+    for (const part of parts) {
+      const ev = (part.match(/^event: (.+)$/m) || [])[1];
+      const raw = (part.match(/^data: (.+)$/m) || [])[1];
+      if (!ev || !raw) continue;
+      let d; try { d = JSON.parse(raw); } catch { continue; }
+      if (ev === "status") onStatus?.(d.s);
+      else if (ev === "delta") { full += d.t; onStatus?.(null); onDelta?.(d.t); }
+      else if (ev === "error") failed = d.error || "Something went wrong.";
+      else if (ev === "done") onStatus?.(null);
+    }
+  }
+  if (failed && !full) throw new Error(failed);
+  return full;
+}
+
+const STATUS_TEXT = {
+  thinking: "Thinking",
+  searching: "Searching the web",
+  searching_more: "Checking another source",
+  reading: "Reading what it found",
+};
+
 function demoReply({ mode }) {
   if (mode === "letter") return "Dear Admissions Committee,\n\n[Demo mode] Once Supabase and the Claude API key are connected, your personal motivation letter will be written here, using only the facts you entered.\n\nSincerely,\n[Your name]";
   if (mode === "journey") return "[Demo mode] I am Hamrah. On the live site I walk your application with you step by step, from HEC attestation to the day you land.";
@@ -494,7 +553,6 @@ function viewHome() {
 
     <section class="section">
       <a class="hamrah-band card" href="#/journey">
-        <span class="hb-mark">ہمراہ</span>
         <div class="hb-text">
           <span class="eyebrow">${esc(HAMRAH)} · your personal agent</span>
           <h2>Chosen your university? Then stop doing this alone.</h2>
@@ -516,7 +574,7 @@ function viewHome() {
       <div class="ai-moat-copy">
         <span class="eyebrow">Your AI advisor</span>
         <h2>Like a consultant, but free and awake at 2am.</h2>
-        <p>Tell it your degree, CGPA and budget. It suggests real programs from our database, checks honestly if you fit, and explains every visa step in English or Urdu.</p>
+        <p>Tell it your degree, CGPA and budget. It suggests real programs from our database, checks honestly if you fit, and explains every visa step.</p>
         <ul class="ticks"><li>Program matches from ${"<span data-total>1,800+</span>"} real listings</li><li>Motivation letters written for one specific program</li><li>Mock interviews by voice, with feedback</li><li>${uk ? "Student visa checklist, CAS and the 28 day funds rule" : "Student visa checklist and blocked account help"}</li></ul>
       </div>
       <form class="ai-ask card" id="aiAsk">
@@ -755,12 +813,12 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
       ${chips.length ? `<div class="chips">${chips.map((c) => `<button class="chip">${esc(c)}</button>`).join("")}</div>` : ""}
       ${voice ? `<div class="voice-bar">
         <label class="check"><input type="checkbox" id="speakToggle" checked /> 🔊 Read questions aloud</label>
-        <select id="voiceLang" aria-label="Voice language"><option value="en-US">English</option><option value="en-GB">English (UK)</option><option value="ur-PK">اردو Urdu</option></select>
+        <select id="voiceLang" aria-label="Voice language"><option value="en-US">English</option><option value="en-GB">English (UK)</option></select>
         ${SR ? "" : `<span class="hint">Voice answers work in Chrome, Edge and Android. On iPhone use the keyboard mic.</span>`}
       </div>` : ""}
       <form class="chat-form" id="chatForm">
         ${voice && SR ? `<button type="button" class="mic" id="micBtn" aria-label="Answer by voice" title="Answer by voice">🎤</button>` : ""}
-        <textarea id="chatInput" rows="1" placeholder="${voice ? "Tap 🎤 and speak your answer, or type..." : "Type in English or Urdu..."}" aria-label="Message"></textarea>
+        <textarea id="chatInput" rows="1" placeholder="${voice ? "Tap 🎤 and speak your answer, or type..." : "Type your message..."}" aria-label="Message"></textarea>
         <button class="btn" id="sendBtn">Send</button>
       </form>
     </div>
@@ -773,25 +831,76 @@ function chatView({ title, intro, mode, chips = [], opener, extraTop = "", getCo
     div.innerHTML = richText(text);
     log.appendChild(div); log.scrollTop = log.scrollHeight; return div;
   };
+  // Text arrives from the network in uneven bursts. Draining it through a steady queue is what
+  // makes it read like someone typing rather than paragraphs being pasted in.
+  const typeInto = (el) => {
+    let queue = "", shown = "", raf = 0, finished = false, onEnd = null;
+    const caret = document.createElement("span");
+    caret.className = "caret";
+    const tick = () => {
+      raf = 0;
+      if (queue) {
+        // Faster when far behind, so a long answer never crawls.
+        const step = Math.max(2, Math.min(18, Math.ceil(queue.length / 14)));
+        shown += queue.slice(0, step);
+        queue = queue.slice(step);
+        el.innerHTML = richText(shown);
+        el.appendChild(caret);
+        log.scrollTop = log.scrollHeight;
+      }
+      if (queue) raf = requestAnimationFrame(tick);
+      else if (finished) { caret.remove(); el.innerHTML = richText(shown); onEnd?.(); }
+    };
+    return {
+      push(t) { queue += t; if (!raf) raf = requestAnimationFrame(tick); },
+      finish(cb) { finished = true; onEnd = cb; if (!raf) raf = requestAnimationFrame(tick); },
+      get text() { return shown + queue; },
+    };
+  };
+
   const send = async (text, { hidden = false } = {}) => {
     if (!text.trim()) return;
     if (!hidden) add("user", text);
     app.querySelector(".chips")?.remove();
     history.push({ role: "user", content: text });
-    const typing = add("ai", "Thinking...", "typing");
+
+    const bubble = add("ai", "", "streaming");
+    const status = document.createElement("div");
+    status.className = "ai-status";
+    status.innerHTML = `<span class="dots"><i></i><i></i><i></i></span><span class="ai-status-t">Thinking</span>`;
+    bubble.appendChild(status);
+    const body = document.createElement("div");
+    bubble.appendChild(body);
+    const typer = typeInto(body);
+    log.scrollTop = log.scrollHeight;
     $("#sendBtn").disabled = true;
+
     try {
-      const reply = await askAI({ mode, messages: history.slice(-20), context: getContext(), ...(journeyId ? { journey_id: journeyId } : {}) });
-      typing.remove(); add("ai", reply);
-      history.push({ role: "assistant", content: reply });
-      if (voice && $("#speakToggle")?.checked) speakText(reply, $("#voiceLang").value);
+      const reply = await streamAI(
+        { mode, messages: history.slice(-20), context: getContext(), ...(journeyId ? { journey_id: journeyId } : {}) },
+        {
+          onStatus: (s) => {
+            if (!s) { status.remove(); return; }
+            if (!status.isConnected) return;
+            status.querySelector(".ai-status-t").textContent = STATUS_TEXT[s] || "Working";
+          },
+          onDelta: (t) => typer.push(t),
+        }
+      );
+      status.remove();
+      await new Promise((done) => typer.finish(done));
+      bubble.classList.remove("streaming");
+      const finalText = reply || typer.text;
+      history.push({ role: "assistant", content: finalText });
+      if (voice && $("#speakToggle")?.checked) speakText(finalText, $("#voiceLang").value);
     } catch (err) {
-      typing.remove(); history.pop(); add("ai", err.message);
+      status.remove();
+      bubble.remove();
+      history.pop();
+      add("ai", err.message);
     } finally { $("#sendBtn").disabled = false; }
   };
 
-  // A saved conversation is put back on screen before anything else, so refreshing the page
-  // does not look like the agent forgot everything it was told.
   if (preload.length) {
     const back = document.createElement("div");
     back.className = "chat-resume";
@@ -836,7 +945,7 @@ function viewVisa() {
   chatView({
     getContext: () => ({ profile: prof }),
     title: `Your AI study advisor · ${C().name}`,
-    intro: isUK() ? "Tell it your degree, CGPA and budget and it suggests matching UK programs from our listings. It also answers every question about UCAS, offers, the CAS and the UK Student visa from Pakistan. English, Urdu and Roman Urdu all work." : "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist. English, Urdu and Roman Urdu all work.",
+    intro: isUK() ? "Tell it your degree, CGPA and budget and it suggests matching UK programs from our listings. It also answers every question about UCAS, offers, the CAS and the UK Student visa from Pakistan." : "Tell it your degree, CGPA and budget and it suggests matching programs from 2,000+ real listings. It also answers every question about applications and the student visa from Pakistan, based on the official embassy checklist.",
     mode: "visa",
     chips: C().chips,
     opener: { show: isUK() ? "Hello! I can find UK programs that fit your background, explain how to apply, and help with the UK Student visa: the CAS, the 28 day funds rule, the TB test and the credibility interview. What did you study, and what do you want to study in the UK?" : "Hello! I can find programs that fit your background, explain how to apply, and help with the German student visa: documents, blocked account, the portal and the interview. What did you study, and what do you want to study in Germany?" }
@@ -1281,7 +1390,7 @@ function viewVisaGuide() {
       <section class="card"><h3>${isUK() ? "Where to give biometrics" : "Where to apply"}</h3>${v.missions.map((m) => `<div class="fact"><span>${esc(m.name)}</span><strong>${esc(m.covers)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Apply online on <a href="${UK_OFFICIAL.visaPage}" target="_blank" rel="noopener">GOV.UK</a>, then book biometrics with <a href="${UK_OFFICIAL.vfs}" target="_blank" rel="noopener">VFS Global</a>.` : `Apply online at the <a href="https://digital.diplo.de" target="_blank" rel="noopener">Consular Services Portal</a>.`}</p></section>
       <section class="card"><h3>Fees and money</h3>${v.money.map(([k, x]) => `<div class="fact"><span>${esc(k)}</span><strong>${esc(x)}</strong></div>`).join("")}<p class="notice">${isUK() ? `Processing usually takes about 3 weeks; priority services cost extra. Official amounts: <a href="${UK_OFFICIAL.money}" target="_blank" rel="noopener">GOV.UK money rules</a>.` : "Processing times change with demand. Apply as soon as you have your admission letter."}</p></section>
     </div>
-    <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers in English or Urdu. If you have already chosen your university, ${esc(HAMRAH)} walks every step with you instead and remembers your conversation.</p></div><div class="ai-strip-go"><a class="btn gold" href="#/visa">Ask the AI advisor</a><a class="btn" href="#/journey">Start a journey with ${esc(HAMRAH)}</a></div></div>`;
+    <div class="ai-strip card"><div><h3>Have a question about your case?</h3><p>The AI advisor knows the full checklist and answers your questions. If you have already chosen your university, ${esc(HAMRAH)} walks every step with you instead and remembers your conversation.</p></div><div class="ai-strip-go"><a class="btn gold" href="#/visa">Ask the AI advisor</a><a class="btn" href="#/journey">Start a journey with ${esc(HAMRAH)}</a></div></div>`;
 }
 
 function viewMoving() {
@@ -1372,7 +1481,7 @@ function viewJobs() {
 function viewHub(kind) {
   const items = kind === "tools" ? [
     ["#/journey", "🧭", `${HAMRAH}, your personal agent`, "Picks one university and walks every step with you, from the form to the airport. Remembers your conversation."],
-    ["#/visa", "✦", "AI advisor", "Program matches and visa answers in English or Urdu."],
+    ["#/visa", "✦", "AI advisor", "Program matches and honest answers on your visa and your case."],
     ["#/doccheck", "📄", "AI document checker", "Upload your documents and get a completeness and eligibility check."],
     ["#/grades", "🧮", "Grade converter", isUK() ? "Your CGPA or percentage as a UK degree class." : "Your CGPA or percentage on the German scale."],
     ["#/letter", "✍️", "Motivation letter", "A personal first draft for one program."],
@@ -1653,7 +1762,7 @@ function openFeedback() {
         <div class="rating" role="radiogroup" aria-label="Rating">
           ${["😞", "😕", "😐", "🙂", "😍"].map((em, i) => `<label><input type="radio" name="rating" value="${i + 1}" ${i === 3 ? "checked" : ""}/><span>${em}</span></label>`).join("")}
         </div>
-        <div class="field"><label for="fbMsg">What should we add or fix? <span class="hint">(English or Urdu)</span></label><textarea id="fbMsg" maxlength="2000" placeholder="e.g. Please add Bachelor's programs..."></textarea></div>
+        <div class="field"><label for="fbMsg">What should we add or fix?</label><textarea id="fbMsg" maxlength="2000" placeholder="e.g. Please add Bachelor's programs..."></textarea></div>
         <button class="btn" style="width:100%">Send feedback</button>
       </form>
       <button class="btn link" id="fbClose" style="margin-top:8px;width:100%">Close</button>
@@ -2441,7 +2550,7 @@ async function viewProgram() {
 
     <section class="grid cols-3" style="margin-top:16px">
       <a class="card" href="#/letter?program=${p.id}"><div class="icon">✍️</div><h3>Write your ${uk ? "personal statement" : "motivation letter"}</h3><p>Start a personal draft for this exact program.</p></a>
-      <a class="card" href="#/visa?q=${encodeURIComponent(`I want to apply for ${p.program} at ${p.university}. What should I prepare and in which order?`)}"><div class="icon">💬</div><h3>Ask the AI</h3><p>Get a step by step plan for this program in English or Urdu.</p></a>
+      <a class="card" href="#/visa?q=${encodeURIComponent(`I want to apply for ${p.program} at ${p.university}. What should I prepare and in which order?`)}"><div class="icon">💬</div><h3>Ask the AI</h3><p>Get a step by step plan for this program.</p></a>
       <a class="card" href="#/interview?program=${p.id}"><div class="icon">🎤</div><h3>Practise the interview</h3><p>Mock university or visa interview for this program.</p></a>
     </section>
 
@@ -2461,7 +2570,7 @@ async function viewProgram() {
 }
 
 /* ---------------- Hamrah: the student's guided journey ---------------- */
-// Hamrah (ہمراہ) means the companion who walks the road with you. Raasta is the path.
+// Hamrah means the companion who walks the road with you. Raasta is the path.
 const HAMRAH = "Hamrah";
 const JOURNEY_TERMS_VERSION = "1";
 // Plain language, because a student is agreeing to it at 2am on a phone.
@@ -2565,7 +2674,7 @@ async function viewJourneyStart() {
   const flag = FLAG[p.country || CTRY] || "";
   app.innerHTML = `
     <a href="#/program?id=${p.id}" class="back">← Back to the program</a>
-    <div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)} · ہمراہ</span>
+    <div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)}</span>
       <h1>Finalize your dream university?</h1>
       <p>Then let's start your process. ${esc(HAMRAH)} stays with you from this page to the day you land.</p></div>
     <div class="card jn-pick">
@@ -2620,7 +2729,7 @@ async function viewJourney() {
 }
 
 function journeyEmpty() {
-  return `<div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)} · ہمراہ</span>
+  return `<div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)}</span>
       <h1>Finalize your dream university?</h1>
       <p>Then let's start your process. Pick the program you have decided on and ${esc(HAMRAH)} takes you from the application form to the day you land.</p></div>
     <div class="grid cols-2" style="align-items:start">
@@ -2827,8 +2936,8 @@ async function viewHamrah() {
   chatView({
     title: `${HAMRAH} · your study companion`,
     intro: j
-      ? `Walking your ${esc(j.program || "application")} at ${esc(j.university)} with you.${step ? ` Right now: <strong>${esc(step.title)}</strong>.` : ""} English, Urdu and Roman Urdu all work.`
-      : `Your companion for the whole process. Start a journey from your program page and ${HAMRAH} will know exactly where you are. English, Urdu and Roman Urdu all work.`,
+      ? `Walking your ${esc(j.program || "application")} at ${esc(j.university)} with you.${step ? ` Right now: <strong>${esc(step.title)}</strong>.` : ""}`
+      : `Your companion for the whole process. Start a journey from your program page and ${HAMRAH} will know exactly where you are.`,
     mode: "journey",
     journeyId: j?.id || null,
     preload: past,

@@ -16,7 +16,7 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const STYLE = `Formatting rules: plain text, short paragraphs, simple numbered lists when useful, **bold** sparingly. Never use em dashes or en dashes; use commas, colons, periods or parentheses instead. Reply in the language the student writes in (English, Urdu or Roman Urdu).`;
+const STYLE = `Formatting rules: plain text, short paragraphs, simple numbered lists when useful, **bold** sparingly. Never use em dashes or en dashes; use commas, colons, periods or parentheses instead. Always reply in English, even when the student writes in another language: keep it simple and clear rather than formal, because English may not be their first language.`;
 
 const VISA_FACTS = `Facts last checked: 2 November 2026. Official sources:
 - German Missions in Pakistan, student visa page: https://pakistan.diplo.de/pk-en/service/2-study-visa-seite-1676104
@@ -107,6 +107,156 @@ Main sirf Germany aur UK mein parhai ke baray mein madad kar sakta hoon: program
 You could ask for example:
 1. Which Master's programs fit my Bachelor's?
 2. Which scholarships can I apply for this year?${warn ? "\n\nNote: repeated messages like this pause the AI for 24 hours." : ""}`;
+
+// Identifiers never reach storage, even inside a saved conversation.
+const redactIds = (t: string) => t
+  .replace(/\b\d{5}[- ]?\d{7}[- ]?\d\b/g, "[removed]")
+  .replace(/\b(?:\d[ -]?){13,19}\b/g, "[removed]")
+  .replace(/\b[A-Z]{2}\d{2}[ ]?(?:[A-Z0-9]{4}[ ]?){3,7}[A-Z0-9]{1,4}\b/g, "[removed]")
+  .replace(/\b[A-Z]{1,2}\d{7}\b/g, "[removed]")
+  .replace(/\b\d{6,}\b/g, "[removed]");
+
+// Hold back text that might be the start of a [[MARKER]] so a marker never flashes on screen.
+function safeSplit(buf: string): [string, string] {
+  const i = buf.lastIndexOf("[");
+  if (i === -1) return [buf, ""];
+  const tail = buf.slice(i);
+  if (/^\[\[(OFF_TOPIC|UNSAFE)\]\]/.test(tail)) return [buf, ""];
+  if (tail.length < 14 && /^\[\[?[A-Z_]*$/.test(tail)) return [buf.slice(0, i), tail];
+  return [buf, ""];
+}
+
+type StreamCtx = {
+  supabase: ReturnType<typeof createClient>;
+  mode: string;
+  jrn: { id: number; remember: boolean } | null;
+  messages: { role: string; content: string }[];
+};
+
+// Streamed reply. Anthropic's SSE is translated into a small protocol the browser can render
+// as it arrives: status for what the agent is doing, delta for text, done at the end.
+function streamReply(payload: Record<string, unknown>, apiKey: string, c: StreamCtx): Response {
+  const enc = new TextEncoder();
+  const body = new ReadableStream({
+    async start(ctrl) {
+      const out = (ev: string, data: unknown) => ctrl.enqueue(enc.encode(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`));
+      let full = "", pending = "", searches = 0;
+
+      const once = async (p: Record<string, unknown>) => {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+          body: JSON.stringify({ ...p, stream: true }),
+        });
+        if (!res.ok || !res.body) {
+          console.error("Claude stream error", res.status, (await res.text()).slice(0, 300));
+          return { stop: "error", blocks: [] as Record<string, unknown>[] };
+        }
+        const blocks: Record<string, unknown>[] = [];
+        const partial: Record<number, string> = {};
+        let stop = "";
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let sse = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sse += dec.decode(value, { stream: true });
+          const chunks = sse.split("\n\n");
+          sse = chunks.pop() ?? "";
+          for (const chunk of chunks) {
+            const line = chunk.split("\n").find((l) => l.startsWith("data: "));
+            if (!line) continue;
+            let ev: Record<string, any>;
+            try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+            if (ev.type === "content_block_start") {
+              const b = ev.content_block ?? {};
+              blocks[ev.index] = { ...b };
+              if (b.type === "text") blocks[ev.index].text = b.text ?? "";
+              if (b.type === "thinking") blocks[ev.index].thinking = b.thinking ?? "";
+              if (b.type === "server_tool_use") { partial[ev.index] = ""; searches++; out("status", { s: searches > 1 ? "searching_more" : "searching" }); }
+              if (b.type === "web_search_tool_result") out("status", { s: "reading" });
+            } else if (ev.type === "content_block_delta") {
+              const d = ev.delta ?? {};
+              const blk = blocks[ev.index] ?? (blocks[ev.index] = { type: "text", text: "" });
+              if (d.type === "text_delta") {
+                blk.text = String(blk.text ?? "") + d.text;
+                full += d.text; pending += d.text;
+                const [send, keep] = safeSplit(pending);
+                pending = keep;
+                if (send) out("delta", { t: send });
+              } else if (d.type === "thinking_delta") {
+                blk.thinking = String(blk.thinking ?? "") + d.thinking;
+              } else if (d.type === "signature_delta") {
+                blk.signature = d.signature;
+              } else if (d.type === "input_json_delta") {
+                partial[ev.index] = (partial[ev.index] ?? "") + d.partial_json;
+              }
+            } else if (ev.type === "content_block_stop") {
+              const blk = blocks[ev.index];
+              if (blk && blk.type === "server_tool_use") {
+                try { blk.input = JSON.parse(partial[ev.index] || "{}"); } catch { blk.input = {}; }
+              }
+            } else if (ev.type === "message_delta") {
+              stop = ev.delta?.stop_reason ?? stop;
+            } else if (ev.type === "error") {
+              console.error("Claude stream event error", JSON.stringify(ev).slice(0, 300));
+              return { stop: "error", blocks };
+            }
+          }
+        }
+        return { stop, blocks: blocks.filter(Boolean) };
+      };
+
+      try {
+        out("status", { s: "thinking" });
+        let r = await once(payload);
+        // A long search can pause the turn. Continue it, in the same stream, so the student
+        // sees one flowing answer rather than a dead stop.
+        for (let i = 0; i < 2 && r.stop === "pause_turn"; i++) {
+          const prev = (payload.messages as unknown[]) ?? [];
+          r = await once({ ...payload, messages: [...prev, { role: "assistant", content: r.blocks }] });
+        }
+        if (pending) { out("delta", { t: pending }); full += ""; }
+
+        if (r.stop === "error" && !full) {
+          out("error", { error: "The AI is busy right now. Please try again in a minute." });
+          ctrl.close(); return;
+        }
+        if (!full.trim()) {
+          out("error", { error: "The AI could not finish this answer. Please ask again, a bit shorter." });
+          ctrl.close(); return;
+        }
+
+        const mark = full.match(/\[\[(OFF_TOPIC|UNSAFE)\]\]/);
+        let clean = full.replace(/\[\[(OFF_TOPIC|UNSAFE)\]\]\s*/g, "").trim().replace(/[\u2013\u2014]/g, ", ");
+        if (mark) {
+          const unsafe = mark[1] === "UNSAFE";
+          const { data: total } = await c.supabase.rpc("flag_ai", { p_category: unsafe ? "unsafe_model" : "off_topic", p_weight: unsafe ? 2 : 0 });
+          if (unsafe && (total ?? 0) >= 2) { const note = "\n\nNote: repeated messages like this pause the AI for 24 hours."; clean += note; out("delta", { t: note }); }
+        }
+        if (c.mode === "journey" && c.jrn?.remember) {
+          const lastUser = c.messages.filter((m) => m.role === "user").pop();
+          if (lastUser) {
+            await Promise.allSettled([
+              c.supabase.from("journey_messages").insert([
+                { journey_id: c.jrn.id, role: "user", content: redactIds(lastUser.content).slice(0, 4000) },
+                { journey_id: c.jrn.id, role: "assistant", content: redactIds(clean).slice(0, 8000) },
+              ]),
+            ]);
+          }
+        }
+        out("done", { flagged: mark ? mark[1].toLowerCase() : null });
+      } catch (e) {
+        console.error("stream failed", String(e));
+        out("error", { error: "The connection dropped. Please ask again." });
+      }
+      ctrl.close();
+    },
+  });
+  return new Response(body, { headers: { ...cors, "content-type": "text/event-stream", "cache-control": "no-cache", "x-accel-buffering": "no" } });
+}
 
 const SITE = Deno.env.get("SITE_URL") ?? "https://raheelgul063-lgtm.github.io/raasta/";
 
@@ -214,7 +364,7 @@ function systemForJourney(ctx: Record<string, string>, uk: boolean): string {
     ctx.openSteps ? `Still open: ${ctx.openSteps}.` : "",
   ].filter(Boolean).join("\n");
 
-  return `You are Hamrah (ہمراہ, "the one who walks the road with you"), the companion inside Raasta for a Pakistani student who has chosen their university and is now going through the real process. You are not a help desk and not a search engine. You are the person they message at midnight when they are confused, and you have been with them since the first day.
+  return `You are Hamrah, "the one who walks the road with you", the companion inside Raasta for a Pakistani student who has chosen their university and is now going through the real process. You are not a help desk and not a search engine. You are the person they message at midnight when they are confused, and you have been with them since the first day.
 
 ${uk ? UK_FACTS : VISA_FACTS}
 
@@ -230,7 +380,7 @@ HOW YOU TALK. This matters as much as being right.
 - Never open with a heading, a bulleted list or a restatement of their question. Open with a reaction, then the answer. "Ah, that one is annoying but it is fixable." "Good, that is the easy part." "Okay, stop. Do not pay for that."
 - Use bullets only when you are giving a genuine list the student will tick off, like documents to carry. For anything else, write in sentences.
 - Reference your shared history out loud when it is relevant: "you told me your CGPA is 3.1, so..." or "last time we left off at the HEC stamps, did those come back?" This is what makes you worth talking to.
-- Use their name if you know it. Match their language: if they write Urdu, answer Urdu; Roman Urdu, answer Roman Urdu; English, answer English. If they mix, mix.
+- Use their name if you know it. Always answer in English, even if they write to you in Urdu or Roman Urdu: plain, warm English, short words, no officialese.
 - React to how they feel. If they are panicking about a deadline, say the honest thing first ("you have time, but not much") and calm them with the plan, not with reassurance you cannot back up. If something has genuinely gone wrong, say so kindly and go straight to what can still be done.
 - End like a human: one question, or one thing to do next. Not a summary. Not "let me know if you have questions."
 - Length follows the question. One line for a small thing. A few short paragraphs for a real decision. Never pad, never lecture, and never repeat what you already told them.
@@ -401,7 +551,7 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return json({ error: "Please sign in again." }, 401);
 
-  let body: { mode?: string; messages?: { role: string; content: string }[]; context?: Record<string, string>; journey_id?: number };
+  let body: { mode?: string; messages?: { role: string; content: string }[]; context?: Record<string, string>; journey_id?: number; stream?: boolean };
   try { body = await req.json(); } catch { return json({ error: "Bad request" }, 400); }
 
   if (body.mode === "selftest") {
@@ -525,6 +675,10 @@ Deno.serve(async (req) => {
     payload.thinking = { type: "between_tools" };
     payload.max_tokens = 4000;
   }
+  if (body.stream === true && (mode === "journey" || mode === "visa" || mode === "interview")) {
+    return streamReply(payload, apiKey, { supabase, mode, jrn, messages });
+  }
+
   const callClaude = (body: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -568,18 +722,10 @@ Deno.serve(async (req) => {
   if (mode === "journey" && jrn?.remember) {
     const lastUser = messages.filter((m) => m.role === "user").pop();
     if (lastUser) {
-      // The conversation is kept, but never an identifier inside it. A student will paste a
-      // CNIC or a card number sooner or later, and it must not end up in a stored transcript.
-      const redact = (t: string) => t
-        .replace(/\b\d{5}[- ]?\d{7}[- ]?\d\b/g, "[removed]")                 // CNIC
-        .replace(/\b(?:\d[ -]?){13,19}\b/g, "[removed]")                      // card or long account number
-        .replace(/\b[A-Z]{2}\d{2}[ ]?(?:[A-Z0-9]{4}[ ]?){3,7}[A-Z0-9]{1,4}\b/g, "[removed]") // IBAN
-        .replace(/\b[A-Z]{1,2}\d{7}\b/g, "[removed]")                         // passport
-        .replace(/\b\d{6,}\b/g, "[removed]");                                 // any other long number run
       await Promise.allSettled([
         supabase.from("journey_messages").insert([
-          { journey_id: jrn.id, role: "user", content: redact(lastUser.content).slice(0, 4000) },
-          { journey_id: jrn.id, role: "assistant", content: redact(clean).slice(0, 8000) },
+          { journey_id: jrn.id, role: "user", content: redactIds(lastUser.content).slice(0, 4000) },
+          { journey_id: jrn.id, role: "assistant", content: redactIds(clean).slice(0, 8000) },
         ]),
       ]);
     }
