@@ -224,7 +224,13 @@ function setCountry(c, { silent = false } = {}) {
   CTRY = c; local.set("country", c); local.set("finderFilters", {});
   renderCountrySwitch();
   if (LIVE && session) sb.from("profiles").update({ country: c }).eq("id", session.user.id).then(() => {}, () => {});
-  if (!silent) { toast(`Showing ${C().name}`); route(); }
+  if (silent) return;
+  toast(`Showing ${C().name}`);
+  // Filters in the address bar belong to the country you just left. "Tuition free" means
+  // nothing in the UK, and a stale sort silently showed the wrong list.
+  const bare = (location.hash || "#/").split("?")[0];
+  if (bare !== location.hash) { location.hash = bare; return; }
+  route();
 }
 function daysUntil(dateStr) {
   if (!dateStr) return null;
@@ -328,7 +334,7 @@ async function askAI(payload) {
     await new Promise((r) => setTimeout(r, 700));
     return demoReply(payload);
   }
-  const { data, error } = await sb.functions.invoke("ai", { body: { ...payload, context: { ...(payload.context || {}), country: CTRY } } });
+  const { data, error } = await sb.functions.invoke("ai", { body: { ...payload, context: { country: CTRY, ...(payload.context || {}) } } });
   if (error) {
     let msg = "Something went wrong. Please try again.";
     try { const body = await error.context.json(); if (body?.error) msg = body.error; } catch {}
@@ -353,7 +359,7 @@ async function streamAI(payload, { onStatus, onDelta }) {
   const res = await fetch(`${CFG.SUPABASE_URL}/functions/v1/ai`, {
     method: "POST",
     headers: { "content-type": "application/json", apikey: CFG.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ ...payload, stream: true, context: { ...(payload.context || {}), country: CTRY } }),
+    body: JSON.stringify({ ...payload, stream: true, context: { country: CTRY, ...(payload.context || {}) } }),
   });
 
   if (!res.ok || !res.body || !(res.headers.get("content-type") || "").includes("text/event-stream")) {
@@ -2065,7 +2071,7 @@ function progCard(p, saved) {
     <article class="prog-card">
       <a href="#/program?id=${p.id}" class="prog-main">
         <div class="prog-head"><span class="mono" aria-hidden="true">${esc(mono(p.university))}</span><div>
-          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${p.type === "Russell Group" ? `<span class="pill pill-lang">Russell Group</span>` : ""}${langPill(p)}${ncPill(p)}</div>
+          <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 && progCountry(p) !== "UK" ? `<span class="pill pill-free">Tuition free</span>` : ""}${p.type === "Private university" ? `<span class="pill">Private</span>` : ""}${p.type === "Russell Group" ? `<span class="pill pill-lang">Russell Group</span>` : ""}${langPill(p)}${ncPill(p)}</div>
         </div></div>
         <h3>${esc(p.program)}</h3>
         <p class="prog-uni">${esc(p.university)}</p>
@@ -2158,7 +2164,7 @@ function uniCard(u) {
   return `<a class="uni-card" href="#/university?name=${encodeURIComponent(u.name)}">
     <span class="mono big" aria-hidden="true">${esc(mono(u.name))}</span>
     <div class="uni-body"><h3>${esc(u.name)}</h3><p>📍 ${esc([u.city, u.state === u.city ? "" : u.state].filter(Boolean).join(", ") || C().label)}</p>
-      <div class="uni-tags"><span class="pill">${esc(u.type || "University")}</span>${u.free ? `<span class="pill pill-free">${u.free} tuition free</span>` : ""}${u.minFee ? `<span class="pill pill-gold">From £${u.minFee.toLocaleString("en-US")} / year</span>` : ""}</div></div>
+      <div class="uni-tags"><span class="pill">${esc(u.type || "University")}</span>${u.free && !isUK() ? `<span class="pill pill-free">${u.free} tuition free</span>` : ""}${u.minFee ? `<span class="pill pill-gold">From £${u.minFee.toLocaleString("en-US")} / year</span>` : ""}</div></div>
     <div class="uni-count"><strong>${u.n}</strong><span>program${u.n === 1 ? "" : "s"}</span></div>
   </a>`;
 }
@@ -2360,7 +2366,7 @@ async function viewFinder() {
       if (c.nc === "open" && !/^Open/.test(p.nc_status || "")) return false;
       if (c.nc === "restricted" && !/^Restricted/.test(p.nc_status || "")) return false;
       if (c.lang) { const l = p.language || "", en = /english/i.test(l), de = /german/i.test(l); if ((c.lang === "en" && !en) || (c.lang === "de" && !de) || (c.lang === "both" && !(en && de))) return false; }
-      if (c.tuition === "free" && p.tuition !== 0) return false;
+      if (c.tuition === "free" && (isUK() || p.tuition !== 0)) return false;
       if (["1500", "15000", "18000", "22000"].includes(c.tuition) && !(p.tuition != null && p.tuition <= Number(c.tuition))) return false;
       if (c.duration === "3" && !(p.duration && p.duration <= 3)) return false;
       if (c.duration === "4" && p.duration !== 4) return false;
@@ -2472,7 +2478,7 @@ async function viewProgram() {
   app.innerHTML = `
     <a href="#/finder" class="back">← All programs</a>
     <div class="prog-hero card">
-      <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 ? `<span class="pill pill-free">Tuition free</span>` : ""}<span class="pill">${esc(p.type || "")}</span></div>
+      <div class="prog-top"><span class="pill ${p.degree === "Master" ? "pill-green" : "pill-gold"}">${esc(p.title || p.degree)}</span>${p.tuition === 0 && progCountry(p) !== "UK" ? `<span class="pill pill-free">Tuition free</span>` : ""}<span class="pill">${esc(p.type || "")}</span></div>
       <h1>${esc(p.program)}</h1>
       <p class="prog-uni big"><a href="#/university?name=${encodeURIComponent(p.university)}">${esc(p.university)}</a> · ${esc([p.city, p.state].filter(Boolean).join(", "))}</p>
       ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
@@ -2722,15 +2728,20 @@ async function viewJourney() {
   let list = [];
   try { list = await db.journeys(); } catch (e) { app.innerHTML = `<div class="page-head"><h1>Your journey</h1><p>${esc(e.message)}</p></div>`; return; }
   const wanted = Number(route.params?.get("id"));
-  const j = (wanted && list.find((x) => x.id === wanted)) || list.find((x) => x.status === "active") || list[0];
-  if (!j) { app.innerHTML = journeyEmpty(); return; }
+  const j = (wanted && list.find((x) => x.id === wanted))
+    || list.find((x) => x.status === "active" && x.country === CTRY)
+    || null;
+  if (!j) { app.innerHTML = journeyEmpty(list); return; }
+  if (j.country !== CTRY) { setCountry(j.country, { silent: true }); }
   const [steps, events, chatCount] = await Promise.all([db.journeySteps(j.id), db.journeyEvents(j.id).catch(() => []), db.journeyChatCount(j.id).catch(() => 0)]);
   renderJourney(j, steps, events, list, chatCount);
 }
 
-function journeyEmpty() {
-  return `<div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)}</span>
-      <h1>Finalize your dream university?</h1>
+function journeyEmpty(list = []) {
+  const other = list.filter((x) => x.status === "active" && x.country !== CTRY);
+  return `${other.length ? `<div class="callout jn-other">You have a journey for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and Raasta will switch to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
+    <div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)}</span>
+      <h1>Finalize your dream university${other.length ? ` in ${esc(C().name)}` : ""}?</h1>
       <p>Then let's start your process. Pick the program you have decided on and ${esc(HAMRAH)} takes you from the application form to the day you land.</p></div>
     <div class="grid cols-2" style="align-items:start">
       <section class="card"><h3>What ${esc(HAMRAH)} does with you</h3>
@@ -2924,6 +2935,7 @@ async function viewHamrah() {
   if (jid) {
     try { j = (await db.journeys()).find((x) => x.id === jid) || null; if (j) steps = await db.journeySteps(j.id); } catch {}
   }
+  if (j && j.country !== CTRY) setCountry(j.country, { silent: true });
   const past = j && j.remember ? await db.journeyChat(j.id).catch(() => []) : [];
   const c = j?.country || CTRY;
   const def = key ? jStepDef(c, key) : null;
@@ -2949,6 +2961,7 @@ async function viewHamrah() {
         : `You are ${prog ? `${prog.done} of ${prog.total} steps` : ""} into your application to ${j.university}.${next ? ` Next up is: ${next.title}.` : ""} What do you want to work on?`)
       : `Hello. I am ${HAMRAH}. Tell me where you are in your process and I will take it from there.` },
     getContext: () => ({
+      country: j?.country || CTRY,
       profile: prof,
       journey: j ? `${j.degree || ""} ${j.program || ""} at ${j.university}${j.intake ? `, ${j.intake} intake` : ""}` : "",
       stepTitle: step?.title || "",

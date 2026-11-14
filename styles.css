@@ -821,3 +821,4 @@ a.job-card:hover { border-color: var(--green-2); box-shadow: var(--shadow); }
   .ai-status-t { animation: none; -webkit-text-fill-color: currentColor; background: none; }
   .caret { animation: none; }
 }
+.jn-other { margin-bottom: 18px; }

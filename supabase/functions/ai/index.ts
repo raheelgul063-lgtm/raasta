@@ -595,7 +595,7 @@ Deno.serve(async (req) => {
     return json({ error: "Please fill in program, experience and why this program." }, 400);
   }
 
-  const uk = ctx.country === "UK";
+  let uk = ctx.country === "UK";
 
   // Hamrah's memory. Loaded here, not sent by the browser, so it survives the app being
   // closed and cannot be edited on the way in. Row level security proves the journey is theirs.
@@ -623,6 +623,12 @@ Deno.serve(async (req) => {
         }
       }
     }
+  }
+  if (mode === "journey" && jrn) {
+    // The journey row decides the country, not the flag the browser happens to be showing.
+    // Otherwise a German application gets answered with UK rules.
+    ctx.country = jrn.country;
+    uk = jrn.country === "UK";
   }
   if (mode === "journey") {
     if (jrn) ctx.journey = `${jrn.degree || ""} ${jrn.program || ""} at ${jrn.university}${jrn.intake ? `, ${jrn.intake} intake` : ""}`.trim();
