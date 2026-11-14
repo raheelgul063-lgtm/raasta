@@ -1,4 +1,4 @@
-// Raasta UK guides: visa (Pakistan), cities, jobs, moving to the UK, scholarships. Facts checked 9 November 2026.
+// WizPath UK guides: visa (Pakistan), cities, jobs, moving to the UK, scholarships. Facts checked 9 November 2026.
 // Same shape as guides.js (window.RAASTA_GUIDES), so the same pages can show either country.
 window.RAASTA_GUIDES_UK = {
   checked: "9 November 2026",

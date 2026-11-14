@@ -11,7 +11,7 @@
 //  - Pakistan is on the UK TB test list and the clinic must be Home Office approved.
 //    Source: gov.uk tuberculosis tests for visa applicants.
 //
-// step: key, title, detail, optional, only ("Bachelor" | "Master"), tool (a Raasta route), ask (a question to hand Hamrah)
+// step: key, title, detail, optional, only ("Bachelor" | "Master"), tool (a WizPath route), ask (a question to hand Hamrah)
 window.JOURNEY_PLAN = {
   version: "1",
   stages: {
@@ -56,7 +56,7 @@ window.JOURNEY_PLAN = {
       { key: "de_lang", stage: "docs", title: "Sit your language test",
         detail: "An English-taught program wants IELTS or TOEFL. A German-taught program wants TestDaF, DSH or a Goethe certificate. Check which one your program actually requires before you book and pay.",
         tool: "#/program", ask: "Which language certificate does my program accept, and what score do I need?" },
-      { key: "de_doccheck", stage: "docs", title: "Run your documents through Raasta's document check",
+      { key: "de_doccheck", stage: "docs", title: "Run your documents through WizPath's document check",
         detail: "Catch the missing stamp or the wrong format now, not after uni-assist rejects the set.",
         tool: "#/doccheck", ask: "What are the most common document mistakes that get Pakistani applications rejected in Germany?" },
 
@@ -68,7 +68,7 @@ window.JOURNEY_PLAN = {
         detail: "Hamrah prepares every field: how to enter your grades, how to describe your degree, what to write where the form expects a German term. You paste it in and submit it yourself, because the declaration at the end has to be yours.",
         ask: "Go through the uni-assist form with me field by field for my program." },
       { key: "de_letter", stage: "apply", title: "Write your motivation letter",
-        detail: "Build it in Raasta, then read it aloud once before you attach it.",
+        detail: "Build it in WizPath, then read it aloud once before you attach it.",
         tool: "#/letter", ask: "Review my motivation letter for this program and tell me what is weak." },
       { key: "de_cv", stage: "apply", title: "Put your CV in European format",
         detail: "Reverse chronological, no photo needed, no marital status, no father's name. German admissions staff expect a plain and factual CV.",
@@ -80,12 +80,12 @@ window.JOURNEY_PLAN = {
         detail: "Download the confirmation and the reference number the moment you submit. Keep them. You will need them for every follow up.",
         ask: "I submitted my application. What happens next and how long does it take?" },
       { key: "de_track", stage: "apply", title: "Add the deadline to your tracker",
-        detail: "So Raasta can warn you before the decision window closes.",
+        detail: "So WizPath can warn you before the decision window closes.",
         tool: "#/tracker" },
 
       // Interview
       { key: "de_interview", stage: "interview", title: "Prepare for the interview or entrance test", optional: true,
-        detail: "Some German programs interview or set a written entrance test. If yours does, practise in Raasta first.",
+        detail: "Some German programs interview or set a written entrance test. If yours does, practise in WizPath first.",
         tool: "#/interview", ask: "Does my program have an entrance test, and how should I prepare for it?" },
 
       // Offer
@@ -98,7 +98,7 @@ window.JOURNEY_PLAN = {
 
       // Money
       { key: "de_block", stage: "money", title: "Open a blocked account",
-        detail: "The Sperrkonto proves you can cover your living costs. Hamrah explains the providers, the current required amount and the paperwork. You open it and transfer the money yourself. Raasta never handles your money and never asks for your banking details.",
+        detail: "The Sperrkonto proves you can cover your living costs. Hamrah explains the providers, the current required amount and the paperwork. You open it and transfer the money yourself. WizPath never handles your money and never asks for your banking details.",
         tool: "#/visa-guide", ask: "Compare the blocked account providers for a student in Pakistan and tell me the current required amount." },
       { key: "de_insurance", stage: "money", title: "Arrange health insurance",
         detail: "You need cover from your date of entry. Public student insurance is the normal route once you enrol, and travel cover bridges the gap before that.",
@@ -171,7 +171,7 @@ window.JOURNEY_PLAN = {
       { key: "uk_lang", stage: "docs", title: "Sit your English test",
         detail: "Check whether your university needs an IELTS for UKVI (a SELT) or accepts an ordinary IELTS or its own test. Booking the wrong one is an expensive and common mistake.",
         ask: "Does my course need IELTS for UKVI or will a normal IELTS do?" },
-      { key: "uk_doccheck", stage: "docs", title: "Run your documents through Raasta's document check",
+      { key: "uk_doccheck", stage: "docs", title: "Run your documents through WizPath's document check",
         detail: "Find the gaps before the university does.",
         tool: "#/doccheck", ask: "Check my document set for a UK application and tell me what is missing." },
 
@@ -180,7 +180,7 @@ window.JOURNEY_PLAN = {
         detail: "Bachelor applications normally go through UCAS. Master's applications normally go directly on the university's own portal.",
         tool: "#/program", ask: "Do I apply to my course through UCAS or directly?" },
       { key: "uk_ps", stage: "apply", title: "Write your personal statement",
-        detail: "The UK weighs this heavily, far more than German universities do. Build it in Raasta and keep it about you and the course, not about the country.",
+        detail: "The UK weighs this heavily, far more than German universities do. Build it in WizPath and keep it about you and the course, not about the country.",
         tool: "#/letter", ask: "Review my personal statement for this course and tell me what is weak." },
       { key: "uk_ref", stage: "apply", title: "Line up your references",
         detail: "Ask your referees early and give them your CV and the course link. Chase them: a missing reference stalls the whole application.",
@@ -192,7 +192,7 @@ window.JOURNEY_PLAN = {
         detail: "Keep the application number. Every follow up needs it.",
         ask: "I submitted my UK application. What happens next and how long does it take?" },
       { key: "uk_track", stage: "apply", title: "Add the deadline to your tracker",
-        detail: "So Raasta can warn you before anything closes.",
+        detail: "So WizPath can warn you before anything closes.",
         tool: "#/tracker" },
 
       // Interview
@@ -211,7 +211,7 @@ window.JOURNEY_PLAN = {
         detail: "Some technical and scientific courses require ATAS clearance before the visa. It is free but it takes weeks. Your offer letter says whether yours needs it.",
         ask: "Does my course need ATAS clearance, and how do I apply for it?" },
       { key: "uk_deposit", stage: "offer", title: "Pay your tuition deposit",
-        detail: "Most UK universities will not issue a CAS until the deposit is paid. You make this payment yourself, directly to the university. Raasta never handles your money.",
+        detail: "Most UK universities will not issue a CAS until the deposit is paid. You make this payment yourself, directly to the university. WizPath never handles your money.",
         ask: "How do I pay a UK tuition deposit from Pakistan, and what proof should I keep?" },
       { key: "uk_cas", stage: "offer", title: "Get your CAS",
         detail: "The Confirmation of Acceptance for Studies. Check every detail on it against your passport and your documents the day it arrives. An error on the CAS means a refused visa.",

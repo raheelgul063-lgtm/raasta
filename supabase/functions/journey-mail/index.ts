@@ -13,9 +13,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const MAIL_FROM = Deno.env.get("MAIL_FROM") ?? "Raasta <hamrah@raasta.app>";
+const MAIL_FROM = Deno.env.get("MAIL_FROM") ?? "WizPath <hamrah@raasta.app>";
 const CRON_SECRET = Deno.env.get("JOURNEY_CRON_SECRET") ?? "";
-const SITE = "https://raheelgul063-lgtm.github.io/raasta/";
+const SITE = Deno.env.get("SITE_URL") ?? "https://wizzpath.com/";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json", ...cors } });
@@ -27,14 +27,14 @@ type Step = { step_key: string; title: string; detail: string | null; stage: str
 function shell(heading: string, lines: string[], cta: string) {
   return `<!doctype html><html><body style="margin:0;background:#F7F5F0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C">
 <div style="max-width:560px;margin:0 auto;padding:28px 20px">
-  <div style="font-weight:800;color:#0E4D3A;font-size:1.1rem;margin-bottom:18px">Raasta <span style="color:#8A8A8A;font-weight:600">&middot; Hamrah</span></div>
+  <div style="font-weight:800;color:#0E4D3A;font-size:1.1rem;margin-bottom:18px">WizPath <span style="color:#8A8A8A;font-weight:600">&middot; Hamrah</span></div>
   <div style="background:#fff;border:1px solid #E6E2D8;border-radius:14px;padding:22px">
     <h1 style="margin:0 0 12px;font-size:1.25rem;line-height:1.35">${esc(heading)}</h1>
     ${lines.map((l) => `<p style="margin:0 0 12px;line-height:1.6;color:#4A4A4A">${l}</p>`).join("")}
     <a href="${SITE}${cta}" style="display:inline-block;margin-top:8px;background:#F2B544;color:#3E2A02;text-decoration:none;font-weight:700;padding:11px 18px;border-radius:10px">Open my journey</a>
   </div>
   <p style="color:#8A8A8A;font-size:.8rem;line-height:1.6;margin-top:18px">
-    Hamrah guides you, but you submit your own applications and make your own payments. Raasta will never ask for a password, a card number or a one time code.<br>
+    Hamrah guides you, but you submit your own applications and make your own payments. WizPath will never ask for a password, a card number or a one time code.<br>
     To stop these emails, open your journey and turn off reminders.
   </p>
 </div></body></html>`;
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
       `Hamrah is with you for ${where}.`,
       `There are ${required.length} steps ahead. ${next ? `First one: <strong>${esc(next.title)}</strong>.` : ""}`,
       "Tick each step off as you finish it and I will tell you what comes next. Set a target date on anything with a deadline and I will remind you before it passes.",
-      "One thing worth repeating: I prepare your answers, but you submit your own forms and make your own payments. Nobody from Raasta will ever ask for a password, a card number or a one time code.",
+      "One thing worth repeating: I prepare your answers, but you submit your own forms and make your own payments. Nobody from WizPath will ever ask for a password, a card number or a one time code.",
     ]);
     return json({ ok: true, ...r });
   }

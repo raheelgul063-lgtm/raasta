@@ -1,7 +1,7 @@
-// Raasta AI document checker. Documents are analysed in memory and never stored or logged.
+// WizPath AI document checker. Documents are analysed in memory and never stored or logged.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "https://raheelgul063-lgtm.github.io";
+const ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "https://wizzpath.com";
 const MODEL = Deno.env.get("MODEL_WRITER") ?? "claude-sonnet-5-5";
 const DAILY_CREDITS = Number(Deno.env.get("DAILY_CREDITS") ?? 30);
 const COST = 8;
@@ -9,7 +9,7 @@ const MAX_FILES = 6, MAX_BYTES = 7 * 1024 * 1024;
 const cors = { "Access-Control-Allow-Origin": ORIGIN, "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
-const SYSTEM_BASE = `You are Raasta's document checker for Pakistani students applying to __WHERE__. You review scans of their academic and personal documents for one target program.
+const SYSTEM_BASE = `You are WizPath's document checker for Pakistani students applying to __WHERE__. You review scans of their academic and personal documents for one target program.
 You are NOT __OFFICIAL__ and you do NOT certify anything. You flag problems so the student can fix them before applying.
 
 Return ONLY valid JSON (no markdown, no comments) with exactly this shape:

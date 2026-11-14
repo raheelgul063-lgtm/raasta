@@ -4,7 +4,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/uk-import`;
-const UA = "Mozilla/5.0 (compatible; RaastaBot/1.0; +https://raheelgul063-lgtm.github.io/raasta/)";
+const UA = "Mozilla/5.0 (compatible; WizPathBot/1.0; +https://wizzpath.com/)";
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 
 async function get(url: string, ms = 15000): Promise<{ status: number; text: string }> {

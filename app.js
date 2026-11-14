@@ -22,7 +22,7 @@ const OFFICIAL = {
 
 /* ---------------- Content ---------------- */
 const ROADMAP = [
-  { t: "Shortlist your programs", d: "Use the Raasta university finder to filter English taught programs, then read each official page. Note the deadline, IELTS score and required documents.", tag: "Start 8 to 12 months before intake", link: "#/finder", linkText: "Open the finder" },
+  { t: "Shortlist your programs", d: "Use the WizPath university finder to filter English taught programs, then read each official page. Note the deadline, IELTS score and required documents.", tag: "Start 8 to 12 months before intake", link: "#/finder", linkText: "Open the finder" },
   { t: "Book your language test", d: "Most English taught programs ask for IELTS or TOEFL. Check the exact minimum score for every program on your list.", tag: "Results take about 2 weeks" },
   { t: "Get your degree attested by HEC", d: "Your degree and transcripts need Higher Education Commission attestation for the visa. Start early, this takes time.", tag: "Do this before applying", link: OFFICIAL.hec, linkText: "HEC attestation" },
   { t: "Prepare CV, motivation letter and references", d: "A one page Europass or clean CV, a personal motivation letter for each program and usually two reference letters.", tag: "Use the Letter builder" },
@@ -121,7 +121,7 @@ function richText(s) {
   h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   h = h.replace(/(https?:\/\/[^\s<)]+)/g, (u) => {
     const internal = u.match(/#\/program\?id=(\d+)/);
-    return internal ? `<a href="#/program?id=${internal[1]}">View program in Raasta →</a>` : `<a href="${u}" target="_blank" rel="noopener">${u}</a>`;
+    return internal ? `<a href="#/program?id=${internal[1]}">View program in WizPath →</a>` : `<a href="${u}" target="_blank" rel="noopener">${u}</a>`;
   });
   return h;
 }
@@ -145,7 +145,7 @@ const UK_OFFICIAL = {
   vfs: "https://visa.vfsglobal.com/pak/en/gbr/"
 };
 const ROADMAP_UK = [
-  { t: "Shortlist your courses", d: "Use the Raasta finder to filter UK programs by field, fees and intake, then read each course page. Note the English score, fees and deadlines.", tag: "Start 9 to 12 months before September", link: "#/finder", linkText: "Open the finder" },
+  { t: "Shortlist your courses", d: "Use the WizPath finder to filter UK programs by field, fees and intake, then read each course page. Note the English score, fees and deadlines.", tag: "Start 9 to 12 months before September", link: "#/finder", linkText: "Open the finder" },
   { t: "Take an English test", d: "Most Master's ask for IELTS Academic 6.0 to 6.5 overall. Some universities accept other tests or your degree's medium of instruction. Check each course.", tag: "Results take about 1 to 2 weeks" },
   { t: "Get your documents attested", d: "Many UK universities and scholarships ask for HEC attested degrees and transcripts. Do it early, it takes time.", tag: "Do this before applying", link: OFFICIAL.hec, linkText: "HEC attestation" },
   { t: "Write your personal statement and CV", d: "A personal statement for each course (or one for UCAS), a 2 page CV and usually two references.", tag: "Use the AI letter builder" },
@@ -210,7 +210,7 @@ function renderCountrySwitch() {
     box.querySelectorAll("[data-ctry]").forEach((b) => b.onclick = () => setCountry(b.dataset.ctry));
   }
   document.body.dataset.country = CTRY;
-  document.title = `Raasta · Study in ${C().name}, with a free AI advisor`;
+  document.title = `WizPath · Study in ${C().name}, with a free AI advisor`;
   const fe = document.getElementById("footExplore");
   // This column was static HTML, so "Tuition free programs" sat in the footer of every UK page
   // and linked to a filter that means nothing there.
@@ -510,7 +510,7 @@ async function openLogin(reason, mode = "signup") {
       vb.disabled = true; vb.textContent = "Checking...";
       const { error } = await sb.auth.verifyOtp({ email, token: otp.value.trim(), type: "email" });
       if (error) { vb.disabled = false; vb.textContent = "Verify and sign in"; otp.select(); toast(/expired|invalid/i.test(error.message) ? "That code is wrong or expired. Check the latest email or resend." : friendly(error.message)); return; }
-      clearInterval(timer); close(); toast(isUp ? "Account created. Welcome to Raasta!" : "You're signed in");
+      clearInterval(timer); close(); toast(isUp ? "Account created. Welcome to WizPath!" : "You're signed in");
     };
   };
 
@@ -654,7 +654,7 @@ async function homeStats() {
   const counts = {}; progs.forEach((p) => (counts[p.field] = (counts[p.field] || 0) + 1));
   app.querySelectorAll("[data-fcount]").forEach((x) => (x.textContent = counts[x.dataset.fcount] ? `${n(counts[x.dataset.fcount])} programs` : ""));
   const top = unis.sort((a, b) => b.n - a.n).slice(0, 6);
-  if ($("#homeUnis")) $("#homeUnis").innerHTML = `<div class="section-head"><div><h2>Popular universities</h2><p>${isUK() ? "Universities with the most programs in Raasta." : "Most international programs. Public, applied sciences and private."}</p></div><a href="#/universities" class="btn ghost small">All ${unis.length} universities</a></div><div class="uni-grid">${top.map(uniCard).join("")}</div>`;
+  if ($("#homeUnis")) $("#homeUnis").innerHTML = `<div class="section-head"><div><h2>Popular universities</h2><p>${isUK() ? "Universities with the most programs in WizPath." : "Most international programs. Public, applied sciences and private."}</p></div><a href="#/universities" class="btn ghost small">All ${unis.length} universities</a></div><div class="uni-grid">${top.map(uniCard).join("")}</div>`;
 }
 
 async function homeSuggestions() {
@@ -1076,7 +1076,7 @@ async function checkVersion() {
     if (live && APP_VERSION && live !== APP_VERSION && !$("#updBar")) {
       const bar = document.createElement("div");
       bar.id = "updBar"; bar.className = "upd-bar";
-      bar.innerHTML = `<span>Raasta was updated with new programs and features.</span><button class="btn gold small" type="button">Refresh now</button>`;
+      bar.innerHTML = `<span>WizPath was updated with new programs and features.</span><button class="btn gold small" type="button">Refresh now</button>`;
       bar.querySelector("button").onclick = () => location.reload();
       document.body.appendChild(bar);
     }
@@ -1089,7 +1089,7 @@ async function init() {
   if (!LIVE) {
     $("#demoBanner").hidden = false;
     // Configured but could not connect: never silently fall back to demo with real users
-    if (CONFIGURED) $("#demoBanner").innerHTML = `Could not connect to Raasta. Please refresh the page. If it keeps happening, try again in a few minutes.`;
+    if (CONFIGURED) $("#demoBanner").innerHTML = `Could not connect to WizPath. Please refresh the page. If it keeps happening, try again in a few minutes.`;
   }
   if (LIVE) {
     const { data } = await sb.auth.getSession();
@@ -1159,7 +1159,7 @@ async function viewProfile(isWelcome) {
 
   app.innerHTML = `
     <div class="page-head">
-      <h1>${isWelcome ? "Welcome to Raasta 👋" : "Your profile"}</h1>
+      <h1>${isWelcome ? "Welcome to WizPath 👋" : "Your profile"}</h1>
       <p>${isWelcome ? "A few details so the AI advisor can suggest programs that really fit you." : "Your details stay private. Only you can see them."}</p>
     </div>
     <div class="profile-wrap">
@@ -1235,13 +1235,13 @@ async function viewProfile(isWelcome) {
         <h3>Sign in and security</h3>
         <div class="fact"><span>Email</span><strong>${esc(session?.user.email || "")}</strong></div>
         <div class="fact"><span>Sign in method</span><strong>${(session?.user.app_metadata?.providers || ["email"]).includes("google") ? "Google or email code" : "Email code"}</strong></div>
-        <p class="notice">For your security Raasta has no passwords. Every sign in needs a fresh 6 digit code sent to your email (or your Google account), so nobody can get in without access to your inbox.</p>
+        <p class="notice">For your security WizPath has no passwords. Every sign in needs a fresh 6 digit code sent to your email (or your Google account), so nobody can get in without access to your inbox.</p>
         <button class="btn ghost small" id="signOutAll" type="button" style="margin-top:12px">Sign out on all devices</button>
       </section>
 
       <section class="card">
         <h3>Your data</h3>
-        <p class="notice">Raasta never sells your data. You can download it or delete your account at any time.</p>
+        <p class="notice">WizPath never sells your data. You can download it or delete your account at any time.</p>
         <div class="prog-cta">
           <button class="btn ghost small" id="exportBtn" type="button">Download my data</button>
           <button class="btn ghost small danger" id="deleteBtn" type="button">Delete my account</button>
@@ -1261,7 +1261,7 @@ async function viewProfile(isWelcome) {
   // Photo upload
   $("#avFile").onchange = async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    if (!LIVE) { toast("Photos work once Raasta is connected."); return; }
+    if (!LIVE) { toast("Photos work once WizPath is connected."); return; }
     try {
       toast("Uploading photo...");
       const blob = await prepareAvatar(file);
@@ -1369,7 +1369,7 @@ async function viewCity() {
   const unis = uniAggregate(progs).sort((a, b) => b.n - a.n);
   app.innerHTML = `<a href="#/cities" class="back">← All cities</a>
     <div class="city-hero" id="cityHero"><div class="city-hero-in"><span class="eyebrow light">${esc(c.state)}</span><h1>${esc(c.name)}</h1><p>${esc(c.vibe)}</p></div></div>
-    <div class="stat-row"><div><strong id="cPop">…</strong><span id="cPopL">Population</span></div><div><strong>${progs.length}</strong><span>${isUK() ? "Programs in Raasta" : "International programs"}</span></div><div><strong>${unis.length}</strong><span>Universities</span></div>${isUK() ? `<div><strong>${c.slug === "london" ? "£1,570" : "£1,203"}</strong><span>Visa living costs per month</span></div>` : `<div><strong>${esc(c.rent || "n/a")}</strong><span>Student flat per month</span></div>`}</div>
+    <div class="stat-row"><div><strong id="cPop">…</strong><span id="cPopL">Population</span></div><div><strong>${progs.length}</strong><span>${isUK() ? "Programs in WizPath" : "International programs"}</span></div><div><strong>${unis.length}</strong><span>Universities</span></div>${isUK() ? `<div><strong>${c.slug === "london" ? "£1,570" : "£1,203"}</strong><span>Visa living costs per month</span></div>` : `<div><strong>${esc(c.rent || "n/a")}</strong><span>Student flat per month</span></div>`}</div>
     <div class="grid cols-2" style="align-items:start">
       <section class="card"><h3>Job market and industries</h3><ul class="needs">${c.industries.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
         <h3 style="margin-top:16px">Major employers nearby</h3><div class="uni-tags">${c.employers.map((x) => `<span class="pill">${esc(x)}</span>`).join("")}</div></section>
@@ -1599,7 +1599,7 @@ function viewScholarship() {
       <a class="btn ghost" href="#/visa?q=${encodeURIComponent(`Do I qualify for the ${s.name}? My degree is ..., CGPA ..., work experience ...`)}">Ask the AI if I qualify</a>
       <a class="btn ghost" href="#/letter">Draft my ${isUK() ? "personal statement" : "motivation letter"}</a>
     </div>
-    <p class="notice">Raasta is not the scholarship provider. The official page always has the final word.</p>`;
+    <p class="notice">WizPath is not the scholarship provider. The official page always has the final word.</p>`;
 }
 // Scholarship block for a university page
 function uniScholarshipBlock(u) {
@@ -1718,7 +1718,7 @@ async function viewDocCheck() {
   });
 
   runBtn.onclick = async () => {
-    if (!LIVE) { toast("The document checker works once Raasta is connected."); return; }
+    if (!LIVE) { toast("The document checker works once WizPath is connected."); return; }
     if (!session) { openLogin("Sign in free to check your documents. They are analysed and then discarded, never stored."); return; }
     runBtn.disabled = true; runBtn.textContent = "Checking... this takes about 30 to 60 seconds";
     $("#dcOut").innerHTML = `<h3>Results</h3><p class="notice">Reading your documents...</p>`;
@@ -1769,7 +1769,7 @@ function openFeedback() {
   bg.className = "modal-bg";
   bg.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
-      <h2 id="fbTitle">How is Raasta for you?</h2>
+      <h2 id="fbTitle">How is WizPath for you?</h2>
       <p>Your feedback decides what we build next.</p>
       <form id="fbForm">
         <div class="rating" role="radiogroup" aria-label="Rating">
@@ -1815,7 +1815,7 @@ function viewPrivacy() {
       <h3>Your rights</h3>
       <p>You can download all your data or delete your account at any time in your profile. You can also ask us by email to see, correct or delete your data. Under the GDPR you can complain to a data protection authority, for example the Berlin Commissioner for Data Protection and Freedom of Information.</p>
       <h3>Not official advice</h3>
-      <p>Raasta is not affiliated with DAAD, uni-assist, any university or the German Missions in Pakistan. AI answers and estimates can be wrong. Always check the official sources before you submit anything.</p>
+      <p>WizPath is not affiliated with DAAD, uni-assist, any university or the German Missions in Pakistan. AI answers and estimates can be wrong. Always check the official sources before you submit anything.</p>
     </div>`;
 }
 
@@ -1954,14 +1954,14 @@ async function viewAdmin() {
     const { data: reqs, error } = await sb.from("support_requests").select("*").order("created_at", { ascending: false }).limit(50);
     const box = $("#supportBox"); if (!box) return;
     const open = (reqs || []).filter((r) => r.status === "open").length;
-    box.innerHTML = `<h3>Support requests <span class="pill ${open ? "pill-gold" : ""}">${open} open</span></h3>` + (error ? `<div class="callout">${esc(error.message)}</div>` : reqs.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>From</th><th>Topic</th><th>Message</th><th>Status</th></tr></thead><tbody>${reqs.map((r) => `<tr><td>${fmt(r.created_at)}</td><td>${esc(r.name)}<br/><a href="mailto:${esc(r.email)}?subject=${encodeURIComponent("Raasta support: " + r.topic)}">${esc(r.email)}</a></td><td>${esc(r.topic)}</td><td style="max-width:420px;white-space:pre-wrap">${esc(r.message)}</td><td><select data-sid="${r.id}">${["open", "answered", "closed"].map((x) => `<option ${x === r.status ? "selected" : ""}>${x}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No support requests yet</div>`);
+    box.innerHTML = `<h3>Support requests <span class="pill ${open ? "pill-gold" : ""}">${open} open</span></h3>` + (error ? `<div class="callout">${esc(error.message)}</div>` : reqs.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>From</th><th>Topic</th><th>Message</th><th>Status</th></tr></thead><tbody>${reqs.map((r) => `<tr><td>${fmt(r.created_at)}</td><td>${esc(r.name)}<br/><a href="mailto:${esc(r.email)}?subject=${encodeURIComponent("WizPath support: " + r.topic)}">${esc(r.email)}</a></td><td>${esc(r.topic)}</td><td style="max-width:420px;white-space:pre-wrap">${esc(r.message)}</td><td><select data-sid="${r.id}">${["open", "answered", "closed"].map((x) => `<option ${x === r.status ? "selected" : ""}>${x}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No support requests yet</div>`);
     box.querySelectorAll("[data-sid]").forEach((sel) => sel.onchange = async () => { const { error: e } = await sb.from("support_requests").update({ status: sel.value }).eq("id", sel.dataset.sid); toast(e ? e.message : "Status saved"); });
   }
 }
 
 const SUPPORT_TOPICS = ["Account and sign in", "Programs and data", "AI tools", "Visa and documents", "Privacy and data deletion", "Bug or error", "Other"];
 const FAQ = [
-  ["Is Raasta really free?", "Yes. Searching programs, the guides, the tracker and the AI tools are free. AI tools have a daily limit so the service stays free for everyone."],
+  ["Is WizPath really free?", "Yes. Searching programs, the guides, the tracker and the AI tools are free. AI tools have a daily limit so the service stays free for everyone."],
   ["I did not get my sign in code.", "Check your spam folder and wait one minute. Then use Resend code. If you set a password in your profile you can also sign in with it."],
   ["A program or deadline looks wrong.", "Always trust the official university page first. Then tell us with the form below and include the program name, so we can fix it."],
   ["Do I need an APS certificate from Pakistan?", "No. APS is for India, China, Vietnam and Mongolia. Read the step by step visa guide for the full process."],
@@ -2535,7 +2535,7 @@ async function viewProgram() {
         <div class="adm"><span>Foundation year needed?</span><strong>${p.degree === "Bachelor" ? "Sometimes" : "No"}</strong><em>${p.degree === "Bachelor" ? "Depends on your grades and the university." : "A recognised Bachelor's degree gives direct entry."}</em></div>
         <div class="adm"><span>Application route</span><strong>${p.degree === "Bachelor" ? "UCAS" : "University website"}</strong><em>${p.degree === "Bachelor" ? "One UCAS application for up to 5 courses." : "Apply directly; most universities charge no application fee."}</em></div>
         <div class="adm"><span>Intakes</span><strong>${esc((p.intakes || []).join(" and ") || "See page")}</strong><em>${(p.intakes || []).includes("January") ? "January starts usually close for applications around October or November." : "Most courses start in September."}</em></div>
-        <div class="adm"><span>Credibility check</span><strong>Likely</strong><em>Many universities interview Pakistani applicants before issuing the CAS. Practise with Raasta.</em></div>
+        <div class="adm"><span>Credibility check</span><strong>Likely</strong><em>Many universities interview Pakistani applicants before issuing the CAS. Practise with WizPath.</em></div>
       </div>` : `<div class="adm-grid">
         <div class="adm"><span>NC status</span><strong>${esc(p.nc_status || "Not stated")}</strong>${p.nc_value ? `<em>Last NC ${esc(p.nc_value)}${p.nc_semester ? ` (${esc(p.nc_semester)})` : ""}${p.nc_source ? `, <a href="${safeUrl(p.nc_source)}" target="_blank" rel="noopener">source</a>` : ""}</em>` : `<em>${p.nc_status ? "From the program listing." : "Most international programs select by documents, not a fixed grade cutoff. Check the university page."}</em>`}</div>
         <div class="adm"><span>Language level</span><strong>${esc(langLevel(p))}</strong><em>${p.language ? `${esc(p.language)} taught` : "The program page does not state the teaching language. Confirm it before you apply."}</em></div>
@@ -2557,7 +2557,7 @@ async function viewProgram() {
       <div class="apply-steps">
         <a class="apply-step" href="${safeUrl(p.program_url || p.url)}" target="_blank" rel="noopener"><span>1</span><div><strong>Read the program page</strong><em>Modules, exact requirements, documents</em></div></a>
         ${p.apply_url ? `<a class="apply-step" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener"><span>2</span><div><strong>Open the application page</strong><em>${/uni-assist/i.test(p.apply_url) ? "uni-assist portal" : "University application portal"}</em></div></a>` : `<div class="apply-step"><span>2</span><div><strong>Find "Apply" on the program page</strong><em>The university explains its portal there</em></div></div>`}
-        <a class="apply-step" href="#/letter?program=${p.id}"><span>3</span><div><strong>Write your motivation letter</strong><em>For this program, in Raasta</em></div></a>
+        <a class="apply-step" href="#/letter?program=${p.id}"><span>3</span><div><strong>Write your motivation letter</strong><em>For this program, in WizPath</em></div></a>
       </div>
       <p class="notice">${uk ? `Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">university's website</a>. Fees and requirements change each year; the course page always has the final word.` : `Checked ${p.verified_on ? fmtDate(new Date(p.verified_on)) : "recently"} from ${p.curated ? "the university and " : ""}the <a href="${safeUrl(p.url)}" target="_blank" rel="noopener">DAAD listing</a>. The university page always has the final word.`}</p>
     </section>
@@ -2584,7 +2584,7 @@ async function viewProgram() {
 }
 
 /* ---------------- Hamrah: the student's guided journey ---------------- */
-// Hamrah means the companion who walks the road with you. Raasta is the path.
+// Hamrah means the companion who walks the road with you. WizPath is the path.
 const HAMRAH = "Hamrah";
 const JOURNEY_TERMS_VERSION = "1";
 // Plain language, because a student is agreeing to it at 2am on a phone.
@@ -2592,7 +2592,7 @@ const JOURNEY_TERMS = [
   ["What Hamrah does", "It keeps your whole journey in one list, from documents to landing. It prepares every answer for your application forms, checks your documents, practises your interview, explains each visa step, and reminds you before a deadline passes."],
   ["What Hamrah never does", "It never fills in or submits an application for you, never signs in to any portal as you, and never handles money. It cannot pay your fees, open your blocked account or move your funds. Every form you submit and every payment you make, you do yourself."],
   ["Why it works that way", "Universities and visa offices require the declaration at the end of a form to be yours. An answer submitted on your behalf, if it is wrong, can void your application. And nobody should hold your money but you."],
-  ["Raasta is not your agent or your lawyer", "Raasta is free and is not a consultancy, a legal adviser or an immigration adviser. Hamrah can be wrong, and rules change. The university's own page and the official mission or Home Office page always have the final word, and you are responsible for what you submit."],
+  ["WizPath is not your agent or your lawyer", "WizPath is free and is not a consultancy, a legal adviser or an immigration adviser. Hamrah can be wrong, and rules change. The university's own page and the official mission or Home Office page always have the final word, and you are responsible for what you submit."],
   ["Hamrah remembers your conversation", "So that you never explain yourself twice, Hamrah keeps your recent conversation with it. Only the conversation: it does not build a file on you and it does not store your documents. A CNIC, passport, card or account number is stripped out before anything is saved. You can delete the conversation, or switch remembering off, on your journey page."],
   ["Your information", "Your steps, notes, dates and memory are stored in your own account and only you can see them. Nothing from your journey is used anywhere else. Delete your journey, or your whole account, whenever you want, and it all goes with it."],
   ["Reminders by email", "If you leave reminders on, Hamrah emails you when you finish a step and when something is overdue. You can turn this off at any time, on this page."],
@@ -2724,7 +2724,7 @@ async function viewJourneyStart() {
 
 function journeyPreviewNotice() {
   return `<div class="page-head"><h1>Your journey with ${esc(HAMRAH)}</h1></div>
-    <div class="card" style="max-width:560px"><p>Journeys are saved in your Raasta account, so this works on the live site once Supabase is connected.</p>
+    <div class="card" style="max-width:560px"><p>Journeys are saved in your WizPath account, so this works on the live site once Supabase is connected.</p>
     <a class="btn gold" href="#/finder">Browse programs</a></div>`;
 }
 
@@ -2749,7 +2749,7 @@ async function viewJourney() {
 
 function journeyEmpty(list = []) {
   const other = list.filter((x) => x.status === "active" && x.country !== CTRY);
-  return `${other.length ? `<div class="callout jn-other">You have a journey for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and Raasta will switch to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
+  return `${other.length ? `<div class="callout jn-other">You have a journey for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and WizPath will switch to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
     <div class="page-hero"><span class="eyebrow light">${esc(HAMRAH)}</span>
       <h1>Finalize your dream university${other.length ? ` in ${esc(C().name)}` : ""}?</h1>
       <p>Then let's start your process. Pick the program you have decided on and ${esc(HAMRAH)} takes you from the application form to the day you land.</p></div>
@@ -2940,7 +2940,7 @@ function hamrahNoJourney(list = []) {
   const other = list.filter((x) => x.status === "active" && x.country !== CTRY);
   return `<div class="page-head"><h1>${esc(HAMRAH)} · your study companion</h1>
       <p>${esc(HAMRAH)} walks one application with you at a time, so it needs to know which one.</p></div>
-    ${other.length ? `<div class="callout jn-other">Your journey is for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and Raasta switches back to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
+    ${other.length ? `<div class="callout jn-other">Your journey is for ${esc(COUNTRIES[other[0].country].name)}: <strong>${esc(other[0].university)}</strong>. <a href="#/journey?id=${other[0].id}">Open it</a> and WizPath switches back to ${esc(COUNTRIES[other[0].country].name)}.</div>` : ""}
     <div class="card" style="max-width:580px">
       <h3>No ${esc(C().name)} journey yet</h3>
       <p>Pick the ${esc(C().name)} program you have decided on and press <strong>Finalize this university</strong> on its page. ${esc(HAMRAH)} takes it from there.</p>

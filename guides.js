@@ -1,4 +1,4 @@
-// Raasta guides: city guides, visa process (Pakistan), moving to Germany. Facts checked 2 November 2026.
+// WizPath guides: city guides, visa process (Pakistan), moving to Germany. Facts checked 2 November 2026.
 window.RAASTA_GUIDES = {
   checked: "2 November 2026",
 
@@ -75,7 +75,7 @@ window.RAASTA_GUIDES = {
       { t: "Arrange health insurance", d: "For entry you need travel or incoming health insurance until you enrol. After enrolment you join German statutory student insurance (about €141 to €146 per month in 2026)." },
       { t: "Apply on the Consular Services Portal", d: "Students from Pakistan apply online at digital.diplo.de. Answer the questionnaire, then upload every document the portal lists. Missing documents stop your application." },
       { t: "Book and attend the appointment", d: "After the document check you get an appointment. Punjab, Khyber Pakhtunkhwa, Islamabad, Gilgit-Baltistan and AJK go to the Embassy in Islamabad; Sindh and Balochistan go to the Consulate General in Karachi." },
-      { t: "Prepare for the interview", d: "Expect questions on your program, why Germany, how you finance your studies and your plans after graduation. Practise with the Raasta interview tool." },
+      { t: "Prepare for the interview", d: "Expect questions on your program, why Germany, how you finance your studies and your plans after graduation. Practise with the WizPath interview tool." },
       { t: "Pay the fee and wait", d: "The national visa fee is €75, paid in PKR. Processing times change with demand; apply as soon as you have your admission letter." },
       { t: "Travel and get your residence permit", d: "Your visa is usually valid for a few months. In Germany, register your address and apply for a residence permit at the foreigners office (Ausländerbehörde) before the visa expires." }
     ],
